@@ -3,23 +3,23 @@ module Plant
 export melibeNew!, Params, State
 
 Base.@kwdef struct Params
-    Cₘ::Float64  = 1.0
-    gI::Float64  = 4.0    # nS
-    gK::Float64  = 0.3    # nS
-    gₕ::Float64  = 0.03   # nS
-    gL::Float64  = 0.003  # nS
-    gT::Float64  = 0.01   # nS
+    Cₘ::Float64   = 1.0
+    gI::Float64   = 4.0    # nS
+    gK::Float64   = 0.3    # nS
+    gₕ::Float64   = 0.03   # nS
+    gL::Float64   = 0.003  # nS
+    gT::Float64   = 0.01   # nS
     gKCa::Float64 = 0.03  # nS
-    EI::Float64  = 30.0   # mV
-    EK::Float64  = -75.0  # mV
-    Eₕ::Float64  = 70.0   # mV
-    EL::Float64  = -40.0  # mV
-    ECa::Float64 = 140.0  # mV
-    Kc::Float64  = 0.0085 # mV⁻¹
-    τₓ::Float64  = 100.0  # ms, 235ms also used
-    ρ::Float64   = 0.0003 # ms⁻¹
-    Δx::Float64  = 0.0    # mm
-    ΔCa::Float64 = 0.0    # ms
+    EI::Float64   = 30.0   # mV
+    EK::Float64   = -75.0  # mV
+    Eₕ::Float64   = 70.0   # mV
+    EL::Float64   = -40.0  # mV
+    ECa::Float64  = 140.0  # mV
+    Kc::Float64   = 0.0085 # mV⁻¹
+    τₓ::Float64   = 100.0  # ms, 235ms also used
+    ρ::Float64    = 0.0003 # ms⁻¹
+    Δx::Float64   = 0.0    # mm
+    ΔCa::Float64  = 0.0    # ms
 end
 
 Vₛ(V::Float64)::Float64 = (127.0 * V + 8265.0) / 105.0
