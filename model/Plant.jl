@@ -80,7 +80,7 @@ function melibeNew!(du, u, θ, t)
 end
 
 Base.@kwdef mutable struct State
-    x::Float64    = 0.7
+    x::Float64    = 0.8
     y::Float64    = 5.472e-46
     n::Float64    = 0.137
     h::Float64    = 0.389
