@@ -59,6 +59,7 @@ function melibeNew(u::AbstractVector{T}, p::AbstractVector{T}, t::T) where T<:Ab
     dCa(p::AbstractVector{T}, Ca::T, x::T, V::T)::T = p[15] * (p[13] * x * (p[12] - V + p[17]) - Ca)
 
     function dV(p::AbstractVector{T}, x::T, y::T, n::T, h::T, Ca::T, V::T, Isyn::T)::T
+        # TODO: Add a function for Isyn per (12) in the appendix of the paper.
         return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
     end
 
