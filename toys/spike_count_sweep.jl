@@ -122,12 +122,12 @@ function markovChain(spike_counts)
 end
 
 ΔCa_min = -60.0
-ΔCa_max = 50.0
-ΔCa_resolution = 8000
-Δx_min = -1.5
-Δx_max = 3.0
+ΔCa_max = 35.0
+ΔCa_resolution = 4000
+Δx_min = -2.5
+Δx_max = 1.0
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1/500
+chunk_proportion = 1/50
 
 tspan = (0, 1.0f5)
 
