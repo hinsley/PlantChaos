@@ -132,6 +132,7 @@ chunk_proportion = 1/50
 tspan = (0, 1.0f5)
 
 for chunk in 1:Int(1/chunk_proportion)^2
+    println("Beginning chunk $(chunk) of $(Int(1/chunk_proportion)^2).")
     params = []
     chunk_ΔCa_min = ΔCa_min + (ΔCa_max - ΔCa_min)*chunk_proportion*trunc(Int, chunk*chunk_proportion)
     chunk_ΔCa_max = ΔCa_min + (ΔCa_max - ΔCa_min)*(chunk_proportion*(trunc(Int, chunk*chunk_proportion)+1)-1/ΔCa_resolution)
@@ -183,6 +184,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
     sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
 
+    println("Post-processing chunk $chunk of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
     results = []
     for i in 1:length(sol)
@@ -194,6 +196,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
         end
     end
 
+    println("Saving chunk $chunk of $(Int(1/chunk_proportion)^2).")
     @save "toys/output/chunk_$(chunk).jld2" results
     println("Finished chunk $chunk of $(Int(1/chunk_proportion)^2): $(round(100*chunk*chunk_proportion^2, digits=2))%")
 end
