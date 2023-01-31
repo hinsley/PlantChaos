@@ -182,8 +182,8 @@ for chunk in 1:Int(1/chunk_proportion)^2
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
-    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
-    #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
+    #@time sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
+    @time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3f1, saveat=range(tspan[1], tspan[2], length=1200));
 
     println("Post-processing chunk $chunk of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
