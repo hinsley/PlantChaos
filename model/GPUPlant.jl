@@ -25,6 +25,8 @@ default_params = @SVector Float32[
 ]
 
 function melibeNew(u::AbstractVector{T}, p::AbstractVector{T}, t::T) where T<:AbstractFloat
+    # TODO: Move all of these helper functions outside of melibeNew and use the @everywhere macro
+    # when `using` this module so they are available to all workers.
     Vs(V::T)::T = (127.0 * V + 8265.0) / 105.0
 
     am(V::T)::T = 0.1 * (50.0 - Vs(V)) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)
