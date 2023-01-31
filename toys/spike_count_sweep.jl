@@ -136,7 +136,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
     params = []
     chunk_ΔCa_min = ΔCa_min + (ΔCa_max - ΔCa_min)*chunk_proportion*trunc(Int, chunk*chunk_proportion)
     chunk_ΔCa_max = ΔCa_min + (ΔCa_max - ΔCa_min)*(chunk_proportion*(trunc(Int, chunk*chunk_proportion)+1)-1/ΔCa_resolution)
-    for ΔCa in range(chunk_ΔCa_min, chunk_ΔCa_max, length=Int(ΔCa_resolution*chunk_proportion))
+    @time for ΔCa in range(chunk_ΔCa_min, chunk_ΔCa_max, length=Int(ΔCa_resolution*chunk_proportion))
         chunk_Δx_min = Δx_min + (Δx_max - Δx_min)*chunk_proportion*(chunk%(1/chunk_proportion)-1)
         chunk_Δx_max = Δx_min + (Δx_max - Δx_min)*(chunk_proportion*(chunk%(1/chunk_proportion)) - 1/Δx_resolution)
         for Δx in range(chunk_Δx_min, chunk_Δx_max, length=Int(Δx_resolution*chunk_proportion))
@@ -182,12 +182,13 @@ for chunk in 1:Int(1/chunk_proportion)^2
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
-    sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
+    #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
 
     println("Post-processing chunk $chunk of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
     results = []
-    for i in 1:length(sol)
+    @time for i in 1:length(sol)
         spike_counts = countSpikes(sol[i], params[i])
         if length(spike_counts) < 2
             push!(results, 0.0f1)
