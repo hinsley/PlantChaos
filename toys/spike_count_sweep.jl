@@ -122,12 +122,12 @@ function markovChain(spike_counts)
 end
 
 ΔCa_min = -60.0
-ΔCa_max = 35.0
-ΔCa_resolution = 4000
+ΔCa_max = 50.0
+ΔCa_resolution = 8000
 Δx_min = -2.5
 Δx_max = 1.0
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1/50
+chunk_proportion = 1/100
 
 tspan = (0, 1.0f5)
 
@@ -190,7 +190,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
     results = []
     @time for i in 1:length(sol)
         spike_counts = countSpikes(sol[i], params[i])
-        if length(spike_counts) < 2
+        if length(spike_counts) < 3
             push!(results, 0.0f1)
         else
             push!(results, Float32{norm(markovChain(spike_counts))})
