@@ -85,17 +85,31 @@ prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(prob.p))
 
 monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
 #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=true, trajectories=1, dt=1.0f0, abstol=1e-6, reltol=1e-6)
-@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=false, trajectories=1, dt=3.0f0, abstol=1f-6, reltol=1f-6)
+#@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=false, trajectories=1, dt=3.0f0, abstol=1f-6, reltol=1f-6)
+@time sol = solve(monteprob, Tsit5(), EnsembleThreads(), adaptive=false, trajectories=1, dt=1.0f0, abstol=1f-6, reltol=1f-6, verbose=false)
 
 using Plots
+sol[1]
 
 min_Ca = min(sol[1](sol[1].t, idxs=(5))...)
 max_Ca = max(sol[1](sol[1].t, idxs=(5))...)
 min_x = min(sol[1](sol[1].t, idxs=(1))...)
 max_x = max(sol[1](sol[1].t, idxs=(1))...)
+if isnan(min_Ca) || isnan(max_Ca)
+    min_Ca = 0.0f0
+    max_Ca = -1.0f0
+end
+if isnan(min_x) || isnan(max_x)
+    min_x = 0.01f0
+    max_x = 0.99f0
+end
 plt = plot(sol, idxs=(5, 1), lw=0.2, legend=false, xlims=(min_Ca, max_Ca), ylims=(min_x, max_x), dpi=500, size=(1280, 720), xlabel="Ca", ylabel="x", title="\$\\Delta_x = $(Δx), \\Delta_{Ca} = $(ΔCa)\$")
 v_eq, Ca_eq, x_eq = Ca_x_eq(p)
-V_range = range(xinfinv(p, min_x), xinfinv(p, max_x), length=1000)
+try
+    V_range = range(xinfinv(p, min_x), xinfinv(p, max_x), length=1000)
+catch e
+    V_range = range(-70, 20, length=1000)
+end
 plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 scatter!(plt, [Ca_eq], [x_eq])

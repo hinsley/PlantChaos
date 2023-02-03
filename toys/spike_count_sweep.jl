@@ -131,11 +131,11 @@ end
 
 ΔCa_min = -60.0
 ΔCa_max = 50.0
-ΔCa_resolution = 20
+ΔCa_resolution = 400
 Δx_min = -2.5
 Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1
+chunk_proportion = 1/5
 
 tspan = (0.0f0, 1.0f5)
 
@@ -192,8 +192,9 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     prob = ODEProblem{false}(GPUPlant.melibeNew, u0, tspan, params[1])
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
-    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=true)
-    @time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, abstol=1f-6, reltol=1f-6, saveat=range(tspan[1], tspan[2], length=1500))
+    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
+    #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUArray(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, saveat=range(tspan[1], tspan[2], length=1500))
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[2], length=1500), verbose=false)
 
     println("Post-processing chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
@@ -201,9 +202,9 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     @time for i in 1:length(sol)
         spike_counts = countSpikes(sol[i], params[i])
         if length(spike_counts) < 3
-            push!(results, 0.0f0)
+            push!(results, 0.0e0)
         else
-            push!(results, Float32{norm(markovChain(spike_counts))})
+            push!(results, norm(markovChain(spike_counts)))
         end
     end
 
@@ -219,7 +220,7 @@ plt = heatmap(
     ylabel="\$\\Delta_x\$",
     #xlim=(-40, -30),
     #ylim=(-0.75, -0.5),
-    title="Spikes per burst: \$\\ln(1+\\sigma^2)\$",
+    title="Spike Count Markov Matrix Norm",
     color=:thermal,
     size=(1000, 750),
     dpi=1000
