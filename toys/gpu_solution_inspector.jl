@@ -45,8 +45,8 @@ function Ca_x_eq(p)
     return v_eq, Ca_eq, x_eq
 end
 
-Δx = -0.5f0
-ΔCa = -43.0f0
+Δx = -1.0f0
+ΔCa = -20.0f0
 tspan = (0, 1.0f5)
 
 p = @SVector Float32[
@@ -105,6 +105,7 @@ if isnan(min_x) || isnan(max_x)
 end
 plt = plot(sol, idxs=(5, 1), lw=0.2, legend=false, xlims=(min_Ca, max_Ca), ylims=(min_x, max_x), dpi=500, size=(1280, 720), xlabel="Ca", ylabel="x", title="\$\\Delta_x = $(Δx), \\Delta_{Ca} = $(ΔCa)\$")
 v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+V_range = nothing
 try
     V_range = range(xinfinv(p, min_x), xinfinv(p, max_x), length=1000)
 catch e
