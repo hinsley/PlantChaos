@@ -10,32 +10,38 @@ include("../model/GPUPlant.jl")
 state = GPUPlant.default_state
 u0 = state
 
+# TODO: Use the helper functions from GPUPlant.jl instead of redefining them here.
+Vs(V) = (127.0f0*V+8265.0f0)/105.0f0
+ah(V) = 0.07f0*exp((25.0f0-Vs(V))/20.0f0)
+bh(V) = 1.0f0/(1.0f0+exp((55.0f0-Vs(V))/10.0f0))
+hinf(V) = ah(V)/(ah(V)+bh(V))
+am(V) = 0.1f0*(50.0f0-Vs(V))/(exp((50.0f0-Vs(V))/10.0f0)-1.0f0)
+bm(V) = 4.0f0*exp((25.0f0-Vs(V))/18.0f0)
+minf(V) = am(V)/(am(V)+bm(V))
+an(V) = 0.01f0*(55.0f0-Vs(V))/(exp((55.0f0-Vs(V))/10.0f0)-1.0f0)
+bn(V) = 0.125f0*exp((45.0f0-Vs(V))/80.0f0)
+ninf(V) = an(V)/(an(V)+bn(V))
+xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (p[16] - V - 50.0f0)))
+IKCa(p, V) = p[2]*hinf(V)*minf(V)^3.0f0*(p[8]-V) + p[3]*ninf(V)^4.0f0*(p[9]-V) + p[6]*xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
+xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
+
+function x_null_Ca(p, v)
+    return 0.5f0*IKCa(p, v)/(p[7]*(v-p[9]) - IKCa(p, v))
+end
+
+function Ca_null_Ca(p, v)
+    return p[13]*xinf(p, v)*(p[12]-v+p[17])
+end
+
 # The function which must be minimized to find the equilibrium voltage.
 function Ca_difference(p, v)
-    Vs(V) = (127.0f0*V+8265.0f0)/105.0f0
-    ah(V) = 0.07f0*exp((25.0f0-Vs(V))/20.0f0)
-    bh(V) = 1.0f0/(1.0f0+exp((55.0f0-Vs(V))/10.0f0))
-    hinf(V) = ah(V)/(ah(V)+bh(V))
-    am(V) = 0.1f0*(50.0f0-Vs(V))/(exp((50.0f0-Vs(V))/10.0f0)-1.0f0)
-    bm(V) = 4.0f0*exp((25.0f0-Vs(V))/18.0f0)
-    minf(V) = am(V)/(am(V)+bm(V))
-    an(V) = 0.1f0*(55.0f0-Vs(V))/(exp((55.0f0-Vs(V))/10.0f0)-1.0f0)
-    bn(V) = 0.125f0*exp((45.0f0-Vs(V))/80.0f0)
-    ninf(V) = an(V)/(an(V)+bn(V))
-    # Not very DRY of me.
-    xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (p[16] - V - 50.0f0)))
-    IKCa = p[2]*hinf(v)*minf(v)^3*(p[8]-v) + p[3]*ninf(v)^4*(p[9]-v) + p[6]*xinf(p, v)*(p[8]-v) + p[4]*(p[10]-v)/((1.0f0+exp(10.0f0*(v-50.0f0)))*(1.0f0+exp(-(v-63.0f0)/7.8f0))^3) + p[5]*(p[11]-v)
-    x_null_Ca = 0.5f0*IKCa/(p[7]*(v-p[9]) - IKCa)
-    Ca_null_Ca = p[13]*xinf(p, v)*(p[12]-v+p[17])
-    return x_null_Ca - Ca_null_Ca
+    return x_null_Ca(p, v) - Ca_null_Ca(p, v)
 end
 
 # Finds the equilibrium in the slow subsystem.
-function Ca_x_eq(p, min_V=(p[11]+p[9])/2)
-    # Not very DRY of me.
-    xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (p[16] - V - 50.0f0)))
-    v_eq = find_zero(v -> Ca_difference(p, v), min_V)
-    Ca_eq = p[13]*xinf(p, v_eq)*(p[13]-v_eq+p[17])
+function Ca_x_eq(p)
+    v_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
+    Ca_eq = Ca_null_Ca(p, v_eq)
     x_eq = xinf(p, v_eq)
     return v_eq, Ca_eq, x_eq
 end
@@ -49,7 +55,7 @@ function countSpikes(sol, p, debug=false)
     Ca_eq = 0.0f0
     x_eq = 0.0f0
     try
-        v_eq, Ca_eq, x_eq = Ca_x_eq(p, min(sol(sol.t, idxs=(6))...))
+        v_eq, Ca_eq, x_eq = Ca_x_eq(p)
     catch e
         if debug
             print("No equilibrium found.")
@@ -58,6 +64,8 @@ function countSpikes(sol, p, debug=false)
     end
 
     for i in 2:length(sol)
+        x = 1
+        Ca = 5
         if sol[i-1][x] < x_eq && sol[i][x] < x_eq && sol[i][Ca] <= Ca_eq < sol[i-1][Ca]
             push!(resets, i)
         end
@@ -123,16 +131,16 @@ end
 
 ΔCa_min = -60.0
 ΔCa_max = 50.0
-ΔCa_resolution = 8000
+ΔCa_resolution = 20
 Δx_min = -2.5
 Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1/100
+chunk_proportion = 1
 
-tspan = (0, 1.0f5)
+tspan = (0.0f0, 1.0f5)
 
 for chunk in 0:Int(1/chunk_proportion)^2-1
-    println("Beginning chunk $(chunk) of $(Int(1/chunk_proportion)^2).")
+    println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
     params = []
     chunk_ΔCa_min = ΔCa_min + (ΔCa_max - ΔCa_min)*chunk_proportion*trunc(Int, chunk*chunk_proportion)
     chunk_ΔCa_max = ΔCa_min + (ΔCa_max - ΔCa_min)*(chunk_proportion*(trunc(Int, chunk*chunk_proportion)+1)-1/ΔCa_resolution)
@@ -167,8 +175,9 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
             "Δx_min" => chunk_Δx_min,
             "Δx_max" => chunk_Δx_max
         )
-        @save "toys/output/chunk_$(chunk)_ranges.jld2" ranges
+        @save "toys/output/chunk_$(chunk+1)_ranges.jld2" ranges
     end
+
     function initial_conditions(p)
         try
             v_eq, Ca_eq, x_eq = Ca_x_eq(p)
@@ -179,14 +188,14 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
         end
         return u0
     end
+
     prob = ODEProblem{false}(GPUPlant.melibeNew, u0, tspan, params[1])
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
-    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
-    #@time sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
-    @time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3f0, saveat=range(tspan[1], tspan[2], length=1200));
+    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=true)
+    @time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, abstol=1f-6, reltol=1f-6, saveat=range(tspan[1], tspan[2], length=1500))
 
-    println("Post-processing chunk $chunk of $(Int(1/chunk_proportion)^2).")
+    println("Post-processing chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
     results = []
     @time for i in 1:length(sol)
@@ -198,9 +207,9 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
         end
     end
 
-    println("Saving chunk $chunk of $(Int(1/chunk_proportion)^2).")
-    @save "toys/output/chunk_$(chunk).jld2" results
-    println("Finished chunk $chunk of $(Int(1/chunk_proportion)^2): $(round(100*chunk*chunk_proportion^2, digits=2))%")
+    println("Saving chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
+    @save "toys/output/chunk_$(chunk+1).jld2" results
+    println("Finished chunk $(chunk+1) of $(Int(1/chunk_proportion)^2): $(round(100*(chunk+1)*chunk_proportion^2, digits=2))%")
 end
 
 using Plots

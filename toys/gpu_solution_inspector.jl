@@ -47,7 +47,7 @@ end
 
 Δx = -0.5f0
 ΔCa = -43.0f0
-tspan = (0, 1.0f6)
+tspan = (0, 1.0f5)
 
 p = @SVector Float32[
     GPUPlant.default_params[1],  # Cₘ
@@ -84,7 +84,8 @@ prob = ODEProblem{false}(GPUPlant.melibeNew, u0, tspan, p)
 prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(prob.p))
 
 monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
-@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=1, abstol=1e-6, reltol=1e-6)
+#@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=true, trajectories=1, dt=1.0f0, abstol=1e-6, reltol=1e-6)
+@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=false, trajectories=1, dt=3.0f0, abstol=1f-6, reltol=1f-6)
 
 using Plots
 
@@ -99,7 +100,7 @@ plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 scatter!(plt, [Ca_eq], [x_eq])
 
-display(plot)
+display(plt)
 
 function countSpikes(sol, p, debug=false)
     # Obtain burst reset times.
