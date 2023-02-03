@@ -224,9 +224,9 @@ plt = heatmap(
     color=:thermal,
     size=(1000, 750),
     dpi=1000
-);
+)
 
-for i in 1:Int(1/chunk_proportion)^2
+for i in 1:14#Int(1/chunk_proportion)^2
     @load "toys/output/chunk_$(i)_ranges.jld2" ranges
     @load "toys/output/chunk_$(i).jld2" results
 
@@ -234,7 +234,7 @@ for i in 1:Int(1/chunk_proportion)^2
         plt,
         range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion)),
         range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion)),
-        reshape(results, Int(ΔCa_resolution*chunk_proportion), Int(Δx_resolution*chunk_proportion)),
+        reshape(results, Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
         color=:thermal,
         size=(1000, 750),
         dpi=1000
