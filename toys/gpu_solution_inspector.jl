@@ -22,6 +22,7 @@ bn(V) = 0.125f0*exp((45.0f0-Vs(V))/80.0f0)
 ninf(V) = an(V)/(an(V)+bn(V))
 xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (p[16] - V - 50.0f0)))
 IKCa(p, V) = p[2]*hinf(V)*minf(V)^3.0f0*(p[8]-V) + p[3]*ninf(V)^4.0f0*(p[9]-V) + p[6]*xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
+xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 
 function x_null_Ca(p, v)
     return 0.5f0*IKCa(p, v)/(p[7]*(v-p[9]) - IKCa(p, v))
@@ -37,8 +38,8 @@ function Ca_difference(p, v)
 end
 
 # Finds the equilibrium in the slow subsystem.
-function Ca_x_eq(p, min_V=(p[11]+p[9])/2.0f0)
-    v_eq = find_zero(v -> Ca_difference(p, v), min_V)
+function Ca_x_eq(p)
+    v_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
     Ca_eq = Ca_null_Ca(p, v_eq)
     x_eq = xinf(p, v_eq)
     return v_eq, Ca_eq, x_eq
@@ -94,7 +95,6 @@ plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 scatter!(plt, [Ca_eq], [x_eq])
 
-
 display(plot)
 
 function countSpikes(sol, p, debug=false)
@@ -106,7 +106,7 @@ function countSpikes(sol, p, debug=false)
     Ca_eq = 0.0f0
     x_eq = 0.0f0
     try
-        v_eq, Ca_eq, x_eq = Ca_x_eq(p, min(sol(sol.t, idxs=(6))...))
+        v_eq, Ca_eq, x_eq = Ca_x_eq(p)
     catch e
         if debug
             print("No equilibrium found.")
@@ -179,6 +179,3 @@ function markovChain(spike_counts)
 
     return chain
 end
-
-countSpikes(sol, p)
-Ca_x_eq(p)
