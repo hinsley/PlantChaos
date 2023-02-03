@@ -226,7 +226,7 @@ plt = heatmap(
     dpi=1000
 )
 
-for i in 1:14#Int(1/chunk_proportion)^2
+for i in 1:Int(1/chunk_proportion)^2
     @load "toys/output/chunk_$(i)_ranges.jld2" ranges
     @load "toys/output/chunk_$(i).jld2" results
 
