@@ -39,7 +39,7 @@ function melibeNew(u::AbstractVector{T}, p::AbstractVector{T}, t::T) where T<:Ab
     bh(V::T)::T = 1.0 / (1.0 + exp((55.0 - Vs(V)) / 10.0))
     hinf(V::T)::T = ah(V) / (ah(V) + bh(V))
     th(V::T)::T = 12.5 / (ah(V) + bh(V))
-    Ih(p::AbstractVector{T}, y::T, V::T)::T = p[4] * y * (V + p[10]) / (1.0 + exp((63.0 - V) / 7.8))^3.0
+    Ih(p::AbstractVector{T}, y::T, V::T)::T = p[4] * y * (V - p[10]) / (1.0 + exp(-(63.0 + V) / 7.8))^3.0
     dh(h::T, V::T)::T = (hinf(V) - h) / th(V)
 
     an(V::T)::T = 0.01 * (55.0 - Vs(V)) / (exp((55.0 - Vs(V)) / 10.0) - 1.0)

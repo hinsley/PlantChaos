@@ -12,18 +12,20 @@ u0 = state
 
 # The function which must be minimized to find the equilibrium voltage.
 function Ca_difference(p, v)
-    Vs(V) = (127.0f1*V+8265.0f1)/105.0f1
-    ah(V) = 0.07f1*exp((25.0f0-Vs(V))/20.0f1)
-    bh(V) = 1.0f1/(1.0f1+exp((55.0f1-Vs(V))/10.0f1))
+    Vs(V) = (127.0f0*V+8265.0f0)/105.0f0
+    ah(V) = 0.07f0*exp((25.0f0-Vs(V))/20.0f0)
+    bh(V) = 1.0f0/(1.0f0+exp((55.0f0-Vs(V))/10.0f0))
     hinf(V) = ah(V)/(ah(V)+bh(V))
-    am(V) = 0.1f1*(50.0f1-Vs(V))/(exp((50.0f1-Vs(V))/10.0f1)-1.0f1)
-    bm(V) = 4.0f1*exp((25.0f1-Vs(V))/18.0f1)
+    am(V) = 0.1f0*(50.0f0-Vs(V))/(exp((50.0f0-Vs(V))/10.0f0)-1.0f0)
+    bm(V) = 4.0f0*exp((25.0f0-Vs(V))/18.0f0)
     minf(V) = am(V)/(am(V)+bm(V))
-    an(V) = 0.1f1*(55.0f1-Vs(V))/(exp((55.0f1-Vs(V))/10.0f1)-1.0f1)
-    bn(V) = 0.125f1*exp((45.0f1-Vs(V))/80.0f1)
+    an(V) = 0.1f0*(55.0f0-Vs(V))/(exp((55.0f0-Vs(V))/10.0f0)-1.0f0)
+    bn(V) = 0.125f0*exp((45.0f0-Vs(V))/80.0f0)
     ninf(V) = an(V)/(an(V)+bn(V))
-    IKCa = p[2]*hinf(v)*minf(v)^3*(p[8]-v) + p[3]*ninf(v)^4*(p[9]-v) + p[6]*xinf(p, v)*(p[8]-v) + p[4]*(p[10]-v)/((1.0f1+exp(10.0f1*(v-50.0f1)))*(1.0f1+exp(-(v-63.0f1)/7.8f1))^3) + p[5]*(p[11]-v)
-    x_null_Ca = 0.5f1*IKCa/(p[7]*(v-p[9]) - IKCa)
+    # Not very DRY of me.
+    xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (p[16] - V - 50.0f0)))
+    IKCa = p[2]*hinf(v)*minf(v)^3*(p[8]-v) + p[3]*ninf(v)^4*(p[9]-v) + p[6]*xinf(p, v)*(p[8]-v) + p[4]*(p[10]-v)/((1.0f0+exp(10.0f0*(v-50.0f0)))*(1.0f0+exp(-(v-63.0f0)/7.8f0))^3) + p[5]*(p[11]-v)
+    x_null_Ca = 0.5f0*IKCa/(p[7]*(v-p[9]) - IKCa)
     Ca_null_Ca = p[13]*xinf(p, v)*(p[12]-v+p[17])
     return x_null_Ca - Ca_null_Ca
 end
@@ -43,9 +45,9 @@ function countSpikes(sol, p, debug=false)
     resets = []
     Ca = 5
     x = 1
-    v_eq = 0.0f1
-    Ca_eq = 0.0f1
-    x_eq = 0.0f1
+    v_eq = 0.0f0
+    Ca_eq = 0.0f0
+    x_eq = 0.0f0
     try
         v_eq, Ca_eq, x_eq = Ca_x_eq(p, min(sol(sol.t, idxs=(6))...))
     catch e
@@ -56,8 +58,6 @@ function countSpikes(sol, p, debug=false)
     end
 
     for i in 2:length(sol)
-        x = 1
-        Ca = 5
         if sol[i-1][x] < x_eq && sol[i][x] < x_eq && sol[i][Ca] <= Ca_eq < sol[i-1][Ca]
             push!(resets, i)
         end
@@ -125,13 +125,13 @@ end
 ΔCa_max = 50.0
 ΔCa_resolution = 8000
 Δx_min = -2.5
-Δx_max = 1.0
+Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/100
 
 tspan = (0, 1.0f5)
 
-for chunk in 1:Int(1/chunk_proportion)^2
+for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk) of $(Int(1/chunk_proportion)^2).")
     params = []
     chunk_ΔCa_min = ΔCa_min + (ΔCa_max - ΔCa_min)*chunk_proportion*trunc(Int, chunk*chunk_proportion)
@@ -174,6 +174,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
             v_eq, Ca_eq, x_eq = Ca_x_eq(p)
             u0 = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq-0.2, v_eq, state[7]]
         catch e
+            # This should trigger when the Ca_x_eq function fails to converge.
             u0 = state
         end
         return u0
@@ -183,7 +184,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
 
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
     #@time sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=1f-1, saveat=range(tspan[1], tspan[2], length=1500));
-    @time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3f1, saveat=range(tspan[1], tspan[2], length=1200));
+    @time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3f0, saveat=range(tspan[1], tspan[2], length=1200));
 
     println("Post-processing chunk $chunk of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
@@ -191,7 +192,7 @@ for chunk in 1:Int(1/chunk_proportion)^2
     @time for i in 1:length(sol)
         spike_counts = countSpikes(sol[i], params[i])
         if length(spike_counts) < 3
-            push!(results, 0.0f1)
+            push!(results, 0.0f0)
         else
             push!(results, Float32{norm(markovChain(spike_counts))})
         end
@@ -201,3 +202,33 @@ for chunk in 1:Int(1/chunk_proportion)^2
     @save "toys/output/chunk_$(chunk).jld2" results
     println("Finished chunk $chunk of $(Int(1/chunk_proportion)^2): $(round(100*chunk*chunk_proportion^2, digits=2))%")
 end
+
+using Plots
+
+plt = heatmap(
+    xlabel="\$\\Delta_{Ca}\$",
+    ylabel="\$\\Delta_x\$",
+    #xlim=(-40, -30),
+    #ylim=(-0.75, -0.5),
+    title="Spikes per burst: \$\\ln(1+\\sigma^2)\$",
+    color=:thermal,
+    size=(1000, 750),
+    dpi=1000
+);
+
+for i in 1:Int(1/chunk_proportion)^2
+    @load "toys/output/chunk_$(i)_ranges.jld2" ranges
+    @load "toys/output/chunk_$(i).jld2" results
+
+    heatmap!(
+        plt,
+        range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion)),
+        range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion)),
+        reshape(results, Int(ΔCa_resolution*chunk_proportion), Int(Δx_resolution*chunk_proportion)),
+        color=:thermal,
+        size=(1000, 750),
+        dpi=1000
+    );
+end
+
+display(plt)
