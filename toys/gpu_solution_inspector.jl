@@ -7,7 +7,7 @@ using StaticArrays
 include("../model/GPUPlant.jl")
 
 state = GPUPlant.default_state
-u0 = state
+u0 = @SVector Float32[0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0]
 
 # TODO: Use the helper functions from GPUPlant.jl instead of redefining them here.
 Vs(V) = (127.0f0*V+8265.0f0)/105.0f0
@@ -45,9 +45,9 @@ function Ca_x_eq(p)
     return v_eq, Ca_eq, x_eq
 end
 
-Δx = -1.0f0
-ΔCa = -20.0f0
-tspan = (0, 1.0f5)
+Δx = -0.85f0
+ΔCa = -45.0f0
+tspan = (0.0f0, 1.0f6)
 
 p = @SVector Float32[
     GPUPlant.default_params[1],  # Cₘ
@@ -95,6 +95,10 @@ min_Ca = min(sol[1](sol[1].t, idxs=(5))...)
 max_Ca = max(sol[1](sol[1].t, idxs=(5))...)
 min_x = min(sol[1](sol[1].t, idxs=(1))...)
 max_x = max(sol[1](sol[1].t, idxs=(1))...)
+min_Ca = 0.0f0
+max_Ca = 1.0f0
+min_x = 0.01f0
+max_x = 0.99f0
 if isnan(min_Ca) || isnan(max_Ca)
     min_Ca = 0.0f0
     max_Ca = -1.0f0
@@ -111,8 +115,8 @@ try
 catch e
     V_range = range(-70, 20, length=1000)
 end
-plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
-plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
+#plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
+#plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 scatter!(plt, [Ca_eq], [x_eq])
 
 display(plt)
@@ -188,14 +192,26 @@ function markovChain(spike_counts)
         chain[spike_counts[i], spike_counts[i+1]] += 1
     end
     for row in 1:size
-        if max(chain[row, :]...) == 0.0
-            # If we don't know what comes next, we consider all
-            # outcomes equiprobable.
-            chain[row, :] = ones(size)
-        end
+        # The following does yield the correct Markov chain, but is not
+        # very useful for chaos scans.
+        #
+        # if max(chain[row, :]...) == 0.0
+        #     # If we don't know what comes next, we consider all
+        #     # outcomes equiprobable.
+        #     chain[row, :] = ones(size)
+        # end
         # Normalize rows to have total probability 1.
-        chain[row, :] = normalize!(chain[row, :], 1)
+        # chain[row, :] = normalize!(chain[row, :], 1)
+
+        if max(chain[row, :]...) != 0.0
+            # If this row is nonzero, normalize it to have probability 1.
+            chain[row, :] = normalize!(chain[row, :], 1)
+        end
     end
 
     return chain
 end
+
+countSpikes(sol[1], p)
+markovChain(countSpikes(sol[1], p))
+norm(markovChain(countSpikes(sol[1], p)))

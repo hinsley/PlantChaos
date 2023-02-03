@@ -117,13 +117,21 @@ function markovChain(spike_counts)
         chain[spike_counts[i], spike_counts[i+1]] += 1
     end
     for row in 1:size
-        if max(chain[row, :]...) == 0.0
-            # If we don't know what comes next, we consider all
-            # outcomes equiprobable.
-            chain[row, :] = ones(size)
-        end
+        # The following does yield the correct Markov chain, but is not
+        # very useful for chaos scans.
+        #
+        # if max(chain[row, :]...) == 0.0
+        #     # If we don't know what comes next, we consider all
+        #     # outcomes equiprobable.
+        #     chain[row, :] = ones(size)
+        # end
         # Normalize rows to have total probability 1.
-        chain[row, :] = normalize!(chain[row, :], 1)
+        # chain[row, :] = normalize!(chain[row, :], 1)
+
+        if max(chain[row, :]...) != 0.0
+            # If this row is nonzero, normalize it to have probability 1.
+            chain[row, :] = normalize!(chain[row, :], 1)
+        end
     end
 
     return chain
@@ -226,6 +234,8 @@ plt = heatmap(
     dpi=1000
 )
 
+@load "toys/output/chunk_11_ranges.jld2" ranges
+ranges
 for i in 1:Int(1/chunk_proportion)^2
     @load "toys/output/chunk_$(i)_ranges.jld2" ranges
     @load "toys/output/chunk_$(i).jld2" results
