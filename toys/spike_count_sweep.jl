@@ -5,12 +5,12 @@ using LinearAlgebra
 using Roots
 using StaticArrays
 
-include("../model/GPUPlant.jl")
+include("../model/Plant.jl")
 
-state = GPUPlant.default_state
+state = Plant.default_state
 u0 = state
 
-# TODO: Use the helper functions from GPUPlant.jl instead of redefining them here.
+# TODO: Use the helper functions from Plant.jl instead of redefining them here.
 Vs(V) = (127.0f0*V+8265.0f0)/105.0f0
 ah(V) = 0.07f0*exp((25.0f0-Vs(V))/20.0f0)
 bh(V) = 1.0f0/(1.0f0+exp((55.0f0-Vs(V))/10.0f0))
@@ -157,21 +157,21 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
         chunk_Δx_max = Δx_min + (Δx_max - Δx_min)*(chunk_proportion*(chunk%(1/chunk_proportion)) - 1/Δx_resolution)
         for Δx in range(chunk_Δx_min, chunk_Δx_max, length=Int(Δx_resolution*chunk_proportion))
             p = @SVector Float32[
-                GPUPlant.default_params[1],  # Cₘ
-                GPUPlant.default_params[2],  # gI
-                GPUPlant.default_params[3],  # gK
-                GPUPlant.default_params[4],  # gₕ
-                GPUPlant.default_params[5],  # gL
-                GPUPlant.default_params[6],  # gT
-                GPUPlant.default_params[7],  # gKCa
-                GPUPlant.default_params[8],  # EI
-                GPUPlant.default_params[9],  # EK
-                GPUPlant.default_params[10], # Eₕ
-                GPUPlant.default_params[11], # EL
-                GPUPlant.default_params[12], # ECa
-                GPUPlant.default_params[13], # Kc
-                GPUPlant.default_params[14], # τₓ
-                GPUPlant.default_params[15], # ρ
+                Plant.default_params[1],  # Cₘ
+                Plant.default_params[2],  # gI
+                Plant.default_params[3],  # gK
+                Plant.default_params[4],  # gₕ
+                Plant.default_params[5],  # gL
+                Plant.default_params[6],  # gT
+                Plant.default_params[7],  # gKCa
+                Plant.default_params[8],  # EI
+                Plant.default_params[9],  # EK
+                Plant.default_params[10], # Eₕ
+                Plant.default_params[11], # EL
+                Plant.default_params[12], # ECa
+                Plant.default_params[13], # Kc
+                Plant.default_params[14], # τₓ
+                Plant.default_params[15], # ρ
                 Δx,                          # Δx
                 ΔCa                          # ΔCa
             ]
@@ -198,9 +198,9 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     end
 
     # Out-of-place.
-    #prob = ODEProblem{false}(GPUPlant.melibeNew, u0, tspan, params[1]
+    #prob = ODEProblem{false}(Plant.melibeNew, u0, tspan, params[1]
     # In-place.
-    prob = ODEProblem{false}(GPUPlant.melibeNew!, u0, tspan, params[1])
+    prob = ODEProblem{false}(Plant.melibeNew!, u0, tspan, params[1])
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)

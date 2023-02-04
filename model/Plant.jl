@@ -1,4 +1,4 @@
-module GPUPlant
+module Plant
 
 export melibeNew, default_params, default_state
 
