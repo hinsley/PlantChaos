@@ -46,7 +46,7 @@ function Ca_x_eq(p)
 end
 
 Δx = -0.85f0
-ΔCa = -45.0f0
+ΔCa = -55.0f0
 tspan = (0.0f0, 1.0f6)
 
 p = @SVector Float32[
@@ -89,7 +89,6 @@ monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
 @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), adaptive=false, trajectories=1, dt=1.0f0, abstol=1f-6, reltol=1f-6, verbose=false)
 
 using Plots
-sol[1]
 
 min_Ca = min(sol[1](sol[1].t, idxs=(5))...)
 max_Ca = max(sol[1](sol[1].t, idxs=(5))...)
@@ -115,8 +114,8 @@ try
 catch e
     V_range = range(-70, 20, length=1000)
 end
-#plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
-#plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
+plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
+plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
 scatter!(plt, [Ca_eq], [x_eq])
 
 display(plt)

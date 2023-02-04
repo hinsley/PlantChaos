@@ -139,7 +139,7 @@ end
 
 ΔCa_min = -60.0
 ΔCa_max = 50.0
-ΔCa_resolution = 400
+ΔCa_resolution = 1000
 Δx_min = -2.5
 Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
@@ -234,8 +234,6 @@ plt = heatmap(
     dpi=1000
 )
 
-@load "toys/output/chunk_11_ranges.jld2" ranges
-ranges
 for i in 1:Int(1/chunk_proportion)^2
     @load "toys/output/chunk_$(i)_ranges.jld2" ranges
     @load "toys/output/chunk_$(i).jld2" results
