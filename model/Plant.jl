@@ -1,6 +1,6 @@
 module Plant
 
-export melibeNew, default_params, default_state
+export melibeNew, melibeNew!, default_params, default_state
 
 using StaticArrays
 
