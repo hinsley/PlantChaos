@@ -80,7 +80,7 @@ function initial_conditions(p)
     return u0
 end
 
-prob = ODEProblem{false}(Plant.melibeNew!, u0, tspan, p)
+prob = ODEProblem{false}(Plant.melibeNew, u0, tspan, p)
 prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(prob.p))
 
 monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)

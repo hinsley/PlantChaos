@@ -198,9 +198,9 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     end
 
     # Out-of-place.
-    #prob = ODEProblem{false}(Plant.melibeNew, u0, tspan, params[1]
+    prob = ODEProblem{false}(Plant.melibeNew, u0, tspan, params[1])
     # In-place.
-    prob = ODEProblem{false}(Plant.melibeNew!, u0, tspan, params[1])
+    # prob = ODEProblem{false}(Plant.melibeNew!, u0, tspan, params[1])
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
