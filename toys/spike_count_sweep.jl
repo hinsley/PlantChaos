@@ -153,8 +153,8 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     chunk_ΔCa_min = ΔCa_min + (ΔCa_max - ΔCa_min)*chunk_proportion*trunc(Int, chunk*chunk_proportion)
     chunk_ΔCa_max = ΔCa_min + (ΔCa_max - ΔCa_min)*(chunk_proportion*(trunc(Int, chunk*chunk_proportion)+1)-1/ΔCa_resolution)
     @time for ΔCa in range(chunk_ΔCa_min, chunk_ΔCa_max, length=Int(ΔCa_resolution*chunk_proportion))
-        chunk_Δx_min = Δx_min + (Δx_max - Δx_min)*chunk_proportion*(chunk%(1/chunk_proportion)-1)
-        chunk_Δx_max = Δx_min + (Δx_max - Δx_min)*(chunk_proportion*(chunk%(1/chunk_proportion)) - 1/Δx_resolution)
+        chunk_Δx_min = Δx_min + (Δx_max - Δx_min)*chunk_proportion*(chunk%(1/chunk_proportion))
+        chunk_Δx_max = Δx_min + (Δx_max - Δx_min)*(chunk_proportion*(chunk%(1/chunk_proportion)+1) - 1/Δx_resolution)
         for Δx in range(chunk_Δx_min, chunk_Δx_max, length=Int(Δx_resolution*chunk_proportion))
             p = @SVector Float32[
                 Plant.default_params[1],  # Cₘ
@@ -231,7 +231,7 @@ plt = heatmap(
     ylabel="\$\\Delta_x\$",
     #xlim=(-40, -30),
     #ylim=(-0.75, -0.5),
-    title="Spike Count Markov Matrix Norm",
+    title="Spike count Markov matrix norm",
     color=:thermal,
     size=(1000, 750),
     dpi=1000
