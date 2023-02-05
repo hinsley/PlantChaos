@@ -140,7 +140,7 @@ end
 ΔCa_min = -60.0
 ΔCa_max = 50.0
 ΔCa_resolution = 1000
-Δx_min = -2.5
+Δx_min = -3.0
 Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/5
