@@ -215,7 +215,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
         if length(spike_counts) < 3
             push!(results, 0.0e0)
         else
-            push!(results, norm(markovChain(spike_counts)))
+            push!(results, max(spike_counts...))
         end
     end
 
