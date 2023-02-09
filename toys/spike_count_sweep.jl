@@ -215,7 +215,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
         if length(spike_counts) < 3
             push!(results, 0.0e0)
         else
-            push!(results, max(spike_counts...))
+            push!(results, min(spike_counts...))
         end
     end
 
@@ -229,9 +229,9 @@ using Plots
 plt = heatmap(
     xlabel="\$\\Delta_{Ca}\$",
     ylabel="\$\\Delta_x\$",
-    #xlim=(-40, -30),
-    #ylim=(-0.75, -0.5),
-    title="Spike count Markov matrix norm",
+    #xlim=(-50, -42),
+    #ylim=(-0.5, 0.5),
+    title="Spike count minimum",
     color=:thermal,
     size=(1000, 750),
     dpi=1000
