@@ -147,6 +147,22 @@ function mmoSymbolics(sol, p, debug=false)
     return symbols
 end
 
+function maxSTOsPerBurst(mmo_symbolic_sequence)
+    # Obtain the maximum number of STOs per burst.
+    max_STOs = 0
+    STOs = 0
+    for i in 1:length(mmo_symbolic_sequence)
+        if mmo_symbolic_sequence[i] == 0
+            STOs += 1
+            if STOs > max_STOs
+                max_STOs = STOs
+            end
+        else
+            STOs = 0
+        end
+    end
+    return max_STOs
+end
 
 function transitionMap(spike_counts)
     plt = scatter(1, markeralpha=0.2, legend=false, aspect_ratio=:equal, size=(600, 600), xticks=0:maximum(spike_counts), yticks=0:maximum(spike_counts), xlims=(-0.5, maximum(spike_counts) + 0.5), ylims=(-0.5, maximum(spike_counts) + 0.5))
@@ -290,7 +306,7 @@ for i in 1:Int(1/chunk_proportion)^2
         plt,
         range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion)),
         range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion)),
-        reshape(results, Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        reshape([maxSTOsPerBurst(sequence) for sequence in results], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
         color=:thermal,
         size=(1000, 750),
         dpi=1000
