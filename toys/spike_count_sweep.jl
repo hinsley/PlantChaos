@@ -51,6 +51,7 @@ function countSpikes(sol, p, debug=false)
     resets = []
     Ca = 5
     x = 1
+    V = 6
     v_eq = 0.0f0
     Ca_eq = 0.0f0
     x_eq = 0.0f0
@@ -82,7 +83,7 @@ function countSpikes(sol, p, debug=false)
     for i in 1:length(resets)-1
         spike_count = 0
         for j in resets[i]:resets[i+1]
-            if sol[j-1][6] < V_threshold < sol[j][6]
+            if sol[j-1][V] < V_threshold < sol[j][V]
                 spike_count += 1
             end
         end
@@ -97,6 +98,55 @@ function countSpikes(sol, p, debug=false)
         return spike_counts[2:end]
     end
 end
+
+function mmoSymbolics(sol, p, debug=false)
+    # Obtain a mixed mode oscillation symbolic sequence.
+    # 0 = sub-threshold oscillation
+    # 1 = spike
+
+    cutoff_STOs = 2 # Truncate the head of the symbolic sequence by this many STOs.
+
+    STOs_observed = 0
+    symbols = []
+    Ca = 5
+    x = 1
+    V = 6
+    v_eq = 0.0f0
+    Ca_eq = 0.0f0
+    x_eq = 0.0f0
+    try
+        v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+    catch e
+        if debug
+            print("No equilibrium found.")
+        end
+        return [0]
+    end
+
+    V_threshold = 0.0
+
+    for i in 2:length(sol)
+        x = 1
+        Ca = 5
+        if sol[i-1][V] < V_threshold < sol[i][V]
+            if STOs_observed > cutoff_STOs
+                push!(symbols, 1) # Spike
+            end
+        elseif sol[i-1][x] < x_eq && sol[i][x] < x_eq && sol[i][Ca] <= Ca_eq < sol[i-1][Ca]
+            if STOs_observed > cutoff_STOs
+                push!(symbols, 0) # Sub-threshold oscillation
+            end
+            STOs_observed += 1
+        end
+    end
+
+    if debug
+        print("$(length(symbols)) symbolic events captured.")
+    end
+
+    return symbols
+end
+
 
 function transitionMap(spike_counts)
     plt = scatter(1, markeralpha=0.2, legend=false, aspect_ratio=:equal, size=(600, 600), xticks=0:maximum(spike_counts), yticks=0:maximum(spike_counts), xlims=(-0.5, maximum(spike_counts) + 0.5), ylims=(-0.5, maximum(spike_counts) + 0.5))
@@ -211,12 +261,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     # TODO: Vectorize this so it doesn't take so long.
     results = []
     @time for i in 1:length(sol)
-        spike_counts = countSpikes(sol[i], params[i])
-        if length(spike_counts) < 3
-            push!(results, 0.0e0)
-        else
-            push!(results, min(spike_counts...))
-        end
+        results = mmoSymbolics(sol[i], p)
     end
 
     println("Saving chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
