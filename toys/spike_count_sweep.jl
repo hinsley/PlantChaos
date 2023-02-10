@@ -193,7 +193,7 @@ end
 Δx_min = -3.0
 Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1/5
+chunk_proportion = 1
 
 tspan = (0.0f0, 1.0f5)
 
@@ -261,7 +261,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     # TODO: Vectorize this so it doesn't take so long.
     results = []
     @time for i in 1:length(sol)
-        results = mmoSymbolics(sol[i], p)
+        push!(results, mmoSymbolics(sol[i], params[i]))
     end
 
     println("Saving chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
