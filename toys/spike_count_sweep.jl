@@ -193,7 +193,7 @@ end
 Δx_min = -3.0
 Δx_max = 3.0
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1
+chunk_proportion = 1/5
 
 tspan = (0.0f0, 1.0f5)
 
