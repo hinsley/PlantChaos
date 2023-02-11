@@ -203,11 +203,11 @@ function markovChain(spike_counts)
     return chain
 end
 
-ΔCa_min = -60.0
-ΔCa_max = 50.0
+ΔCa_min = -46.0
+ΔCa_max = -5.0
 ΔCa_resolution = 1000
 Δx_min = -3.0
-Δx_max = 3.0
+Δx_max = 0.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/5
 
@@ -290,8 +290,8 @@ using Plots
 plt = heatmap(
     xlabel="\$\\Delta_{Ca}\$",
     ylabel="\$\\Delta_x\$",
-    #xlim=(-50, -42),
-    #ylim=(-0.5, 0.5),
+    xlim=(-46, -5),
+    ylim=(-3, 0),
     title="Slow manifold revolutions per burst",
     color=:thermal,
     size=(1000, 750),
