@@ -1,6 +1,7 @@
 module Plant
 
-export melibeNew, melibeNew!, default_params, default_state
+export melibeNew, melibeNew!, default_params, default_state,
+       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa
 
 using StaticArrays
 
@@ -24,49 +25,46 @@ default_params = @SVector Float32[
     0.0e0     # ΔCa
 ]
 
+Vs(V) = (127.0 * V + 8265.0) / 105.0
+
+am(V) = 0.1 * (50.0 - Vs(V)) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)
+bm(V) = 4.0 * exp((25.0 - Vs(V))/18.0)
+minf(V) = am(V) / (am(V) + bm(V))
+# Fast inward sodium and calcium current
+II(p, h, V) = p[2] * h * minf(V)^3.0 * (V - p[8])
+
+ah(V) = 0.07 * exp((25.0 - Vs(V)) / 20.0)
+bh(V) = 1.0 / (1.0 + exp((55.0 - Vs(V)) / 10.0))
+hinf(V) = ah(V) / (ah(V) + bh(V))
+th(V) = 12.5 / (ah(V) + bh(V))
+Ih(p, y, V) = p[4] * y * (V - p[10]) / (1.0 + exp(-(63.0 + V) / 7.8))^3.0
+dh(h, V) = (hinf(V) - h) / th(V)
+
+an(V) = 0.01 * (55.0 - Vs(V)) / (exp((55.0 - Vs(V)) / 10.0) - 1.0)
+bn(V) = 0.125 * exp((45.0 - Vs(V)) / 80.0)
+ninf(V) = an(V) / (an(V) + bn(V))
+tn(V) = 12.5 / (an(V) + bn(V))
+IK(p, n, V) = p[3] * n^4.0 * (V - p[9])
+dn(n, V) = (ninf(V) - n) / tn(V)
+
+xinf(p, V) = 1.0 / (1.0 + exp(0.15 * (p[16] - V - 50.0)))
+IT(p, x, V) = p[6] * x * (V - p[8])
+dx(p, x, V) = (xinf(p, V) - x) / p[14]
+
+dy(y, V) = (1.0 / (1.0 + exp(10.0 * (V + 50.0))) - y) / (14.2 + 20.8 / (1.0 + exp((V + 68.0) / 2.2)))
+
+Ileak(p, V) = p[5] * (V - p[11])
+
+IKCa(p, Ca, V) = p[7] * Ca * (V - p[9]) / (0.5 + Ca)
+dCa(p, Ca, x, V) = p[15] * (p[13] * x * (p[12] - V + p[17]) - Ca)
+
+function dV(p, x, y, n, h, Ca, V, Isyn)
+    # TODO: Add a function for Isyn per (12) in the appendix of the paper.
+    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
+end
+
 function melibeNew(u::AbstractVector{T}, p::AbstractVector{T}, t::T) where T<:AbstractFloat
-    # TODO: Move all of these helper functions outside of melibeNew and use the @everywhere macro
-    # when `using` this module so they are available to all workers.
-    Vs(V::T)::T = (127.0 * V + 8265.0) / 105.0
-
-    am(V::T)::T = 0.1 * (50.0 - Vs(V)) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)
-    bm(V::T)::T = 4.0 * exp((25.0 - Vs(V))/18.0)
-    minf(V::T)::T = am(V) / (am(V) + bm(V))
-    # Fast inward sodium and calcium current
-    II(p::AbstractVector{T}, h::T, V::T)::T = p[2] * h * minf(V)^3.0 * (V - p[8])
-
-    ah(V::T)::T = 0.07 * exp((25.0 - Vs(V)) / 20.0)
-    bh(V::T)::T = 1.0 / (1.0 + exp((55.0 - Vs(V)) / 10.0))
-    hinf(V::T)::T = ah(V) / (ah(V) + bh(V))
-    th(V::T)::T = 12.5 / (ah(V) + bh(V))
-    Ih(p::AbstractVector{T}, y::T, V::T)::T = p[4] * y * (V - p[10]) / (1.0 + exp(-(63.0 + V) / 7.8))^3.0
-    dh(h::T, V::T)::T = (hinf(V) - h) / th(V)
-
-    an(V::T)::T = 0.01 * (55.0 - Vs(V)) / (exp((55.0 - Vs(V)) / 10.0) - 1.0)
-    bn(V::T)::T = 0.125 * exp((45.0 - Vs(V)) / 80.0)
-    ninf(V::T)::T = an(V) / (an(V) + bn(V))
-    tn(V::T)::T = 12.5 / (an(V) + bn(V))
-    IK(p::AbstractVector{T}, n::T, V::T)::T = p[3] * n^4.0 * (V - p[9])
-    dn(n::T, V::T)::T = (ninf(V) - n) / tn(V)
-
-    xinf(p::AbstractVector{T}, V::T)::T = 1.0 / (1.0 + exp(0.15 * (p[16] - V - 50.0)))
-    IT(p::AbstractVector{T}, x::T, V::T)::T = p[6] * x * (V - p[8])
-    dx(p::AbstractVector{T}, x::T, V::T)::T = (xinf(p, V) - x) / p[14]
-
-    dy(y::T, V::T)::T = (1.0 / (1.0 + exp(10.0 * (V + 50.0))) - y) / (14.2 + 20.8 / (1.0 + exp((V + 68.0) / 2.2)))
-
-    Ileak(p::AbstractVector{T}, V::T)::T = p[5] * (V - p[11])
-
-    IKCa(p::AbstractVector{T}, Ca::T, V::T)::T = p[7] * Ca * (V - p[9]) / (0.5 + Ca)
-    dCa(p::AbstractVector{T}, Ca::T, x::T, V::T)::T = p[15] * (p[13] * x * (p[12] - V + p[17]) - Ca)
-
-    function dV(p::AbstractVector{T}, x::T, y::T, n::T, h::T, Ca::T, V::T, Isyn::T)::T
-        # TODO: Add a function for Isyn per (12) in the appendix of the paper.
-        return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
-    end
-
     # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
-    # TODO: Delete y eqn.
 
     # du1 = dx(p, u[1] V)
     # du2 = dy(y, V)
@@ -88,48 +86,7 @@ function melibeNew(u::AbstractVector{T}, p::AbstractVector{T}, t::T) where T<:Ab
 end
 
 function melibeNew!(du::AbstractVector{T}, u::AbstractVector{T}, p::AbstractVector{T}, t::T) where T<:AbstractFloat
-    # TODO: Move all of these helper functions outside of melibeNew and use the @everywhere macro
-    # when `using` this module so they are available to all workers.
-    Vs(V::T)::T = (127.0 * V + 8265.0) / 105.0
-
-    am(V::T)::T = 0.1 * (50.0 - Vs(V)) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)
-    bm(V::T)::T = 4.0 * exp((25.0 - Vs(V))/18.0)
-    minf(V::T)::T = am(V) / (am(V) + bm(V))
-    # Fast inward sodium and calcium current
-    II(p::AbstractVector{T}, h::T, V::T)::T = p[2] * h * minf(V)^3.0 * (V - p[8])
-
-    ah(V::T)::T = 0.07 * exp((25.0 - Vs(V)) / 20.0)
-    bh(V::T)::T = 1.0 / (1.0 + exp((55.0 - Vs(V)) / 10.0))
-    hinf(V::T)::T = ah(V) / (ah(V) + bh(V))
-    th(V::T)::T = 12.5 / (ah(V) + bh(V))
-    Ih(p::AbstractVector{T}, y::T, V::T)::T = p[4] * y * (V - p[10]) / (1.0 + exp(-(63.0 + V) / 7.8))^3.0
-    dh(h::T, V::T)::T = (hinf(V) - h) / th(V)
-
-    an(V::T)::T = 0.01 * (55.0 - Vs(V)) / (exp((55.0 - Vs(V)) / 10.0) - 1.0)
-    bn(V::T)::T = 0.125 * exp((45.0 - Vs(V)) / 80.0)
-    ninf(V::T)::T = an(V) / (an(V) + bn(V))
-    tn(V::T)::T = 12.5 / (an(V) + bn(V))
-    IK(p::AbstractVector{T}, n::T, V::T)::T = p[3] * n^4.0 * (V - p[9])
-    dn(n::T, V::T)::T = (ninf(V) - n) / tn(V)
-
-    xinf(p::AbstractVector{T}, V::T)::T = 1.0 / (1.0 + exp(0.15 * (p[16] - V - 50.0)))
-    IT(p::AbstractVector{T}, x::T, V::T)::T = p[6] * x * (V - p[8])
-    dx(p::AbstractVector{T}, x::T, V::T)::T = (xinf(p, V) - x) / p[14]
-
-    dy(y::T, V::T)::T = (1.0 / (1.0 + exp(10.0 * (V + 50.0))) - y) / (14.2 + 20.8 / (1.0 + exp((V + 68.0) / 2.2)))
-
-    Ileak(p::AbstractVector{T}, V::T)::T = p[5] * (V - p[11])
-
-    IKCa(p::AbstractVector{T}, Ca::T, V::T)::T = p[7] * Ca * (V - p[9]) / (0.5 + Ca)
-    dCa(p::AbstractVector{T}, Ca::T, x::T, V::T)::T = p[15] * (p[13] * x * (p[12] - V + p[17]) - Ca)
-
-    function dV(p::AbstractVector{T}, x::T, y::T, n::T, h::T, Ca::T, V::T, Isyn::T)::T
-        # TODO: Add a function for Isyn per (12) in the appendix of the paper.
-        return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
-    end
-
     # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
-    # TODO: Delete y eqn.
 
     # du1 = dx(p, u[1] V)
     # du2 = dy(y, V)

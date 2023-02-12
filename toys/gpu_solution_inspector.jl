@@ -9,19 +9,7 @@ include("../model/Plant.jl")
 state = Plant.default_state
 u0 = @SVector Float32[0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0]
 
-# TODO: Use the helper functions from Plant.jl instead of redefining them here.
-Vs(V) = (127.0f0*V+8265.0f0)/105.0f0
-ah(V) = 0.07f0*exp((25.0f0-Vs(V))/20.0f0)
-bh(V) = 1.0f0/(1.0f0+exp((55.0f0-Vs(V))/10.0f0))
-hinf(V) = ah(V)/(ah(V)+bh(V))
-am(V) = 0.1f0*(50.0f0-Vs(V))/(exp((50.0f0-Vs(V))/10.0f0)-1.0f0)
-bm(V) = 4.0f0*exp((25.0f0-Vs(V))/18.0f0)
-minf(V) = am(V)/(am(V)+bm(V))
-an(V) = 0.01f0*(55.0f0-Vs(V))/(exp((55.0f0-Vs(V))/10.0f0)-1.0f0)
-bn(V) = 0.125f0*exp((45.0f0-Vs(V))/80.0f0)
-ninf(V) = an(V)/(an(V)+bn(V))
-xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (p[16] - V - 50.0f0)))
-IKCa(p, V) = p[2]*hinf(V)*minf(V)^3.0f0*(p[8]-V) + p[3]*ninf(V)^4.0f0*(p[9]-V) + p[6]*xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
+IKCa(p, V) = p[2]*Plant.hinf(V)*Plant.minf(V)^3.0f0*(p[8]-V) + p[3]*Plant.ninf(V)^4.0f0*(p[9]-V) + p[6]*Plant.xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
 xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 
 function x_null_Ca(p, v)
@@ -29,7 +17,7 @@ function x_null_Ca(p, v)
 end
 
 function Ca_null_Ca(p, v)
-    return p[13]*xinf(p, v)*(p[12]-v+p[17])
+    return p[13]*Plant.xinf(p, v)*(p[12]-v+p[17])
 end
 
 # The function which must be minimized to find the equilibrium voltage.
@@ -41,7 +29,7 @@ end
 function Ca_x_eq(p)
     v_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
     Ca_eq = Ca_null_Ca(p, v_eq)
-    x_eq = xinf(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
     return v_eq, Ca_eq, x_eq
 end
 
@@ -114,8 +102,8 @@ try
 catch e
     V_range = range(-70, 20, length=1000)
 end
-plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
-plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range])
+plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range])
+plot!(plt, [x_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range])
 scatter!(plt, [Ca_eq], [x_eq])
 
 display(plt)
