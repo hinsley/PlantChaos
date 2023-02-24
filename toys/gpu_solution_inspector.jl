@@ -33,8 +33,8 @@ function Ca_x_eq(p)
     return v_eq, Ca_eq, x_eq
 end
 
-Δx = -1.3f0
-ΔCa = -41.0f0
+Δx = -2.2f0
+ΔCa = -38.0f0
 print("Δx: ")
 Δx = parse(Float32, readline())
 print("ΔCa: ")
