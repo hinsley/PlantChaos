@@ -4,6 +4,7 @@ using JLD2
 using LinearAlgebra
 using Roots
 using StaticArrays
+using Statistics
 
 include("../model/Plant.jl")
 
@@ -149,19 +150,36 @@ end
 
 function maxSTOsPerBurst(mmo_symbolic_sequence)
     # Obtain the maximum number of STOs per burst.
-    max_STOs = 0
+    # In order to discard convergence to the equilibrium after
+    # an initial transient train of spikes, we check whether a
+    # sequence "spike, STO, spike" occurs (not necessarily
+    # consecutively). If so, we return the maximum number of STOs
+    # per burst. Otherwise, we return NaN. This is what we use
+    # transient_stage for.
     STOs = 0
+    transient_stage = 0
+    STOs_per_burst = []
     for i in 1:length(mmo_symbolic_sequence)
-        if mmo_symbolic_sequence[i] == 0
-            STOs += 1
-            if STOs > max_STOs
-                max_STOs = STOs
+        if mmo_symbolic_sequence[i] == 0 # STO
+            if transient_stage == 1
+                transient_stage += 1
+            elseif transient_stage == 3
+                STOs += 1
             end
-        else
-            STOs = 0
+        else # Spike
+            if transient_stage == 0 || transient_stage == 2
+                transient_stage += 1
+            end
+            if transient_stage == 3 && STOs > 0
+                push!(STOs_per_burst, STOs)
+                STOs = 0
+            end
         end
     end
-    return max_STOs
+    if STOs_per_burst == []
+        return NaN
+    end
+    return maximum(STOs_per_burst)
 end
 
 function transitionMap(spike_counts)
@@ -290,8 +308,8 @@ using Plots
 plt = heatmap(
     xlabel="\$\\Delta_{Ca}\$",
     ylabel="\$\\Delta_x\$",
-    #xlim=(-43, -35),
-    #ylim=(-2.0, -1),
+    #xlim=(-41, -38),
+    #ylim=(-1.75, -1.1),
     title="Slow manifold revolutions per burst",
     color=:thermal,
     size=(1000, 750),

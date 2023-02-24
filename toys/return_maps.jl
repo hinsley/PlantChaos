@@ -33,12 +33,8 @@ function Ca_x_eq(p)
     return v_eq, Ca_eq, x_eq
 end
 
-Δx = -1.3f0
-ΔCa = -41.0f0
-print("Δx: ")
-Δx = parse(Float32, readline())
-print("ΔCa: ")
-ΔCa = parse(Float32, readline())
+Δx = -0.85f0
+ΔCa = -55.0f0
 tspan = (0.0f0, 1.0f6)
 
 p = @SVector Float32[
@@ -111,3 +107,94 @@ plot!(plt, [x_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_rang
 scatter!(plt, [Ca_eq], [x_eq])
 
 display(plt)
+
+function countSpikes(sol, p, debug=false)
+    # Obtain burst reset times.
+    resets = []
+    Ca = 5
+    x = 1
+    v_eq = 0.0f0
+    Ca_eq = 0.0f0
+    x_eq = 0.0f0
+    try
+        v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+    catch e
+        if debug
+            print("No equilibrium found.")
+        end
+        return [0]
+    end
+
+    for i in 2:length(sol)
+        x = 1
+        Ca = 5
+        if sol[i-1][x] < x_eq && sol[i][x] < x_eq && sol[i][Ca] <= Ca_eq < sol[i-1][Ca]
+            push!(resets, i)
+        end
+    end
+
+    if debug
+        print("$(length(resets)) burst resets observed.")
+    end
+
+    V_threshold = 0.0
+
+    # Obtain spike counts per burst.
+    spike_counts = []
+    for i in 1:length(resets)-1
+        spike_count = 0
+        for j in resets[i]:resets[i+1]
+            if sol[j-1][6] < V_threshold < sol[j][6]
+                spike_count += 1
+            end
+        end
+        if spike_count > 0
+            push!(spike_counts, spike_count)
+        end
+    end
+
+    if length(spike_counts) < 2
+        return [0]
+    else
+        return spike_counts[2:end]
+    end
+end
+
+function transitionMap(spike_counts)
+    plt = scatter(1, markeralpha=0.2, legend=false, aspect_ratio=:equal, size=(600, 600), xticks=0:maximum(spike_counts), yticks=0:maximum(spike_counts), xlims=(-0.5, maximum(spike_counts) + 0.5), ylims=(-0.5, maximum(spike_counts) + 0.5))
+    plot!(plt, [0, maximum(spike_counts)], [0, maximum(spike_counts)], linealpha=0.2)
+    for i in 1:length(spike_counts)-1
+        push!(plt, (spike_counts[i], spike_counts[i+1]))
+    end
+    return plt
+end
+
+function markovChain(spike_counts)
+    if length(spike_counts) == 0
+        return zeros(0, 0)
+    end
+    size = max(spike_counts...)
+    chain = zeros(size, size)
+    for i in 1:length(spike_counts)-1
+        chain[spike_counts[i], spike_counts[i+1]] += 1
+    end
+    for row in 1:size
+        # The following does yield the correct Markov chain, but is not
+        # very useful for chaos scans.
+        #
+        # if max(chain[row, :]...) == 0.0
+        #     # If we don't know what comes next, we consider all
+        #     # outcomes equiprobable.
+        #     chain[row, :] = ones(size)
+        # end
+        # Normalize rows to have total probability 1.
+        # chain[row, :] = normalize!(chain[row, :], 1)
+
+        if max(chain[row, :]...) != 0.0
+            # If this row is nonzero, normalize it to have probability 1.
+            chain[row, :] = normalize!(chain[row, :], 1)
+        end
+    end
+
+    return chain
+end
