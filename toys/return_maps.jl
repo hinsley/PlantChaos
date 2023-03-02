@@ -7,7 +7,6 @@ using StaticArrays
 include("../model/Plant.jl")
 
 state = Plant.default_state
-u0 = @SVector Float32[0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0]
 
 IKCa(p, V) = p[2]*Plant.hinf(V)*Plant.minf(V)^3.0f0*(p[8]-V) + p[3]*Plant.ninf(V)^4.0f0*(p[9]-V) + p[6]*Plant.xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
 xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
@@ -33,8 +32,8 @@ function Ca_x_eq(p)
     return v_eq, Ca_eq, x_eq
 end
 
-Δx = -0.85f0
-ΔCa = -55.0f0
+Δx = -1.58361f0
+ΔCa = -39.131f0
 tspan = (0.0f0, 1.0f6)
 
 p = @SVector Float32[
@@ -53,25 +52,32 @@ p = @SVector Float32[
     Plant.default_params[13], # Kc
     Plant.default_params[14], # τₓ
     Plant.default_params[15], # ρ
-    Δx,                          # Δx
-    ΔCa                          # ΔCa
+    Δx,                       # Δx
+    ΔCa                       # ΔCa
 ]
 
-function initial_conditions(p)
-    try
-        v_eq, Ca_eq, x_eq = Ca_x_eq(p)
-        u0 = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq-0.2, v_eq, state[7]]
-    catch e
-        # This should trigger when the Ca_x_eq function fails to converge.
-        u0 = state
-    end
-    return u0
+function Ca_null_V(p, Ca)
+    return find_zero(v -> Ca_null_Ca(p, v) - Ca, (xinfinv(p, 0.99e0), xinfinv(p, 0.01e0)))
 end
+function initial_conditions(p)
+    v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+    return @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq-0.2, v_eq, state[7]]
+end
+# function initial_conditions(p, Ca)
+#     u0 = @SVector Float32[]
+#     try
+#         v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+#         u0 = @SVector Float32[Plant.xinf(p, Ca_null_V(p, Ca)), state[2], state[3], state[4], Ca_null_Ca(p, Ca_null_V(p, Ca)), v_eq, state[7]]
+#     catch e
+#         # This should trigger when the Ca_x_eq function fails to converge.
+#         u0 = @SVector Float32[Plant.xinf(p, Ca_null_V(p, Ca)), state[2], state[3], state[4], Ca_null_Ca(p, Ca_null_V(p, Ca)), 0.0f0, state[7]]
+#     end
+#     return u0
+# end
 
-prob = ODEProblem{false}(Plant.melibeNew, u0, tspan, p)
-prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(prob.p))
+prob = ODEProblem{false}(Plant.melibeNew, initial_conditions(p), tspan, p)
 
-monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
+monteprob = EnsembleProblem(prob, safetycopy=false)
 #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=true, trajectories=1, dt=1.0f0, abstol=1e-6, reltol=1e-6)
 #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUKernel(), adaptive=false, trajectories=1, dt=3.0f0, abstol=1f-6, reltol=1f-6)
 @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), adaptive=false, trajectories=1, dt=1.0f0, abstol=1f-6, reltol=1f-6, verbose=false)
@@ -94,6 +100,7 @@ if isnan(min_x) || isnan(max_x)
     min_x = 0.01f0
     max_x = 0.99f0
 end
+#plot!(plt, sol, idxs=(5, 1), lw=0.2)
 plt = plot(sol, idxs=(5, 1), lw=0.2, legend=false, xlims=(min_Ca, max_Ca), ylims=(min_x, max_x), dpi=500, size=(1280, 720), xlabel="Ca", ylabel="x", title="\$\\Delta_x = $(Δx), \\Delta_{Ca} = $(ΔCa)\$")
 v_eq, Ca_eq, x_eq = Ca_x_eq(p)
 V_range = nothing
