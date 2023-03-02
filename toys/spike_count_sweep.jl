@@ -148,6 +148,69 @@ function mmoSymbolics(sol, p, debug=false)
     return symbols
 end
 
+function cleanup(mmo_symbolic_sequence)
+    # Remove all solitary STOs.
+    if length(mmo_symbolic_sequence) < 2
+        return mmo_symbolic_sequence
+    end
+    cleaned = []
+    for i in 1:length(mmo_symbolic_sequence)
+        if mmo_symbolic_sequence[i] == 0
+            if i == 1
+                if mmo_symbolic_sequence[i+1] == 0
+                    push!(cleaned, 0)
+                end
+            elseif i == length(mmo_symbolic_sequence)
+                if mmo_symbolic_sequence[i-1] == 0
+                    push!(cleaned, 0)
+                end
+            else
+                if mmo_symbolic_sequence[i-1] == 0 || mmo_symbolic_sequence[i+1] == 0
+                    push!(cleaned, 0)
+                end
+            end
+        else
+            push!(cleaned, 1)
+        end
+    end
+    return cleaned
+end
+
+function spikeCounts(mmo_symbolic_sequence)
+    # Obtain the number of spikes per burst.
+    # In order to discard convergence to the equilibrium after
+    # an initial transient train of spikes, we check whether a
+    # sequence "spike, STO, spike" occurs (not necessarily
+    # consecutively). If so, we return the number of spikes per
+    # burst. Otherwise, we return NaN. This is what we use
+    # transient_stage for.
+    spikes = 0
+    transient_stage = 0
+    spikes_per_burst = []
+    for i in 1:length(mmo_symbolic_sequence)
+        if mmo_symbolic_sequence[i] == 1 # Spike
+            if transient_stage == 1
+                transient_stage += 1
+            elseif transient_stage == 3
+                spikes += 1
+            end
+        else # STO
+            if transient_stage == 0 || transient_stage == 2
+                transient_stage += 1
+            end
+            if transient_stage == 3 && spikes > 0
+                push!(spikes_per_burst, spikes)
+                spikes = 0
+            end
+        end
+    end
+    if length(spikes_per_burst) < 2
+        return [0]
+    else
+        return spikes_per_burst[2:end]
+    end
+end
+
 function maxSTOsPerBurst(mmo_symbolic_sequence)
     # Obtain the maximum number of STOs per burst.
     # In order to discard convergence to the equilibrium after
@@ -293,13 +356,14 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
 
     println("Post-processing chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
     # TODO: Vectorize this so it doesn't take so long.
-    results = []
-    @time for i in 1:length(sol)
-        push!(results, mmoSymbolics(sol[i], params[i]))
-    end
+    # results = []
+    # @time for i in 1:length(sol)
+    #     push!(results, mmoSymbolics(sol[i], params[i]))
+    # end
 
     println("Saving chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
-    @save "toys/output/chunk_$(chunk+1).jld2" results
+    # @save "toys/output/chunk_$(chunk+1).jld2" results
+    @save "toys/output/chunk_$(chunk+1).jld2" sol
     println("Finished chunk $(chunk+1) of $(Int(1/chunk_proportion)^2): $(round(100*(chunk+1)*chunk_proportion^2, digits=2))%")
 end
 
@@ -311,7 +375,6 @@ plt = heatmap(
     #xlim=(-41, -38),
     #ylim=(-1.75, -1.1),
     title="Slow manifold revolutions per burst",
-    color=:thermal,
     size=(1000, 750),
     dpi=1000
 )
@@ -324,10 +387,8 @@ for i in 1:Int(1/chunk_proportion)^2
         plt,
         range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion)),
         range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion)),
-        reshape([maxSTOsPerBurst(sequence) for sequence in results], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-        color=:thermal,
-        size=(1000, 750),
-        dpi=1000
+        reshape([maxSTOsPerBurst(cleanup(sequence)) for sequence in results], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        color=cgrad(:amp, scale=:exp)
     );
 end
 
