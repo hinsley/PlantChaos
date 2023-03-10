@@ -2,6 +2,7 @@ using DifferentialEquations
 using DiffEqGPU
 using JLD2
 using LinearAlgebra
+using Printf
 using Roots
 using StaticArrays
 using Statistics
@@ -284,6 +285,28 @@ function markovChain(spike_counts)
     return chain
 end
 
+function makeParams(ΔCa, Δx)
+    return @SVector Float32[
+        Plant.default_params[1],  # Cₘ
+        Plant.default_params[2],  # gI
+        Plant.default_params[3],  # gK
+        Plant.default_params[4],  # gₕ
+        Plant.default_params[5],  # gL
+        Plant.default_params[6],  # gT
+        Plant.default_params[7],  # gKCa
+        Plant.default_params[8],  # EI
+        Plant.default_params[9],  # EK
+        Plant.default_params[10], # Eₕ
+        Plant.default_params[11], # EL
+        Plant.default_params[12], # ECa
+        Plant.default_params[13], # Kc
+        Plant.default_params[14], # τₓ
+        Plant.default_params[15], # ρ
+        Δx,                       # Δx
+        ΔCa                       # ΔCa
+    ]
+end
+
 ΔCa_min = -43.0
 ΔCa_max = -35.0
 ΔCa_resolution = 1000
@@ -302,28 +325,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     chunk_Δx_min = Δx_min + (Δx_max - Δx_min)*chunk_proportion*(chunk%(1/chunk_proportion))
     chunk_Δx_max = Δx_min + (Δx_max - Δx_min)*(chunk_proportion*(chunk%(1/chunk_proportion)+1) - 1/Δx_resolution) # What exactly is that -1/Δx_resolution doing? It's preventing overlap.
     for ΔCa in range(chunk_ΔCa_min, chunk_ΔCa_max, length=Int(ΔCa_resolution*chunk_proportion))
-        for Δx in range(chunk_Δx_min, chunk_Δx_max, length=Int(Δx_resolution*chunk_proportion))
-            p = @SVector Float32[
-                Plant.default_params[1],  # Cₘ
-                Plant.default_params[2],  # gI
-                Plant.default_params[3],  # gK
-                Plant.default_params[4],  # gₕ
-                Plant.default_params[5],  # gL
-                Plant.default_params[6],  # gT
-                Plant.default_params[7],  # gKCa
-                Plant.default_params[8],  # EI
-                Plant.default_params[9],  # EK
-                Plant.default_params[10], # Eₕ
-                Plant.default_params[11], # EL
-                Plant.default_params[12], # ECa
-                Plant.default_params[13], # Kc
-                Plant.default_params[14], # τₓ
-                Plant.default_params[15], # ρ
-                Δx,                          # Δx
-                ΔCa                          # ΔCa
-            ]
-            push!(params, p)
-        end
+        append!(params, [makeParams(ΔCa, Δx) for Δx in range(chunk_Δx_min, chunk_Δx_max, length=Int(Δx_resolution*chunk_proportion))])
         ranges = Dict(
             "ΔCa_min" => chunk_ΔCa_min,
             "ΔCa_max" => chunk_ΔCa_max,
@@ -369,6 +371,90 @@ end
 
 using Plots
 
+function paramsToChunk(ΔCa, Δx)
+    true_ΔCa_max = ΔCa_max - (ΔCa_max - ΔCa_min)/ΔCa_resolution
+    true_Δx_max = Δx_max - (Δx_max - Δx_min)/Δx_resolution
+
+    ΔCa_norm = (ΔCa - ΔCa_min)/(true_ΔCa_max - ΔCa_min)
+    Δx_norm = (Δx - Δx_min)/(true_Δx_max - Δx_min)
+
+    chunk_ΔCa_index = round(ΔCa_norm/chunk_proportion)
+    if ΔCa_norm == 1.0
+        chunk_ΔCa_index -= 1
+    end
+
+    chunk_Δx_index = round(Δx_norm/chunk_proportion)
+    if Δx_norm == 1.0
+        chunk_Δx_index -= 1
+    end
+
+    chunk = chunk_ΔCa_index/chunk_proportion + chunk_Δx_index + 1
+    return Int(chunk)
+end
+
+function paramsToChunkAndIndex(ΔCa, Δx)
+    chunk = paramsToChunk(ΔCa, Δx)
+    @load "toys/output/chunk_$(chunk)_ranges.jld2" ranges
+
+    ΔCa_norm = (ΔCa - ranges["ΔCa_min"])/(ranges["ΔCa_max"] - ranges["ΔCa_min"])
+    Δx_norm = (Δx - ranges["Δx_min"])/(ranges["Δx_max"] - ranges["Δx_min"])
+
+    chunk_ΔCa_resolution = chunk_proportion*ΔCa_resolution
+    chunk_Δx_resolution = chunk_proportion*Δx_resolution
+    index = Int(trunc(Int, ΔCa_norm*(chunk_ΔCa_resolution-1)*chunk_Δx_resolution) + trunc(Int, Δx_norm*(chunk_Δx_resolution-1)) + 1)
+
+    return (chunk, index)
+end
+
+function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0))
+    chunk, index = paramsToChunkAndIndex(ΔCa, Δx)
+    println(chunk)
+    @load "toys/output/chunk_$(chunk).jld2" sol
+
+    plt = plot(
+        sol[index],
+        idxs=(5, 1),
+        lw=lw,
+        legend=false,
+        xlims=(Ca_lims[1], Ca_lims[2]),
+        ylims=(0.0, 1.0),
+        dpi=dpi,
+        size=size,
+        xlabel="Ca",
+        ylabel="x",
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx)
+    )
+
+    p = makeParams(ΔCa, Δx)
+
+    v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+    V_range = nothing
+    try
+        V_range = range(xinfinv(p, min_x), xinfinv(p, max_x), length=1000)
+    catch e
+        V_range = range(-70, 20, length=1000)
+    end
+    
+    plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range])
+    plot!(plt, [x_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range])
+    scatter!(plt, [Ca_eq], [x_eq])
+
+    return plt
+end
+
+function animatedWalk(initial, final, frames; fps=10, lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0), verbose=false)
+    # Initial and final should each be 2-tuples of (ΔCa, Δx).
+    ΔCa = range(initial[1], final[1], length=frames)
+    Δx = range(initial[2], final[2], length=frames)
+    anim = @animate for i in 1:frames
+        if verbose
+            println("Plotting frame $(i) of $(frames).")
+        end
+        plotCaX(ΔCa[i], Δx[i], lw=lw, dpi=dpi, size=size, Ca_lims=Ca_lims)
+    end
+    gif(anim, "toys/output/walk_$(initial)_$(final).gif", fps=fps)
+end
+
 plt = heatmap(
     xlabel="\$\\Delta_{Ca}\$",
     ylabel="\$\\Delta_x\$",
@@ -380,14 +466,25 @@ plt = heatmap(
 )
 
 for i in 1:Int(1/chunk_proportion)^2
+    println("Plotting chunk $(i) of $(Int(1/chunk_proportion)^2).")
     @load "toys/output/chunk_$(i)_ranges.jld2" ranges
-    @load "toys/output/chunk_$(i).jld2" results
+    @load "toys/output/chunk_$(i).jld2" sol
+
+    ΔCa_range = range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion))
+    Δx_range = range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion))
+    
+    params = []
+    for ΔCa in ΔCa_range
+        for Δx in Δx_range
+            push!(params, makeParams(ΔCa, Δx))
+        end
+    end
 
     heatmap!(
         plt,
-        range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion)),
-        range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion)),
-        reshape([maxSTOsPerBurst(cleanup(sequence)) for sequence in results], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        ΔCa_range,
+        Δx_range,
+        reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol[i], params[i]))) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
         color=cgrad(:amp, scale=:exp)
     );
 end
