@@ -371,39 +371,26 @@ end
 
 using Plots
 
-function paramsToChunk(ΔCa, Δx)
+function paramsToChunkAndIndex(ΔCa, Δx)
+    # Returns the chunk number and index within that chunk for a given ΔCa and Δx parameter value.
+    # Also returns the ΔCa and Δx values of the actual point within the chunk after snapping to the
+    # correct discretized value.
     true_ΔCa_max = ΔCa_max - (ΔCa_max - ΔCa_min)/ΔCa_resolution
     true_Δx_max = Δx_max - (Δx_max - Δx_min)/Δx_resolution
+    ΔCa_normed = (ΔCa - ΔCa_min)/(true_ΔCa_max - ΔCa_min)
+    Δx_normed = (Δx - Δx_min)/(true_Δx_max - Δx_min)
+    ΔCa_index = round(ΔCa_normed*(ΔCa_resolution - 1) + 1, RoundNearestTiesUp)
+    Δx_index = round(Δx_normed*(Δx_resolution - 1) + 1, RoundNearestTiesUp)
+    chunk_ΔCa_index = ceil(ΔCa_index/ΔCa_resolution/chunk_proportion)
+    chunk_Δx_index = ceil(Δx_index/Δx_resolution/chunk_proportion)
+    chunk_index = (chunk_ΔCa_index-1)/chunk_proportion + chunk_Δx_index
+    interior_ΔCa_index = ΔCa_index - ΔCa_resolution * chunk_proportion * (chunk_ΔCa_index - 1)
+    interior_Δx_index = Δx_index - Δx_resolution * chunk_proportion * (chunk_Δx_index - 1)
+    interior_index = (interior_ΔCa_index - 1) * Δx_resolution * chunk_proportion + interior_Δx_index
+    solution_ΔCa = ΔCa_min + (ΔCa_index-1)*(ΔCa_max - ΔCa_min)/ΔCa_resolution
+    solution_Δx = Δx_min + (Δx_index-1)*(Δx_max - Δx_min)/Δx_resolution
 
-    ΔCa_norm = (ΔCa - ΔCa_min)/(true_ΔCa_max - ΔCa_min)
-    Δx_norm = (Δx - Δx_min)/(true_Δx_max - Δx_min)
-
-    chunk_ΔCa_index = round(ΔCa_norm/chunk_proportion)
-    if ΔCa_norm == 1.0
-        chunk_ΔCa_index -= 1
-    end
-
-    chunk_Δx_index = round(Δx_norm/chunk_proportion)
-    if Δx_norm == 1.0
-        chunk_Δx_index -= 1
-    end
-
-    chunk = chunk_ΔCa_index/chunk_proportion + chunk_Δx_index + 1
-    return Int(chunk)
-end
-
-function paramsToChunkAndIndex(ΔCa, Δx)
-    chunk = paramsToChunk(ΔCa, Δx)
-    @load "toys/output/chunk_$(chunk)_ranges.jld2" ranges
-
-    ΔCa_norm = (ΔCa - ranges["ΔCa_min"])/(ranges["ΔCa_max"] - ranges["ΔCa_min"])
-    Δx_norm = (Δx - ranges["Δx_min"])/(ranges["Δx_max"] - ranges["Δx_min"])
-
-    chunk_ΔCa_resolution = chunk_proportion*ΔCa_resolution
-    chunk_Δx_resolution = chunk_proportion*Δx_resolution
-    index = Int(trunc(Int, ΔCa_norm*(chunk_ΔCa_resolution-1)*chunk_Δx_resolution) + trunc(Int, Δx_norm*(chunk_Δx_resolution-1)) + 1)
-
-    return (chunk, index)
+    return (trunc(Int, chunk_index), trunc(Int, interior_index), solution_ΔCa, solution_Δx)
 end
 
 function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0))
