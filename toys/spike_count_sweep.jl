@@ -394,8 +394,7 @@ function paramsToChunkAndIndex(ΔCa, Δx)
 end
 
 function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0))
-    chunk, index = paramsToChunkAndIndex(ΔCa, Δx)
-    println(chunk)
+    chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(ΔCa, Δx)
     @load "toys/output/chunk_$(chunk).jld2" sol
 
     plt = plot(
@@ -429,7 +428,7 @@ function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0
     return plt
 end
 
-function animatedWalk(initial, final, frames; fps=10, lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0), verbose=false)
+function animatedWalk(initial, final, frames; fps=10, lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0), verbose=true)
     # Initial and final should each be 2-tuples of (ΔCa, Δx).
     ΔCa = range(initial[1], final[1], length=frames)
     Δx = range(initial[2], final[2], length=frames)
