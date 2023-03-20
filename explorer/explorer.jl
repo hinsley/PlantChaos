@@ -11,7 +11,7 @@ u0 = default_state
 
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(melibeNew, u0, $p, diffeq = (
-    alg = Euler(), dt = 1f0
+    alg = BS3(), dt = 1f0
 ))
 
 set_theme!(theme_black())

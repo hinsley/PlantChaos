@@ -8,14 +8,14 @@ function progress_for_one_step!(solver, u)
 end
 
 #set length of stored trajectory with slider
-maxpoints = 5000
+maxpoints = 2500
 u::Observable{CircularBuffer{SVector{7, Float32}}} = Observable(CircularBuffer{SVector{7,Float32}}(maxpoints))
 
 # create initial trajectory
 for i = 1:maxpoints[]
     progress_for_one_step!(dynsys, u)
 end
-traj = @lift map(x -> Point3f(x[[1,6,5]]...), $u)
+traj = @lift map(x -> Point3f(x[[5,1,6]]...), $u)
 
 lines!(trajax, traj, colormap = :devon, color = @lift 1:$maxpoints)
 
