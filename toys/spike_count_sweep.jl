@@ -125,7 +125,7 @@ function mmoSymbolics(sol, p, debug=false)
         return [0]
     end
 
-    V_threshold = 0.0
+    V_threshold = -40.0
 
     for i in 2:length(sol)
         x = 1
@@ -223,8 +223,11 @@ function maxSTOsPerBurst(mmo_symbolic_sequence)
     STOs = 0
     transient_stage = 0
     STOs_per_burst = []
+    max_spikes_per_burst = 0
+    spikes_in_burst = 0
     for i in 1:length(mmo_symbolic_sequence)
         if mmo_symbolic_sequence[i] == 0 # STO
+            spikes_in_burst = 0
             if transient_stage == 1
                 transient_stage += 1
             elseif transient_stage == 3
@@ -234,13 +237,20 @@ function maxSTOsPerBurst(mmo_symbolic_sequence)
             if transient_stage == 0 || transient_stage == 2
                 transient_stage += 1
             end
-            if transient_stage == 3 && STOs > 0
-                push!(STOs_per_burst, STOs)
-                STOs = 0
+            if transient_stage == 3 
+                spikes_in_burst += 1
+                if spikes_in_burst > max_spikes_per_burst
+                    max_spikes_per_burst = spikes_in_burst
+                end
+                if STOs > 0
+                    push!(STOs_per_burst, STOs)
+                    STOs = 0
+                end
             end
         end
     end
-    if STOs_per_burst == []
+
+    if STOs_per_burst == [] || max_spikes_per_burst < 2
         return NaN
     end
     return maximum(STOs_per_burst)
@@ -307,13 +317,13 @@ function makeParams(ΔCa, Δx)
     ]
 end
 
-ΔCa_min = -43.0
-ΔCa_max = -35.0
-ΔCa_resolution = 1000
-Δx_min = -2.5
-Δx_max = -1.0
+ΔCa_min = -42.5
+ΔCa_max = -33.5
+ΔCa_resolution = 1600
+Δx_min = -1.6
+Δx_max = 0.5
 Δx_resolution = Int(ΔCa_resolution/2)
-chunk_proportion = 1/5
+chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
@@ -476,3 +486,28 @@ for i in 1:Int(1/chunk_proportion)^2
 end
 
 display(plt)
+
+chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-39.77777777777777, -1.2)
+@load "toys/output/chunk_$(chunk).jld2" sol
+maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
+plotCaX(true_ΔCa, true_Δx)
+println(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
+
+plt2 = plot(
+    sol[index],
+    idxs=(6),
+    lw=0.5,
+    legend=false,
+    title="Voltage trace",
+    size=(1000, 750)
+)
+display(plt2)
+
+for Ca in range(-40.0, -39.0, length=10)
+    # Get max STOs per burst.
+    chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(Ca, -1.2)
+    @load "toys/output/chunk_$(chunk).jld2" sol
+    if maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx)))) > 1
+        println("Ca = $(Ca): $(maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx)))))")
+    end
+end
