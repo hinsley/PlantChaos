@@ -3,14 +3,16 @@ Pkg.activate("./explorer")
 include("../model/Plant.jl")
 using .Plant
 using OrdinaryDiffEq, DynamicalSystems, GLMakie
-using FileIO, LinearAlgebra
+using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
 p = Observable(default_params)
-u0 = Observable(default_state)
+u0 = default_state
 
 #use DynamicalSystems interface
-dynsys = @lift CoupledODEs(melibeNew, $u0, $p)
+dynsys = @lift CoupledODEs(melibeNew, u0, $p, diffeq = (
+    alg = BS3(), dt = 1f0
+))
 
 set_theme!(theme_black())
 fig = Figure(resolution = (1500, 1000).*1.3);
@@ -37,4 +39,5 @@ widgetax[3,:] = scantype = Menu(fig,
 include("./trajectory.jl")
 include("./bifurcation.jl")
 
-fig # display
+display(fig) # display
+run_traj()
