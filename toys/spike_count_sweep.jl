@@ -359,7 +359,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     # Out-of-place.
     prob = ODEProblem{false}(Plant.melibeNew, u0, tspan, params[1])
     # In-place.
-    # prob = ODEProblem{false}(Plant.melibeNew!, u0, tspan, params[1])
+    # prob = ODEProblem{true}(Plant.melibeNew!, u0, tspan, params[1])
     prob_func(prob, i, repeat) = remake(prob, u0=initial_conditions(params[trunc(Int, i)]), p=params[trunc(Int, i)]) # Why are we getting Floats here?
 
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
@@ -380,6 +380,108 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
 end
 
 using Plots
+using Plots.PlotMeasures
+
+using FiniteDiff
+
+########## Run a single solution and plot a multi-figure diagram.
+@gif for ΔCa in range(-50.0, 175.0, length=250)
+#begin
+    #ΔCa = -39.5
+    Δx = -1.8
+    voltage_tspan = (0.0f0, 1.0f5) # The full trace.
+    #voltage_tspan = (0.0f0, 2.0f4) # Comment this out to show the whole voltage trace.
+    tspan = (0.0f0, 1.0f5)
+    margin = 0.01f0
+    params = makeParams(ΔCa, Δx)
+    # Start below the equilibrium point.
+    v_eq, Ca_eq, x_eq = Ca_x_eq(params)
+    state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0]
+    #state = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq, v_eq, state[7]]
+    prob = ODEProblem{false}(Plant.melibeNew, state, tspan, params)
+    monteprob=EnsembleProblem(prob)
+    sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=1, adaptive=false, dt=1.0f0, verbose=false)
+    fig1 = plot(
+        sol,
+        idxs=(5, 1),
+        lw=2.0,
+        legend=false,
+        xlims=(0.55, 1.25),
+        ylims=(0.1, 0.95),
+        #xlims=(min([v[5] for v in sol[1].u]...)-margin, max([v[5] for v in sol[1].u]...)+margin),
+        #ylims=(min([v[1] for v in sol[1].u]...)-margin, max([v[1] for v in sol[1].u]...)+margin),
+        xlabel="Ca",
+        ylabel="x",
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx)
+    )
+    v_eq, Ca_eq, x_eq = Ca_x_eq(params)
+    sol[1]
+    V_range = nothing
+    try
+        V_range = range(xinfinv(params, min_x), xinfinv(params, max_x), length=1000)
+    catch e
+        V_range = range(-70, 20, length=1000)
+    end
+    plot!(fig1, [Ca_null_Ca(params, V) for V in V_range], [Plant.xinf(params, V) for V in V_range])
+    plot!(fig1, [x_null_Ca(params, V) for V in V_range], [Plant.xinf(params, V) for V in V_range])
+    scatter!(fig1, [Ca_eq], [x_eq])
+    # Eigenvalue plot.
+    function du(u)
+        static_du = Plant.melibeNew(u, params, 0f0)
+        return Float32[static_du[1], static_du[2], static_du[3], static_du[4], static_du[5], static_du[6], static_du[7]]
+    end
+    equilibrium = Float32[x_eq, state[2], state[3], state[4], Ca_eq, v_eq, state[7]]
+    jacobian = FiniteDiff.finite_difference_jacobian(du, equilibrium)
+    eigenvalues = eigvals(jacobian)
+    eigenvalue_margin = 0.2 # Margin proportional to range.
+    real_bounds = (min([real(evalue) for evalue in eigenvalues]...), max([real(evalue) for evalue in eigenvalues]...))
+    real_range = real_bounds[2] - real_bounds[1]
+    if real_range == 0
+        real_bounds = (real_bounds[1] - eigenvalue_margin, real_bounds[2] + eigenvalue_margin)
+    else
+        real_bounds = (real_bounds[1] - eigenvalue_margin*real_range/2, real_bounds[2] + eigenvalue_margin*real_range/2)
+    end
+    imag_bounds = (min([imag(evalue) for evalue in eigenvalues]...), max([imag(evalue) for evalue in eigenvalues]...))
+    imag_range = imag_bounds[2] - imag_bounds[1]
+    if imag_range == 0
+        imag_bounds = (imag_bounds[1] - eigenvalue_margin, imag_bounds[2] + eigenvalue_margin)
+    else
+        imag_bounds = (imag_bounds[1] - eigenvalue_margin*imag_range/2, imag_bounds[2] + eigenvalue_margin*imag_range/2)
+    end
+    fig2=scatter(
+        [real(evalue) for evalue in eigenvalues],
+        [imag(evalue) for evalue in eigenvalues],
+        legend=false,
+        xlabel="\$\\textrm{Re}(\\lambda)\$",
+        ylabel="\$\\textrm{Im}(\\lambda)\$",
+        xlims=real_bounds,
+        ylims=imag_bounds,
+        color=:black,
+        markersize=6.0
+    )
+    plot!(fig2, [real_bounds...], [0, 0], color=:black, lw=1.0)
+    plot!(fig2, [0, 0], [imag_bounds...], color=:black, lw=1.0)
+    fig3=plot(
+        sol,
+        idxs=(6),
+        legend=false,
+        xlims=voltage_tspan,
+        ylims=(-60, 30),
+        xlabel="t",
+        ylabel="V"
+    )
+    plt = plot(
+        fig1,
+        fig2,
+        fig3,
+        layout=@layout[a{0.6h}; b c],
+        size=(1440, 1280),
+        left_margin=1cm,
+        right_margin=1cm
+    )
+    display(plt)
+end
+##########
 
 function paramsToChunkAndIndex(ΔCa, Δx)
     # Returns the chunk number and index within that chunk for a given ΔCa and Δx parameter value.
@@ -421,7 +523,7 @@ function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx)
     )
 
-    p = makeParams(ΔCa, Δx)
+    p = makeParams(true_ΔCa, true_Δx)
 
     v_eq, Ca_eq, x_eq = Ca_x_eq(p)
     V_range = nothing
@@ -434,6 +536,25 @@ function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0
     plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range])
     plot!(plt, [x_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range])
     scatter!(plt, [Ca_eq], [x_eq])
+
+    return plt
+end
+
+function plotV(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0))
+    chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(ΔCa, Δx)
+    @load "toys/output/chunk_$(chunk).jld2" sol
+
+    plt = plot(
+        sol[index],
+        idxs=(6),
+        lw=lw,
+        legend=false,
+        dpi=dpi,
+        size=size,
+        xlabel="t",
+        ylabel="mV",
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx)
+    )
 
     return plt
 end
@@ -487,7 +608,7 @@ end
 
 display(plt)
 
-chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-39.77777777777777, -1.2)
+chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-40.99, -1.57796)
 @load "toys/output/chunk_$(chunk).jld2" sol
 maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
 plotCaX(true_ΔCa, true_Δx)
