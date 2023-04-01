@@ -48,6 +48,13 @@ function Ca_x_eq(p)
     return v_eq, Ca_eq, x_eq
 end
 
+function evalue_dilate(re, im, dilation)
+    if re == 0.0f0
+        return (re, im)
+    end
+    return (re*(re^2)^((1-dilation)/(2*dilation)), im)
+end
+
 function countSpikes(sol, p, debug=false)
     # Obtain burst reset times.
     resets = []
@@ -434,14 +441,17 @@ using FiniteDiff
     jacobian = FiniteDiff.finite_difference_jacobian(du, equilibrium)
     eigenvalues = eigvals(jacobian)
     eigenvalue_margin = 0.2 # Margin proportional to range.
-    real_bounds = (min([real(evalue) for evalue in eigenvalues]...), max([real(evalue) for evalue in eigenvalues]...))
+    eigenvalue_dilation::Int = 2 # Dilation factor for eigenvalues - helpful for seeing stability transitions.
+    evalue_real_imag_pairs = [(real(evalue), imag(evalue)) for evalue in eigenvalues]
+    transformed_evalues = [evalue_dilate(evalue[1], evalue[2], eigenvalue_dilation) for evalue in evalue_real_imag_pairs]
+    real_bounds = (min([evalue[1] for evalue in transformed_evalues]...), max([evalue[1] for evalue in transformed_evalues]...))
     real_range = real_bounds[2] - real_bounds[1]
     if real_range == 0
         real_bounds = (real_bounds[1] - eigenvalue_margin, real_bounds[2] + eigenvalue_margin)
     else
         real_bounds = (real_bounds[1] - eigenvalue_margin*real_range/2, real_bounds[2] + eigenvalue_margin*real_range/2)
     end
-    imag_bounds = (min([imag(evalue) for evalue in eigenvalues]...), max([imag(evalue) for evalue in eigenvalues]...))
+    imag_bounds = (min([evalue[2] for evalue in transformed_evalues]...), max([evalue[2] for evalue in transformed_evalues]...))
     imag_range = imag_bounds[2] - imag_bounds[1]
     if imag_range == 0
         imag_bounds = (imag_bounds[1] - eigenvalue_margin, imag_bounds[2] + eigenvalue_margin)
@@ -449,10 +459,10 @@ using FiniteDiff
         imag_bounds = (imag_bounds[1] - eigenvalue_margin*imag_range/2, imag_bounds[2] + eigenvalue_margin*imag_range/2)
     end
     fig2=scatter(
-        [real(evalue) for evalue in eigenvalues],
-        [imag(evalue) for evalue in eigenvalues],
+        [evalue[1] for evalue in transformed_evalues],
+        [evalue[2] for evalue in transformed_evalues],
         legend=false,
-        xlabel="\$\\textrm{Re}(\\lambda)\$",
+        xlabel=@sprintf("\$\\textrm{sign}(\\textrm{Re}(\\lambda)) \\cdot \\sqrt[%d]{|\\textrm{Re}(\\lambda)|}\$", eigenvalue_dilation),
         ylabel="\$\\textrm{Im}(\\lambda)\$",
         xlims=real_bounds,
         ylims=imag_bounds,
@@ -466,7 +476,7 @@ using FiniteDiff
         idxs=(6),
         legend=false,
         xlims=voltage_tspan,
-        ylims=(-60, 30),
+        ylims=(-70, 30),
         xlabel="t",
         ylabel="V"
     )
