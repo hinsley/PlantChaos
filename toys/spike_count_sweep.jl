@@ -334,6 +334,8 @@ chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
+scan_directory = "toys/output/Subcritical AH ridge"
+
 for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
     params = []
@@ -349,7 +351,7 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
             "Δx_min" => chunk_Δx_min,
             "Δx_max" => chunk_Δx_max
         )
-        @save "toys/output/chunk_$(chunk+1)_ranges.jld2" ranges
+        @save "$(scan_directory)/chunk_$(chunk+1)_ranges.jld2" ranges
     end
 
     function initial_conditions(p)
@@ -381,8 +383,8 @@ for chunk in 0:Int(1/chunk_proportion)^2-1
     # end
 
     println("Saving chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
-    # @save "toys/output/chunk_$(chunk+1).jld2" results
-    @save "toys/output/chunk_$(chunk+1).jld2" sol
+    # @save "$(scan_directory)/chunk_$(chunk+1).jld2" results
+    @save "$(scan_directory)/chunk_$(chunk+1).jld2" sol
     println("Finished chunk $(chunk+1) of $(Int(1/chunk_proportion)^2): $(round(100*(chunk+1)*chunk_proportion^2, digits=2))%")
 end
 
@@ -517,7 +519,7 @@ end
 
 function plotCaX(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0))
     chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(ΔCa, Δx)
-    @load "toys/output/chunk_$(chunk).jld2" sol
+    @load "$(scan_directory)/chunk_$(chunk).jld2" sol
 
     plt = plot(
         sol[index],
@@ -552,7 +554,7 @@ end
 
 function plotV(ΔCa, Δx; lw=0.5, dpi=500, size=(1280, 720), Ca_lims=(0.6, 1.0))
     chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(ΔCa, Δx)
-    @load "toys/output/chunk_$(chunk).jld2" sol
+    @load "$(scan_directory)/chunk_$(chunk).jld2" sol
 
     plt = plot(
         sol[index],
@@ -579,7 +581,7 @@ function animatedWalk(initial, final, frames; fps=10, lw=0.5, dpi=500, size=(128
         end
         plotCaX(ΔCa[i], Δx[i], lw=lw, dpi=dpi, size=size, Ca_lims=Ca_lims)
     end
-    gif(anim, "toys/output/walk_$(initial)_$(final).gif", fps=fps)
+    gif(anim, "$(scan_directory)/walk_$(initial)_$(final).gif", fps=fps)
 end
 
 plt = heatmap(
@@ -594,8 +596,8 @@ plt = heatmap(
 
 for i in 1:Int(1/chunk_proportion)^2
     println("Plotting chunk $(i) of $(Int(1/chunk_proportion)^2).")
-    @load "toys/output/chunk_$(i)_ranges.jld2" ranges
-    @load "toys/output/chunk_$(i).jld2" sol
+    @load "$(scan_directory)/chunk_$(i)_ranges.jld2" ranges
+    @load "$(scan_directory)/chunk_$(i).jld2" sol
 
     ΔCa_range = range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion))
     Δx_range = range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion))
@@ -619,7 +621,7 @@ end
 display(plt)
 
 chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-40.99, -1.57796)
-@load "toys/output/chunk_$(chunk).jld2" sol
+@load "$(scan_directory)/chunk_$(chunk).jld2" sol
 maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
 plotCaX(true_ΔCa, true_Δx)
 println(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
@@ -637,7 +639,7 @@ display(plt2)
 for Ca in range(-40.0, -39.0, length=10)
     # Get max STOs per burst.
     chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(Ca, -1.2)
-    @load "toys/output/chunk_$(chunk).jld2" sol
+    @load "$(scan_directory)/chunk_$(chunk).jld2" sol
     if maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx)))) > 1
         println("Ca = $(Ca): $(maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx)))))")
     end
