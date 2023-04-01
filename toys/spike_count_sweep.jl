@@ -413,7 +413,7 @@ using FiniteDiff
     fig1 = plot(
         sol,
         idxs=(5, 1),
-        lw=2.0,
+        lw=3.0,
         legend=false,
         xlims=(0.55, 1.25),
         ylims=(0.1, 0.95),
@@ -431,8 +431,8 @@ using FiniteDiff
     catch e
         V_range = range(-70, 20, length=1000)
     end
-    plot!(fig1, [Ca_null_Ca(params, V) for V in V_range], [Plant.xinf(params, V) for V in V_range])
-    plot!(fig1, [x_null_Ca(params, V) for V in V_range], [Plant.xinf(params, V) for V in V_range])
+    plot!(fig1, [Ca_null_Ca(params, V) for V in V_range], [Plant.xinf(params, V) for V in V_range], lw=3.0)
+    plot!(fig1, [x_null_Ca(params, V) for V in V_range], [Plant.xinf(params, V) for V in V_range], lw=3.0)
     scatter!(fig1, [Ca_eq], [x_eq])
     # Eigenvalue plot.
     function du(u)
@@ -480,7 +480,8 @@ using FiniteDiff
         xlims=voltage_tspan,
         ylims=(-70, 30),
         xlabel="t",
-        ylabel="V"
+        ylabel="V",
+        lw=3.0
     )
     plt = plot(
         fig1,
