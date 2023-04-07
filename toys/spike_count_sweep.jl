@@ -263,6 +263,33 @@ function maxSTOsPerBurst(mmo_symbolic_sequence)
     return maximum(STOs_per_burst)
 end
 
+function spikeAmplitudeVariance(sol, p; debug=false)
+    # Obtain the variance of the spike amplitudes.
+
+    V_threshold = -40.0
+
+    # Obtain the solution indices for when are above the voltage threshold.
+    spike_amplitudes = []
+    above_threshold = false
+    V_max_in_spike = -Inf
+    for i in 1:length(sol)
+        if sol[i][V] >= V_threshold
+            if !above_threshold
+                above_threshold = true
+                V_max_in_spike = sol[i][V]
+            else
+                V_max_in_spike = max(V_max_in_spike, sol[i][V])
+            end
+        elseif above_threshold
+            above_threshold = false
+            push!(spike_amplitudes, V_max_in_spike)
+            # There's no need to reset V_max_in_spike to -Inf.
+        end
+    end
+
+    return var(spike_amplitudes)
+end
+
 function transitionMap(spike_counts)
     plt = scatter(1, markeralpha=0.2, legend=false, aspect_ratio=:equal, size=(600, 600), xticks=0:maximum(spike_counts), yticks=0:maximum(spike_counts), xlims=(-0.5, maximum(spike_counts) + 0.5), ylims=(-0.5, maximum(spike_counts) + 0.5))
     plot!(plt, [0, maximum(spike_counts)], [0, maximum(spike_counts)], linealpha=0.2)
@@ -324,17 +351,17 @@ function makeParams(ΔCa, Δx)
     ]
 end
 
-ΔCa_min = -150.0
-ΔCa_max = 370.0
+ΔCa_min = -50.0
+ΔCa_max = 10.0
 ΔCa_resolution = 1600
-Δx_min = -20.0
-Δx_max = 30.0
+Δx_min = -15.0
+Δx_max = 5.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
-scan_directory = "toys/output/Full parameter plane"
+scan_directory = "toys/output/Vertical BT strip"
 
 for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
@@ -585,6 +612,8 @@ function animatedWalk(initial, final, frames; fps=10, lw=0.5, dpi=500, size=(128
     gif(anim, "$(scan_directory)/walk_$(initial)_$(final).gif", fps=fps)
 end
 
+##########
+# Produce a scan.
 plt = heatmap(
     xlabel="\$\\Delta_{Ca}\$",
     ylabel="\$\\Delta_x\$",
@@ -610,16 +639,27 @@ for i in 1:Int(1/chunk_proportion)^2
         end
     end
 
+    # Measure: Max number of STOs per burst.
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol[i], params[i]))) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+    #    color=cgrad(:amp, scale=:exp)
+    #);
+
+    # Measure: Spike voltage amplitude variance.
     heatmap!(
         plt,
         ΔCa_range,
         Δx_range,
-        reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol[i], params[i]))) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        reshape([spikeAmplitudeVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
         color=cgrad(:amp, scale=:exp)
     );
 end
 
 display(plt)
+##########
 
 chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-40.99, -1.57796)
 @load "$(scan_directory)/chunk_$(chunk).jld2" sol
