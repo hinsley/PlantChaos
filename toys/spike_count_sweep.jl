@@ -268,7 +268,6 @@ function spikeAmplitudeVariance(sol, p; debug=false)
 
     V_threshold = -40.0
 
-    # Obtain the solution indices for when are above the voltage threshold.
     spike_amplitudes = []
     above_threshold = false
     V_max_in_spike = -Inf
@@ -288,6 +287,34 @@ function spikeAmplitudeVariance(sol, p; debug=false)
     end
 
     return var(spike_amplitudes)
+end
+
+function ISIs(sol, p; debug=false)
+    # Get a vector of inter-spike intervals.
+
+    V_threshold = -40.0
+
+    # Obtain the solution indices for when we initially exceed the threshold.
+    spike_indices = []
+    above_threshold = false
+    for i in 1:length(sol)
+        if sol[i][V] >= V_threshold
+            if !above_threshold
+                above_threshold = true
+                push!(spike_indices, i)
+            end
+        elseif above_threshold
+            above_threshold = false
+        end
+    end
+
+    # Obtain the inter-spike intervals in terms of solution times.
+    ISIs = []
+    for i in 1:length(spike_indices)-1
+        push!(ISIs, sol.t[spike_indices[i+1]] - sol.t[spike_indices[i]])
+    end
+
+    return ISIs
 end
 
 function transitionMap(spike_counts)
@@ -649,11 +676,20 @@ for i in 1:Int(1/chunk_proportion)^2
     #);
 
     # Measure: Spike voltage amplitude variance.
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([spikeAmplitudeVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+    #    color=cgrad(:amp, scale=:exp)
+    #);
+
+    # Measure: Inter-spike interval variance.
     heatmap!(
         plt,
         ΔCa_range,
         Δx_range,
-        reshape([spikeAmplitudeVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        reshape([interSpikeIntervalVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
         color=cgrad(:amp, scale=:exp)
     );
 end
