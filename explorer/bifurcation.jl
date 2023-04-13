@@ -1,8 +1,16 @@
+using DelimitedFiles
 
-image!(bifax,
-    range(-50, length = 5, stop = 35),
-    range(-2.6, length = 5, stop = -0.1),
-    rotr90(load("./explorer/bifurcation.png")))
+hopf = readdlm("./explorer/hopf.csv", ',', Float64)
+lines!(bifax, hopf, label="hopf")
+lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinc")
+lines!(bifax, readdlm("./explorer/snic.csv", ',', Float64), label="snic")
+
+scatter!(bifax, hopf[1,2], hopf[2,2], color=:blue, marker=:star4, label="BT", markersize=16)
+scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:red, marker=:star6, label="GH", markersize=16)
+scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="GH", markersize=16)
+
+axislegend(bifax ,position=:lb)
+limits!(bifax, -150, 400, -20, 50)
 
 bifpoint = select_point(bifax.scene, marker = :circle)
 
