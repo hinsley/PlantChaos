@@ -15,6 +15,8 @@ dynsys = @lift CoupledODEs(melibeNew, u0, $p, diffeq = (
 ))
 
 set_theme!(theme_black())
+set_window_config!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina Swim InterNeuron (SIN) Model")
+
 fig = Figure(resolution = (1500, 1000).*1.3);
 
 trajax = Axis3(fig[1,1], azimuth = 5pi/13, elevation = pi/25)
