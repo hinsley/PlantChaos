@@ -26,7 +26,7 @@ trajax.ylabel = "x"
 trajax.zlabel = "V"
 
 bifax = Axis(fig[1:2,2])
-bifax.title = "Bifurcation Diagram"
+bifax.title = "Bifurcation Diagram (ΔCa: $((@lift $p[17])[]), Δx: $((@lift $p[16])[]))"
 bifax.xlabel = "ΔCa"
 bifax.ylabel = "Δx"
 
