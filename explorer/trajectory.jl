@@ -20,6 +20,10 @@ traj = @lift map(x -> Point3f(x[[5,1,6]]...), $u)
 lines!(trajax, traj, colormap = :devon, color = @lift 1:$maxpoints)
 limits!(trajax, 0, 2, 0, 1, -70, 40)
 
+# voltage trace
+trace = @lift [e[6] for e in $u]
+lines!(traceax, trace)
+
 ##Interactivity
 
 isrunning = Observable(true)
