@@ -4,7 +4,6 @@ image!(bifax,
     range(-2.6, length = 5, stop = -0.1),
     rotr90(load("./explorer/bifurcation.png")))
 
-Makie.deactivate_interaction!(bifax, :rectanglezoom)
 bifpoint = select_point(bifax.scene, marker = :circle)
 
 on(bifpoint) do pars
