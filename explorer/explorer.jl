@@ -21,9 +21,14 @@ fig = Figure(resolution = (1500, 1000).*1.3);
 
 trajax = Axis3(fig[1:2,1], azimuth = 5pi/13, elevation = pi/25)
 trajax.title = "Trajectory"
+trajax.xlabel = "Ca"
+trajax.ylabel = "x"
+trajax.zlabel = "V"
 
 bifax = Axis(fig[1:2,2])
 bifax.title = "Bifurcation Diagram"
+bifax.xlabel = "ΔCa"
+bifax.ylabel = "Δx"
 
 mapax = Axis(fig[3:4,2], aspect = DataAspect())
 mapax.title = "1D Map"
@@ -31,6 +36,8 @@ rowsize!(fig.layout,2,Relative(1/2))
 
 traceax = Axis(fig[3,1])
 traceax.title = "Voltage Trace"
+traceax.ylabel = "V"
+traceax.xlabel = "t"
 
 widgetax = GridLayout(fig[4,1], tellwidth = false)
 widgetax[1,1] = pausebutton = Button(fig, label = "pause", buttoncolor = RGBf(.2,.2,.2))
