@@ -22,7 +22,7 @@ lines!(trajax, traj, colormap = :devon, color = @lift 1:$maxpoints)
 ##Interactivity
 
 isrunning = Observable(true)
-delay = Observable(0) #@lift 1/10^$(speedslider.slider.value)
+delay = @lift 1/10^$(speedslider.sliders[1].value)
 
 function run_traj()
     i=1

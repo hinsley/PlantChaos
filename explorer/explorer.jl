@@ -33,8 +33,7 @@ widgetax = GridLayout(fig[2,1], tellwidth = false)
 widgetax[1,1] = pausebutton = Button(fig, label = "pause", buttoncolor = RGBf(.2,.2,.2))
 widgetax[1,2] = clearbutton = Button(fig, label = "clear", buttoncolor = RGBf(.2,.2,.2))
 widgetax[1,3] = resetbutton = Button(fig, label = "reset", buttoncolor = RGBf(.2,.2,.2))
-speedslider = labelslider!(fig, "speed", 1:.1:4; startvalue = 2)
-widgetax[2,:] = speedslider.layout
+speedslider = SliderGrid(widgetax[2,:], (label = "speed", range=1:.1:4, format = "{:.1f}", startvalue = 2))
 widgetax[3,:] = scantype = Menu(fig,
     options = ["LZ Complexity", "Spike Count Variance", "Conditional Block Entropy"])
 
