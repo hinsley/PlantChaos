@@ -720,8 +720,7 @@ for i in 1:Int(1/chunk_proportion)^2
     #);
 end
 
-import("./bif_diagram.jl")
-
+include("./bif_diagram.jl")
 plot_bif_diagram!(plt)
 
 display(plt)
