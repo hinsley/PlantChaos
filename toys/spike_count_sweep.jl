@@ -448,7 +448,7 @@ using Plots.PlotMeasures
 using FiniteDiff
 
 ########## Run a single solution and plot a multi-figure diagram.
-@gif for ΔCa in range(-50.0, 175.0, length=250)
+@gif for ΔCa in range(-50.0, 175.0, length=2)
 #begin
     #ΔCa = -39.5
     Δx = -1.8
@@ -696,6 +696,160 @@ end
 
 display(plt)
 ##########
+
+##########
+# Return maps.
+begin
+    ΔCa = 0
+    Δx = -1.5
+    map_resolution = 2000
+    fill_ins = 100
+    fill_in_resolution = 10
+    V_threshold = -40 # Spike threshold.
+    x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
+    p = makeParams(ΔCa, Δx)
+    V_eq, Ca_eq, x_eq = Ca_x_eq(p)
+    V_range = range(-70, -15, length=1000)
+
+    # Generate initial conditions along the Ca nullcline.
+    V0 = collect(range(V_eq, -50, length=map_resolution))
+    Ca0 = [Ca_null_Ca(p, V) for V in V0]
+    x0 = [xinf(p, V)-x_offset for V in V0]
+    u0 = [@SVector Float32[x0[i], state[2], state[3], state[4], Ca0[i], V0[i], state[7]] for i in 1:length(V0)]
+    Ca_null = [Ca_null_Ca(p, V) for V in V_range]
+
+    # Solve.
+    prob = ODEProblem{false}(Plant.melibeNew, u0[1], tspan, p)
+    prob_func(prob, i, repeat) = remake(prob, u0=u0[i])
+    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
+    function condition(u, t, integrator)
+        # Get two nearest points on the Ca nullcline to the x line (u[1]).
+        # If the x line crosses the Ca nullcline, terminate the solver.
+        # Find the last point on the Ca nullcline that is less than u[5].
+        Ca_null_index = findlast(Ca_null .< u[5])
+        # Linearly interpolate the Ca nullcline to find the x value at u[5].
+        Ca_null_x = xinf(p, V_range[Ca_null_index]) + (u[5] - Ca_null[Ca_null_index])/(Ca_null[Ca_null_index + 1] - Ca_null[Ca_null_index])*(xinf(p, V_range[Ca_null_index + 1]) - xinf(p, V_range[Ca_null_index]))
+
+        # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
+        return Ca_null_x - u[1]
+    end
+    affect!(integrator) = terminate!(integrator) # Stop the solver
+    cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
+    #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUArray(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, saveat=range(tspan[1], tspan[2], length=1500))
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[2], length=1500), verbose=false)
+    Ca_initial = [sol[i][1][5] for i in 1:length(sol)]
+    Ca_final = [sol[i][end][5] for i in 1:length(sol)]
+
+    # Compute spike counts.
+    spike_counts = []
+    for i in 1:length(sol)
+        spikes = 0
+        for j in 1:length(sol[i])-1
+            if sol[i][j][6] < V_threshold < sol[i][j+1][6]
+                spikes += 1
+            end
+        end
+        push!(spike_counts, spikes)
+    end
+
+    # Plot the phase portrait.
+    plt = plot(
+        xlabel="\$Ca\$",
+        ylabel="\$x\$",
+        xlims=(0.5, 1.25),
+        ylims=(0, 0.95),
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+        size=(1000, 750),
+        c=spike_counts,
+        legend=false,
+        margin=5mm
+    )
+
+    # Nullclines.
+    plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range], label="Ca nullcline")
+    plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range], label="x nullcline")
+    # Equilibrium point.
+    scatter!(plt, [Ca_eq], [x_eq], label="Equilibrium point", color=:red, ms=5)
+    # Trajectories.
+    for spike_count in unique(spike_counts)
+        Cas = [sol[i].u[j][5] for i in 1:length(sol) for j in 1:length(sol[i].u) if spike_counts[i] == spike_count]
+        xs = [sol[i].u[j][1] for i in 1:length(sol) for j in 1:length(sol[i].u) if spike_counts[i] == spike_count]
+        plot!(plt, Cas, xs, label=@sprintf("\$%d\$", spike_count), c=spike_count, ms=2, alpha=0.3)
+    end
+
+    display(plt)
+
+    for i in 1:fill_ins
+        println(i)
+        # Fill in sparsest location on the return map.
+        distances = [(Ca_initial[j] - Ca_initial[j+1])^2 + (Ca_final[j] - Ca_final[j+1])^2 for j in 1:length(V0)-1]
+        index = findmax(distances)[2]
+        new_V0 = collect(range(V0[index], V0[index+1], length=fill_in_resolution+2))[2:end-1] # New initial voltages to add to the return map.
+        new_Ca0 = [Ca_null_Ca(p, V) for V in new_V0] # New initial Cas to add to the return map.
+        new_x0 = [xinf(p, V)-x_offset for V in new_V0] # New initial xs to add to the return map.
+        new_u0 = [SVector{7, Float32}(new_x0[j], state[2], state[3], state[4], new_Ca0[j], new_V0[j], state[7]) for j in 1:length(new_V0)] # New initial conditions to add to the return map.
+
+        # Solve.
+        prob = ODEProblem{false}(Plant.melibeNew, new_u0[1], tspan, p)
+        monteprob = EnsembleProblem(prob, prob_func = (prob,i,repeat) -> remake(prob, u0 = new_u0[i]))
+        function condition(u, t, integrator)
+            # Get two nearest points on the Ca nullcline to the x line (u[1]).
+            # If the x line crosses the Ca nullcline, terminate the solver.
+            # Find the last point on the Ca nullcline that is less than u[5].
+            Ca_null_index = findlast(Ca_null .< u[5])
+            # Linearly interpolate the Ca nullcline to find the x value at u[5].
+            Ca_null_x = xinf(p, V_range[Ca_null_index]) + (u[5] - Ca_null[Ca_null_index])/(Ca_null[Ca_null_index + 1] - Ca_null[Ca_null_index])*(xinf(p, V_range[Ca_null_index + 1]) - xinf(p, V_range[Ca_null_index]))
+
+            # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
+            return Ca_null_x - u[1]
+        end
+        affect!(integrator) = terminate!(integrator) # Stop the solver
+        cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
+        #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUArray(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, saveat=range(tspan[1], tspan[2], length=1500))
+        @time sol = solve(monteprob, Tsit5(), callback=cb, trajectories=fill_in_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[2], length=1500), verbose=false)
+        new_Ca_initial = [sol[j].u[1][5] for j in 1:length(sol)]
+        new_Ca_final = [sol[j].u[end][5] for j in 1:length(sol)]
+
+        # Insert new initial conditions into the old ones.
+        Ca_initial = [Ca_initial[1:index]; new_Ca_initial; Ca_initial[index+1:end]]
+        Ca_final = [Ca_final[1:index]; new_Ca_final; Ca_final[index+1:end]]
+        V0 = [V0[1:index]; new_V0; V0[index+1:end]]
+        Ca0 = [Ca0[1:index]; new_Ca0; Ca0[index+1:end]]
+        x0 = [x0[1:index]; new_x0; x0[index+1:end]]
+        u0 = [u0[1:index]; new_u0; u0[index+1:end]]
+
+        # Compute new spike count.
+        for j in 1:length(sol)
+            spikes = 0
+            for k in 1:length(sol[j])-1
+                if sol[j][k][6] < V_threshold < sol[j][k+1][6]
+                    spikes += 1
+                end
+            end
+            insert!(spike_counts, index+j, spikes)
+        end
+    end
+
+    # TODO: Wait until this point to plot the phase portrait, so the hard-to-reach areas are filled in on the phase portrait.
+
+    # Plot the return map.
+    plt = plot(
+        xlabel="\$Ca_n\$",
+        ylabel="\$Ca_{n+1}\$",
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+        size=(1000, 750),
+        legend=false,
+        margin=5mm
+    )
+
+    # Fixed point line.
+    plot!(plt, [Ca0[1], Ca0[end]], [Ca0[1], Ca0[end]], label="Fixed point line", color=:red)
+    # Return map points.
+    scatter!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, ms=2)
+end
+##########
+
+println(Ca_initial)
 
 chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-40.99, -1.57796)
 @load "$(scan_directory)/chunk_$(chunk).jld2" sol
