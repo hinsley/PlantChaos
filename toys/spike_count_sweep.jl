@@ -358,6 +358,17 @@ function markovChain(spike_counts)
     return chain
 end
 
+function blockEntropy(str,m)
+    # Compute the block entropy of a string.
+    # str: string
+    # m: block length
+    blocks = [str[i:i+m-1] for i in 1:length(str)-m-1]
+    # Block occurrence probability.
+    psm = [count(==(b),blocks) for b in unique(blocks)]./length(blocks)
+    # Return block entropy.
+    return -sum([p*log(p) for p in psm])
+end
+
 function makeParams(ΔCa, Δx)
     return @SVector Float32[
         Plant.default_params[1],  # Cₘ
@@ -682,6 +693,15 @@ for i in 1:Int(1/chunk_proportion)^2
         Δx_range,
         reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol.u[i].u, params[i]))) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     );
+
+    # Measure: Block entropy.
+    #block_size = 3
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #);
 
     # Measure: Spike voltage amplitude variance.
     #heatmap!(
