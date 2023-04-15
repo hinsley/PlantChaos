@@ -266,6 +266,8 @@ end
 function spikeAmplitudeVariance(sol, p; debug=false)
     # Obtain the variance of the spike amplitudes.
 
+    V = 6 # Index in state variables.
+
     V_threshold = -40.0
 
     spike_amplitudes = []
@@ -286,7 +288,7 @@ function spikeAmplitudeVariance(sol, p; debug=false)
         end
     end
 
-    return var(spike_amplitudes)
+    return isempty(spike_amplitudes) ? NaN : var(spike_amplitudes)
 end
 
 function ISIs(sol, p; debug=false)
@@ -379,16 +381,16 @@ function makeParams(ΔCa, Δx)
 end
 
 ΔCa_min = -50.0
-ΔCa_max = 10.0
+ΔCa_max = 370.0
 ΔCa_resolution = 1600
-Δx_min = -15.0
-Δx_max = 5.0
+Δx_min = -5.0
+Δx_max = 1.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
-scan_directory = "toys/output/Vertical BT strip"
+scan_directory = "toys/output/Horizontal AH strip"
 
 for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
@@ -644,18 +646,19 @@ end
 plt = heatmap(
     xlabel="\$\\Delta_{Ca}\$",
     ylabel="\$\\Delta_x\$",
-    #xlim=(-41, -38),
-    #ylim=(-1.75, -1.1),
+    xlim=(-50, 100),
+    ylim=(-3.1, 0),
     title="Slow manifold revolutions per burst",
     size=(1000, 750),
-    dpi=1000
+    dpi=1000,
+    margin=2mm
 )
 
 for i in 1:Int(1/chunk_proportion)^2
     println("Plotting chunk $(i) of $(Int(1/chunk_proportion)^2).")
     @load "$(scan_directory)/chunk_$(i)_ranges.jld2" ranges
     @load "$(scan_directory)/chunk_$(i).jld2" sol
-
+    
     ΔCa_range = range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion))
     Δx_range = range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion))
     
@@ -666,33 +669,40 @@ for i in 1:Int(1/chunk_proportion)^2
         end
     end
 
+    # Truncate first 20% of simulations.
+    percent_to_skip = 0.2
+    first_timestep = Int(percent_to_skip*length(sol.u[i].u))+1
+    
+
     # Measure: Max number of STOs per burst.
-    #heatmap!(
-    #    plt,
-    #    ΔCa_range,
-    #    Δx_range,
-    #    reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol[i], params[i]))) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-    #    color=cgrad(:amp, scale=:exp)
-    #);
+    # We don't truncate here since it's already being done by the measure computation functions.
+    heatmap!(
+        plt,
+        ΔCa_range,
+        Δx_range,
+        reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol.u[i].u, params[i]))) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    );
 
     # Measure: Spike voltage amplitude variance.
     #heatmap!(
     #    plt,
     #    ΔCa_range,
     #    Δx_range,
-    #    reshape([spikeAmplitudeVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-    #    color=cgrad(:amp, scale=:exp)
+    #    reshape([log(1+spikeAmplitudeVariance(sol.u[i].u[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     #);
 
     # Measure: Inter-spike interval variance.
-    heatmap!(
-        plt,
-        ΔCa_range,
-        Δx_range,
-        reshape([interSpikeIntervalVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-        color=cgrad(:amp, scale=:exp)
-    );
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], params[i]) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #);
 end
+
+import("./bif_diagram.jl")
+
+plot_bif_diagram!(plt)
 
 display(plt)
 ##########
