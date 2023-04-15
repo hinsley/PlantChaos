@@ -662,7 +662,8 @@ plt = heatmap(
     title="Slow manifold revolutions per burst",
     size=(1000, 750),
     dpi=1000,
-    margin=2mm
+    margin=2mm,
+    legend=false
 )
 
 for i in 1:Int(1/chunk_proportion)^2
