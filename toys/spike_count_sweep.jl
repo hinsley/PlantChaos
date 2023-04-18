@@ -655,15 +655,16 @@ end
 ##########
 # Produce a scan.
 plt = heatmap(
-    xlabel="\$\\Delta_{Ca}\$",
-    ylabel="\$\\Delta_x\$",
+    #xlabel="\$\\Delta_{Ca}\$",
+    #ylabel="\$\\Delta_x\$",
     xlim=(-50, 100),
     ylim=(-3.1, 0),
-    title="Slow manifold revolutions per burst",
+    #title="Slow manifold revolutions per burst",
     size=(1000, 750),
     dpi=1000,
     margin=2mm,
-    legend=false
+    legend=false,
+    framestyle=:none
 )
 
 for i in 1:Int(1/chunk_proportion)^2
@@ -684,7 +685,6 @@ for i in 1:Int(1/chunk_proportion)^2
     # Truncate first 20% of simulations.
     percent_to_skip = 0.2
     first_timestep = Int(percent_to_skip*length(sol.u[i].u))+1
-    
 
     # Measure: Max number of STOs per burst.
     # We don't truncate here since it's already being done by the measure computation functions.
