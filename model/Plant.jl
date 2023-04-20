@@ -19,7 +19,7 @@ default_params = @SVector Float32[
     -40.0e0,  # EL
     140.0e0,  # ECa
     0.0085e0, # Kc
-    100.0e0,   # τₓ
+    100.0e0,  # τₓ
     0.0003e0, # ρ
     0.0e0,    # Δx
     0.0e0     # ΔCa
