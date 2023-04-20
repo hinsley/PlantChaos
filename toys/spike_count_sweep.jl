@@ -1,5 +1,5 @@
-using DifferentialEquations
-using DiffEqGPU
+using DifferentialEquations # Don't run this if accessing parameter sweeps.
+using DiffEqGPU # Don't run this if accessing parameter sweeps.
 using JLD2
 using LinearAlgebra
 using Printf
@@ -266,6 +266,8 @@ end
 function spikeAmplitudeVariance(sol, p; debug=false)
     # Obtain the variance of the spike amplitudes.
 
+    V = 6 # Index in state variables.
+
     V_threshold = -40.0
 
     spike_amplitudes = []
@@ -286,19 +288,20 @@ function spikeAmplitudeVariance(sol, p; debug=false)
         end
     end
 
-    return var(spike_amplitudes)
+    return isempty(spike_amplitudes) ? NaN : var(spike_amplitudes)
 end
 
-function ISIs(sol, p; debug=false)
+function ISIs(u, t, p; debug=false)
     # Get a vector of inter-spike intervals.
 
+    V = 6 # Index in state variables.
     V_threshold = -40.0
 
     # Obtain the solution indices for when we initially exceed the threshold.
     spike_indices = []
     above_threshold = false
-    for i in 1:length(sol)
-        if sol[i][V] >= V_threshold
+    for i in 1:length(u)
+        if u[i][V] >= V_threshold
             if !above_threshold
                 above_threshold = true
                 push!(spike_indices, i)
@@ -311,10 +314,16 @@ function ISIs(sol, p; debug=false)
     # Obtain the inter-spike intervals in terms of solution times.
     ISIs = []
     for i in 1:length(spike_indices)-1
-        push!(ISIs, sol.t[spike_indices[i+1]] - sol.t[spike_indices[i]])
+        push!(ISIs, t[spike_indices[i+1]] - t[spike_indices[i]])
     end
 
     return ISIs
+end
+
+function interSpikeIntervalVariance(u, t, p)
+    # Obtain the variance of the inter-spike intervals.
+    intervals = ISIs(u, t, p)
+    return isempty(intervals) ? NaN : var(intervals)
 end
 
 function transitionMap(spike_counts)
@@ -356,6 +365,17 @@ function markovChain(spike_counts)
     return chain
 end
 
+function blockEntropy(str,m)
+    # Compute the block entropy of a string.
+    # str: string
+    # m: block length
+    blocks = [str[i:i+m-1] for i in 1:length(str)-m-1]
+    # Block occurrence probability.
+    psm = [count(==(b),blocks) for b in unique(blocks)]./length(blocks)
+    # Return block entropy with a finite-size correction (source: Jack's paper).
+    return -sum([p*log(p) for p in psm]) - (length(unique(blocks)) - 1)/(2*length(str))
+end
+
 function makeParams(ΔCa, Δx)
     return @SVector Float32[
         Plant.default_params[1],  # Cₘ
@@ -378,17 +398,17 @@ function makeParams(ΔCa, Δx)
     ]
 end
 
-ΔCa_min = -50.0
-ΔCa_max = 10.0
+ΔCa_min = -42.5
+ΔCa_max = -33.5
 ΔCa_resolution = 1600
-Δx_min = -15.0
-Δx_max = 5.0
+Δx_min = -1.6
+Δx_max = 0.5
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
-scan_directory = "toys/output/Vertical BT strip"
+scan_directory = "toys/output/Subcritical AH ridge"
 
 for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
@@ -450,7 +470,7 @@ using FiniteDiff
 ########## Run a single solution and plot a multi-figure diagram.
 @gif for ΔCa in range(-50.0, 175.0, length=2)
 #begin
-    #ΔCa = -39.5
+    #ΔCa = -39.5 # Comment this out if making a gif.
     Δx = -1.8
     voltage_tspan = (0.0f0, 1.0f5) # The full trace.
     #voltage_tspan = (0.0f0, 2.0f4) # Comment this out to show the whole voltage trace.
@@ -642,20 +662,23 @@ end
 ##########
 # Produce a scan.
 plt = heatmap(
-    xlabel="\$\\Delta_{Ca}\$",
-    ylabel="\$\\Delta_x\$",
-    #xlim=(-41, -38),
-    #ylim=(-1.75, -1.1),
-    title="Slow manifold revolutions per burst",
+    #xlabel="\$\\Delta_{Ca}\$",
+    #ylabel="\$\\Delta_x\$",
+    xlim=(-42.5, -33.5),
+    ylim=(-1.6, 0.5),
+    #title="Slow manifold revolutions per burst",
     size=(1000, 750),
-    dpi=1000
+    dpi=1000,
+    margin=2mm,
+    legend=false,
+    framestyle=:none
 )
 
 for i in 1:Int(1/chunk_proportion)^2
     println("Plotting chunk $(i) of $(Int(1/chunk_proportion)^2).")
     @load "$(scan_directory)/chunk_$(i)_ranges.jld2" ranges
     @load "$(scan_directory)/chunk_$(i).jld2" sol
-
+    
     ΔCa_range = range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion))
     Δx_range = range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion))
     
@@ -666,33 +689,48 @@ for i in 1:Int(1/chunk_proportion)^2
         end
     end
 
+    # Truncate first 20% of simulations.
+    percent_to_skip = 0.2
+    first_timestep = Int(round(percent_to_skip*length(sol.u[i].u)))+1
+
     # Measure: Max number of STOs per burst.
+    # We don't truncate here since it's already being done by the measure computation functions.
     #heatmap!(
     #    plt,
     #    ΔCa_range,
     #    Δx_range,
-    #    reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol[i], params[i]))) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-    #    color=cgrad(:amp, scale=:exp)
+    #    reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol.u[i].u, params[i]))) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #);
+
+    # Measure: Block entropy.
+    # We don't truncate here since it's already being done by the measure computation functions.
+    #block_size = 3
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     #);
 
     # Measure: Spike voltage amplitude variance.
-    #heatmap!(
-    #    plt,
-    #    ΔCa_range,
-    #    Δx_range,
-    #    reshape([spikeAmplitudeVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-    #    color=cgrad(:amp, scale=:exp)
-    #);
-
-    # Measure: Inter-spike interval variance.
     heatmap!(
         plt,
         ΔCa_range,
         Δx_range,
-        reshape([interSpikeIntervalVariance(sol[i], params[i]) for i in 1:length(sol)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-        color=cgrad(:amp, scale=:exp)
+        reshape([spikeAmplitudeVariance(sol.u[i].u[first_timestep:end], params[i]) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     );
+
+    # Measure: Inter-spike interval variance.
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #);
 end
+
+include("./bif_diagram.jl")
+plot_bif_diagram!(plt)
 
 display(plt)
 ##########
