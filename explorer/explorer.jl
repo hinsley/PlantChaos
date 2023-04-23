@@ -6,10 +6,10 @@ using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
 p = Observable(Plant.default_params)
-u0 = default_state
+u0 = Plant.default_state
 
 #use DynamicalSystems interface
-dynsys = @lift CoupledODEs(melibeNew, u0, $p, diffeq = (
+dynsys = @lift CoupledODEs(Plant.melibeNew, u0, $p, diffeq = (
     alg = BS3(), dt = 1f0
 ))
 
