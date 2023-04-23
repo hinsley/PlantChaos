@@ -1,12 +1,11 @@
 using Pkg
 Pkg.activate("./explorer")
 include("../model/Plant.jl")
-using .Plant
 using OrdinaryDiffEq, DynamicalSystems, GLMakie
 using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
-p = Observable(default_params)
+p = Observable(Plant.default_params)
 u0 = default_state
 
 #use DynamicalSystems interface
