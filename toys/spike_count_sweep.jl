@@ -326,6 +326,28 @@ function interSpikeIntervalVariance(u, t, p)
     return isempty(intervals) ? NaN : var(intervals)
 end
 
+function minimumDistanceToEquilibrium(u, p)
+    # Obtain the minimum distance to the equilibrium.
+    # This is the minimum distance to the equilibrium
+    # of the state variables (not including the
+    # synaptic variables).
+    try
+        v_eq, Ca_eq, x_eq = Ca_x_eq(p)
+        minimum_distance = Inf
+        for i in 1:length(u)
+            dCa = u[i][5] - Ca_eq
+            dx = u[i][1] - x_eq
+            distance = sqrt(dCa^2 + dx^2)
+            if distance < minimum_distance
+                minimum_distance = distance
+            end
+        end
+        return minimum_distance
+    catch BoundsError
+        return NaN
+    end
+end
+
 function transitionMap(spike_counts)
     plt = scatter(1, markeralpha=0.2, legend=false, aspect_ratio=:equal, size=(600, 600), xticks=0:maximum(spike_counts), yticks=0:maximum(spike_counts), xlims=(-0.5, maximum(spike_counts) + 0.5), ylims=(-0.5, maximum(spike_counts) + 0.5))
     plot!(plt, [0, maximum(spike_counts)], [0, maximum(spike_counts)], linealpha=0.2)
@@ -671,7 +693,7 @@ plt = heatmap(
     dpi=1000,
     margin=2mm,
     legend=false,
-    framestyle=:none
+    #framestyle=:none
 )
 
 for i in 1:Int(1/chunk_proportion)^2
@@ -727,6 +749,14 @@ for i in 1:Int(1/chunk_proportion)^2
     #    Δx_range,
     #    reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     #);
+
+    # Measure: Minimum distance in the slow projection to the equilibrium point.
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([log(1+1/minimumDistanceToEquilibrium(sol.u[i].u[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #);
 end
 
 include("./bif_diagram.jl")
@@ -740,14 +770,14 @@ display(plt)
 begin
     ΔCa = 0
     Δx = -1.5
-    map_resolution = 2000
-    fill_ins = 100
-    fill_in_resolution = 10
+    map_resolution = 100
+    fill_ins = 0
+    fill_in_resolution = 0
     V_threshold = -40 # Spike threshold.
     x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
     p = makeParams(ΔCa, Δx)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
-    V_range = range(-70, -15, length=1000)
+    V_range = range(-70, -15, length=100)
 
     # Generate initial conditions along the Ca nullcline.
     V0 = collect(range(V_eq, -50, length=map_resolution))
