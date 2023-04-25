@@ -41,18 +41,18 @@ run_traj()
 
 on(pausebutton.clicks) do x
     isrunning[] = !isrunning[]
-    schedule(runtask)
+    isrunning[] && schedule(run_traj())
 end
 
+# clear and start integration
 on(clearbutton.clicks) do clicks
-    ul = last(u[])
-    empty!(u[])
-    push!(u[], ul)
-    u[] = u[]
+    empty!(traj[])
+    traj[] = traj[]
 end
 
+# restart integration from initial conditions to explore transients
 on(resetbutton.clicks) do clicks
-    empty!(u[])
-    push!(u[], u0[])
-    u[] = u[]
+    empty!(traj[])
+    reinit!(dynsys[])
+    traj[] = traj[]
 end
