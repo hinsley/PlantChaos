@@ -10,7 +10,7 @@ u0 = Plant.default_state
 
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(Plant.melibeNew, u0, $p, diffeq = (
-    alg = BS3(), dt = 1f0
+    alg = BS3(),
 ))
 
 set_theme!(theme_black())
