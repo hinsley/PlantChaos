@@ -46,6 +46,9 @@ speedslider = SliderGrid(widgetax[2,:], (label = "speed", range=1:.1:4, format =
 widgetax[3,:] = scantype = Menu(fig,
     options = ["LZ Complexity", "Spike Count Variance", "Conditional Block Entropy"])
 
+maxlyap = @lift lyapunov($dynsys, 100000; Ttr = 10000)
+lyaplab = Label(widgetax[4,:], @lift "max lyapunov = $(round($maxlyap; digits=5))")
+
 include("./trajectory.jl")
 include("./bifurcation.jl")
 
