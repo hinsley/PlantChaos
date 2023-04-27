@@ -1,11 +1,5 @@
-using DifferentialEquations # Don't run this if accessing parameter sweeps.
-using DiffEqGPU # Don't run this if accessing parameter sweeps.
-using JLD2
-using LinearAlgebra
-using Printf
-using Roots
-using StaticArrays
-using Statistics
+using OrdinaryDiffEq, DiffEqGPU, StaticArrays, Roots
+
 
 include("../model/Plant.jl")
 

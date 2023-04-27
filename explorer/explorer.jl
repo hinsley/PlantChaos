@@ -51,6 +51,7 @@ lyaplab = Label(widgetax[4,:], @lift "max lyapunov = $(round($maxlyap; digits=5)
 
 include("./trajectory.jl")
 include("./bifurcation.jl")
+include("./return_map.jl")
 
 display(fig) # display
 run_traj()
