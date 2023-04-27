@@ -24,4 +24,8 @@ on(bifpoint) do pars
     bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
     p[] = (p[][1:end-2]..., delx, delCa)
     auto_dt_reset!(dynsys[].integ)
+    @async begin
+        sleep(.15)
+        reset_limits!(mapax)
+    end
 end
