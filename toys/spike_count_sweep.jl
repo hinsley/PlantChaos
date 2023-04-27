@@ -42,6 +42,8 @@ end
 
 # Finds the equilibrium in the slow subsystem.
 function Ca_x_eq(p)
+    v_eqs = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))
+    v_eq = length(v_eqs) > 1 ? v_eqs[2] : v_eqs[1]
     v_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
     Ca_eq = Ca_null_Ca(p, v_eq)
     x_eq = xinf(p, v_eq)
@@ -490,7 +492,7 @@ using Plots.PlotMeasures
 using FiniteDiff
 
 ########## Run a single solution and plot a multi-figure diagram.
-@gif for ΔCa in range(-50.0, 175.0, length=2)
+@gif for ΔCa in range(-50.0, 175.0, length=100)
 #begin
     #ΔCa = -39.5 # Comment this out if making a gif.
     Δx = -1.8
