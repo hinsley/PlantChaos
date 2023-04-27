@@ -420,17 +420,17 @@ function makeParams(ΔCa, Δx)
     ]
 end
 
-ΔCa_min = -42.5
-ΔCa_max = -33.5
+ΔCa_min = -50.0
+ΔCa_max = 370.0
 ΔCa_resolution = 1600
-Δx_min = -1.6
-Δx_max = 0.5
+Δx_min = -5.0
+Δx_max = 1.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
-scan_directory = "toys/output/Subcritical AH ridge"
+scan_directory = "toys/output/Horizontal AH strip"
 
 for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
@@ -684,15 +684,15 @@ end
 ##########
 # Produce a scan.
 plt = heatmap(
-    #xlabel="\$\\Delta_{Ca}\$",
-    #ylabel="\$\\Delta_x\$",
-    xlim=(-42.5, -33.5),
-    ylim=(-1.6, 0.5),
-    #title="Slow manifold revolutions per burst",
+    xlabel="\$\\Delta_{Ca}\$",
+    ylabel="\$\\Delta_x\$",
+    xlim=(-50, 100),
+    ylim=(-5, 1),
+    title="Max STO per burst - block entropy",
     size=(1000, 750),
     dpi=1000,
     margin=2mm,
-    legend=false,
+    #legend=false,
     #framestyle=:none
 )
 
@@ -726,21 +726,21 @@ for i in 1:Int(1/chunk_proportion)^2
 
     # Measure: Block entropy.
     # We don't truncate here since it's already being done by the measure computation functions.
-    #block_size = 3
-    #heatmap!(
-    #    plt,
-    #    ΔCa_range,
-    #    Δx_range,
-    #    reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
-    #);
-
-    # Measure: Spike voltage amplitude variance.
+    block_size = 3
     heatmap!(
         plt,
         ΔCa_range,
         Δx_range,
-        reshape([spikeAmplitudeVariance(sol.u[i].u[first_timestep:end], params[i]) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+        reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     );
+
+    # Measure: Spike voltage amplitude variance.
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([spikeAmplitudeVariance(sol.u[i].u[first_timestep:end], params[i]) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #) ;
 
     # Measure: Inter-spike interval variance.
     #heatmap!(
