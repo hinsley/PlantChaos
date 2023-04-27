@@ -1,6 +1,6 @@
 using .Plant
 
-map_resolution = 100
+map_resolution = 500
 
 x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
 
@@ -28,7 +28,7 @@ end
 function generate_ics(p, state; res = map_resolution)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
     # Generate initial conditions along the Ca nullcline.
-    Vs = range(V_eq, -40f0, length=res)
+    Vs = range(V_eq, -45f0, length=res)
     u0s = [SVector{7,Float32}([
         xinf(p, V)-x_offset,
         state[2],
@@ -40,38 +40,55 @@ function generate_ics(p, state; res = map_resolution)
 end
 
 #generate initial conditions along the Ca nullcline
-mapics = @lift generate_ics($p, $u0)
+#mapics = @lift generate_ics($p, $u0)
 
 #set up ensemble problem
-map_prob = @lift ODEProblem{false}(melibeNew, $mapics[1], (0f0, 1f6), $p, save_everystep = true)
+#map_prob = @lift ODEProblem{false}(melibeNew, $mapics[1], (0f0, 1f6), $p, save_everystep = true)
+#prob_func(prob, i, repeat) = remake(prob, u0=mapics[][i])
+#output_func(sol,i) = (sol.u, false)
+#monteprob = @lift EnsembleProblem($map_prob, prob_func=prob_func,output_func= output_func, safetycopy=false)
+
+mapics = @lift generate_ics($p, $u0)
+
+map_prob = ODEProblem{false}(melibeNew, u0[], (0f0, 1f6), p[], save_everystep = false)
 prob_func(prob, i, repeat) = remake(prob, u0=mapics[][i])
-output_func(sol,i) = (sol.u, false)
-monteprob = @lift EnsembleProblem($map_prob, prob_func=prob_func,output_func= output_func, safetycopy=false)
+output_func(sol,i) = (sol.u[end][[5,1,6]], false)
 
 function condition(u, t, integrator)
     p = integrator.p
     # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
-    if u[6] > 25
-        return 1f0
-    end
-    t < 50 ? 1f0 : -(p[15] * (p[13] * u[1] * (p[12] - u[6] + p[17]) - u[5]))
+    if u[6] > -20 return -1f0 end
+    (t < 50) ? 1f0 : -(p[15] * (p[13] * u[1] * (p[12] - u[6] + p[17]) - u[5]))
 end
+
 affect!(integrator) = terminate!(integrator) # Stop the solver
-cb = ContinuousCallback(condition, affect!, affect_neg! = nothing, save_positions = (false,false)) # Define the callback
+cb = ContinuousCallback(condition, affect!, affect_neg! = nothing, save_positions = (false,false))
 
-@time mapsol = @lift solve($monteprob, BS3(),EnsembleThreads(), trajectories=map_resolution, adaptive = false, dt = 1f0,
-    callback=cb, merge_callbacks = true, verbose=false)
+monteprob = EnsembleProblem(map_prob, prob_func=prob_func, output_func= output_func, safetycopy=false)
+mapsol = Observable(solve(monteprob, BS3(),EnsembleThreads(), trajectories=map_resolution, adaptive = false, dt = 1f0,
+    callback=cb, merge_callbacks = true, verbose=false))
 
-map = @lift [x[end][1] for x in $mapsol]
+function build_map!(prob, mapics; map_resolution = map_resolution)
+    #generate initial conditions along the Ca nullcline
+    @async begin
+        map_prob = remake(prob, u0 = mapics, p = p[])
+        monteprob = EnsembleProblem(map_prob, prob_func=prob_func, output_func= output_func, safetycopy=false)
+        mapsol[] = solve(monteprob, BS3(),EnsembleThreads(), trajectories=map_resolution, adaptive = false, dt = 1f0,
+            callback=cb, merge_callbacks = true, verbose=false)
+    end
+end
+
+build_map!(map_prob, mapics[])
+
 preimage = @lift getindex.($mapics, 1)
-
+xmap = @lift getindex.($mapsol.u,2)
 #plot
-lines!(mapax, preimage, map)
+lines!(mapax, preimage, xmap)
 lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth = 2,)
 
 
 #lines(preimage, map)
-m = @lift [Point3f(x[5], x[1], x[6]) for x in $mapics]
-scatter!(trajax, m)
-m2 = @lift [Point3f(x[end][5], x[end][1], x[end][6]) for x in $mapsol]
-scatter!(trajax, m2)
+preimage_phase_space = @lift [Point3f(x[5], x[1], x[6]) for x in $mapics]
+scatter!(trajax, preimage_phase_space)
+xmap_phase_space = @lift [Point3f(x[1], x[2], x[3]) for x in $mapsol]
+scatter!(trajax, xmap_phase_space)
