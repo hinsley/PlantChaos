@@ -1,5 +1,11 @@
-using OrdinaryDiffEq, DiffEqGPU, StaticArrays, Roots
-
+using DifferentialEquations # Don't run this if accessing parameter sweeps.
+using DiffEqGPU # Don't run this if accessing parameter sweeps.
+using JLD2
+using LinearAlgebra
+using Printf
+using Roots
+using StaticArrays
+using Statistics
 
 include("../model/Plant.jl")
 
@@ -35,9 +41,13 @@ function Ca_difference(p, v)
 end
 
 # Finds the equilibrium in the slow subsystem.
-function Ca_x_eq(p)
+function Ca_x_eq(p; which_root=Nothing)
     v_eqs = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))
-    v_eq = length(v_eqs) > 1 ? v_eqs[2] : v_eqs[1]
+    if which_root == Nothing
+        v_eq = length(v_eqs) > 1 ? v_eqs[2] : v_eqs[1]
+    else
+        v_eq = v_eqs[which_root]
+    end
     Ca_eq = Ca_null_Ca(p, v_eq)
     x_eq = xinf(p, v_eq)
     return v_eq, Ca_eq, x_eq
@@ -491,22 +501,24 @@ begin
     #ΔCa = -39.5 # Comment this out if making a gif.
     #Δx = -1.8
     # Bogdanov-Takens
-    ΔCa = -10.2369287539234
-    Δx = -10.8111392512278
+    #ΔCa = -10.2369287539234
+    #Δx = -10.8111392512278
     # Lower Bautin Point (GH)
-    #ΔCa = 27.4555230047271
+    #ΔCa = 38.098
     #Δx = -2.70199569136383
     # Upper Bautin Point (GH)
-    #ΔCa = -44.1575230179832
-    #Δx = 13.7472079616095
+    #ΔCa = -45.1575230179832
+    #Δx = 11.944
     voltage_tspan = (0.0f0, 1.0f5) # The full trace.
     #voltage_tspan = (0.0f0, 2.0f4) # Comment this out to show the whole voltage trace.
     tspan = (0.0f0, 1.0f5)
-    margin = 0.01f0
+    margin = 0.1f0
     params = makeParams(ΔCa, Δx)
     # Start below the equilibrium point.
-    v_eq, Ca_eq, x_eq = Ca_x_eq(params)
-    state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0]
+    v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=1) # Use this most of the time.
+    #v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=1) # For the upper BP.
+    #state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0] # Use this most of the time.
+    state = @SVector Float32[0.9, 0.0, 0.137, 0.389, 1.4, v_eq, 0.0] # For showing bistability in BT.
     #state = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq, v_eq, state[7]]
     prob = ODEProblem{false}(Plant.melibeNew, state, tspan, params)
     monteprob=EnsembleProblem(prob)
@@ -516,16 +528,14 @@ begin
         idxs=(5, 1),
         lw=3.0,
         legend=false,
-        xlims=(0.55, 1.25),
-        ylims=(0.1, 0.95),
-        #xlims=(min([v[5] for v in sol[1].u]...)-margin, max([v[5] for v in sol[1].u]...)+margin),
-        #ylims=(min([v[1] for v in sol[1].u]...)-margin, max([v[1] for v in sol[1].u]...)+margin),
+        #xlims=(0.55, 1.25),
+        #ylims=(0.1, 0.95),
+        xlims=(min([v[5] for v in sol[1].u]...)-margin, max([v[5] for v in sol[1].u]...)+margin),
+        ylims=(min([v[1] for v in sol[1].u]...)-margin, max([v[1] for v in sol[1].u]...)+margin),
         xlabel="Ca",
         ylabel="x",
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx)
     )
-    v_eq, Ca_eq, x_eq = Ca_x_eq(params)
-    sol[1]
     V_range = nothing
     try
         V_range = range(xinfinv(params, min_x), xinfinv(params, max_x), length=1000)
