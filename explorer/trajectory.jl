@@ -1,19 +1,16 @@
 function progress_for_one_step!(solver, traj)
     s = solver[]
     step!(s, 5f0)
-    if !(check_error(s.integ) in [ReturnCode.Default, ReturnCode.Success])
-        throw(ErrorException("integration gone and broke itself again. Return code is $errcode"))
-    end
     push!(traj[], Point3f(s.integ.u[[5,1,6]]))
     traj[] = traj[]
 end
 
 #set length of stored trajectory with slider
-maxpoints = 2500
+maxpoints = 1000
 traj = Observable(CircularBuffer{Point{3,Float32}}(maxpoints))
 
 # create initial trajectory
-for i = 1:maxpoints[]
+for i = 1:maxpoints
     progress_for_one_step!(dynsys, traj)
 end
 
@@ -39,9 +36,11 @@ end
 
 run_traj()
 
-on(pausebutton.clicks) do x
+on(pausebutton.clicks) do clicks
     isrunning[] = !isrunning[]
-    isrunning[] && schedule(run_traj())
+end
+on(pausebutton.clicks) do x
+    isrunning[] && run_traj()
 end
 
 # clear and start integration

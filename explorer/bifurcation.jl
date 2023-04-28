@@ -22,10 +22,9 @@ bifpoint = select_point(bifax.scene, marker = :circle)
 on(bifpoint) do pars
     delCa, delx = pars
     bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
-    p[] = (p[][1:end-2]..., delx, delCa)
+    p.val = (p[][1:end-2]..., delx, delCa)
     auto_dt_reset!(dynsys[].integ)
-    @async begin
-        sleep(.15)
-        reset_limits!(mapax)
-    end
+    p[] = p[]
+    build_map!(map_prob, mapics[])
+    #reset_limits!(mapax)
 end
