@@ -39,6 +39,9 @@ traceax.ylabel = "V"
 traceax.xlabel = "t"
 
 eigenax = Axis(fig[4,1])
+eigenax.title = "Eigenvalues"
+eigenax.xlabel = "Re(λ)"
+eigenax.ylabel = "Im(λ)"
 # using ModelingToolkit
 # generate_jacobian(modelingtoolkitize(dynsys[].integ.sol.prob))[1]
 include("./jacobian.jl") |>eval
