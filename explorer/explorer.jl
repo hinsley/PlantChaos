@@ -38,7 +38,16 @@ traceax.title = "Voltage Trace"
 traceax.ylabel = "V"
 traceax.xlabel = "t"
 
-widgetax = GridLayout(fig[4,1], tellwidth = false)
+eigenax = Axis(fig[4,1])
+# using ModelingToolkit
+# generate_jacobian(modelingtoolkitize(dynsys[].integ.sol.prob))[1]
+include("./jacobian.jl") |>eval
+eig = @lift eigen(jacobian($u0,$p,0f0))
+λreal = @lift collect(real($eig.values))
+λimag = @lift collect(imag($eig.values))
+scatter!(eigenax, λreal, λimag)
+
+widgetax = GridLayout(fig[5,1], tellwidth = false)
 widgetax[1,1] = pausebutton = Button(fig, label = "pause", buttoncolor = RGBf(.2,.2,.2))
 widgetax[1,2] = clearbutton = Button(fig, label = "clear", buttoncolor = RGBf(.2,.2,.2))
 widgetax[1,3] = resetbutton = Button(fig, label = "reset", buttoncolor = RGBf(.2,.2,.2))
