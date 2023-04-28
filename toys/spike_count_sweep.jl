@@ -783,8 +783,15 @@ display(plt)
 ##########
 # Return maps.
 begin
-    ΔCa = 0
-    Δx = -1.5
+    # Arbitrary point.
+    #ΔCa = 0
+    #Δx = -1.5
+    # Lower Bautin Point (GH)
+    ΔCa = 38.098
+    Δx = -2.70199569136383
+    # Upper Bautin Point (GH)
+    #ΔCa = -45.1575230179832
+    #Δx = 11.944
     map_resolution = 100
     fill_ins = 0
     fill_in_resolution = 0
@@ -792,10 +799,10 @@ begin
     x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
     p = makeParams(ΔCa, Δx)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
-    V_range = range(-70, -15, length=100)
+    V_range = range(-70, -15, length=200)
 
     # Generate initial conditions along the Ca nullcline.
-    V0 = collect(range(V_eq, -50, length=map_resolution))
+    V0 = collect(range(V_eq, -49, length=map_resolution))
     Ca0 = [Ca_null_Ca(p, V) for V in V0]
     x0 = [xinf(p, V)-x_offset for V in V0]
     u0 = [@SVector Float32[x0[i], state[2], state[3], state[4], Ca0[i], V0[i], state[7]] for i in 1:length(V0)]
@@ -819,7 +826,7 @@ begin
     affect!(integrator) = terminate!(integrator) # Stop the solver
     cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
     #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUArray(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, saveat=range(tspan[1], tspan[2], length=1500))
-    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[2], length=1500), verbose=false)
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, verbose=false)
     Ca_initial = [sol[i][1][5] for i in 1:length(sol)]
     Ca_final = [sol[i][end][5] for i in 1:length(sol)]
 
