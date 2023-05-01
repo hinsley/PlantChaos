@@ -1,5 +1,6 @@
 using Pkg
 Pkg.activate("./explorer")
+Pkg.instantiate()
 include("../model/Plant.jl")
 using OrdinaryDiffEq, DynamicalSystems, GLMakie
 using FileIO, LinearAlgebra, Roots
