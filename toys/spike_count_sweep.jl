@@ -425,17 +425,17 @@ function makeParams(ΔCa, Δx)
     ]
 end
 
-ΔCa_min = -50.0
+ΔCa_min = -150.0
 ΔCa_max = 370.0
 ΔCa_resolution = 1600
-Δx_min = -5.0
-Δx_max = 1.0
+Δx_min = -20.0
+Δx_max = 30.0
 Δx_resolution = Int(ΔCa_resolution/2)
 chunk_proportion = 1/8
 
 tspan = (0.0f0, 1.0f5)
 
-scan_directory = "toys/output/Horizontal AH strip"
+scan_directory = "toys/output/Full parameter plane"
 
 for chunk in 0:Int(1/chunk_proportion)^2-1
     println("Beginning chunk $(chunk+1) of $(Int(1/chunk_proportion)^2).")
@@ -698,17 +698,31 @@ end
 
 ##########
 # Produce a scan.
+# With labels
+#plt = heatmap(
+#    xlabel="\$\\Delta_{Ca}\$",
+#    ylabel="\$\\Delta_x\$",
+#    xlim=(-50, 100),
+#    ylim=(-5, 1),
+#    title="Max STO per burst - block entropy",
+#    size=(1000, 750),
+#    dpi=1000,
+#    margin=2mm
+#)
+# Without any labels
 plt = heatmap(
-    xlabel="\$\\Delta_{Ca}\$",
-    ylabel="\$\\Delta_x\$",
-    xlim=(-50, 100),
-    ylim=(-5, 1),
-    title="Max STO per burst - block entropy",
-    size=(1000, 750),
-    dpi=1000,
-    margin=2mm,
-    #legend=false,
-    #framestyle=:none
+    axis=nothing,
+    grid=nothing,
+    legend=false,
+    left_margin=-1.6mm,
+    right_margin=-1.6mm,
+    top_margin=-2mm,
+    bottom_margin=-2mm,
+    ticks=nothing,
+    title="",
+    xlabel="",
+    ylabel="",
+    size=(3840, 2160)
 )
 
 for i in 1:Int(1/chunk_proportion)^2
@@ -741,13 +755,13 @@ for i in 1:Int(1/chunk_proportion)^2
 
     # Measure: Block entropy.
     # We don't truncate here since it's already being done by the measure computation functions.
-    block_size = 3
-    heatmap!(
-        plt,
-        ΔCa_range,
-        Δx_range,
-        reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
-    );
+    #block_size = 3
+    #heatmap!(
+    #    plt,
+    #    ΔCa_range,
+    #    Δx_range,
+    #    reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #);
 
     # Measure: Spike voltage amplitude variance.
     #heatmap!(
@@ -758,12 +772,12 @@ for i in 1:Int(1/chunk_proportion)^2
     #) ;
 
     # Measure: Inter-spike interval variance.
-    #heatmap!(
-    #    plt,
-    #    ΔCa_range,
-    #    Δx_range,
-    #    reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
-    #);
+    heatmap!(
+        plt,
+        ΔCa_range,
+        Δx_range,
+        reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    );
 
     # Measure: Minimum distance in the slow projection to the equilibrium point.
     #heatmap!(
@@ -941,6 +955,9 @@ chunk, index, true_ΔCa, true_Δx = paramsToChunkAndIndex(-40.99, -1.57796)
 maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
 plotCaX(true_ΔCa, true_Δx)
 println(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
+
+@load "$(scan_directory)/chunk_64_ranges.jld2" ranges
+println(ranges)
 
 plt2 = plot(
     sol[index],
