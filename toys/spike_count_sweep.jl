@@ -722,7 +722,8 @@ plt = heatmap(
     title="",
     xlabel="",
     ylabel="",
-    size=(3840, 2160)
+    size=(3840, 2160),
+    xlim=(-150, 150)
 )
 
 for i in 1:Int(1/chunk_proportion)^2
@@ -737,6 +738,13 @@ for i in 1:Int(1/chunk_proportion)^2
     for ΔCa in ΔCa_range
         for Δx in Δx_range
             push!(params, makeParams(ΔCa, Δx))
+        end
+    end
+
+    # If the simulation didn't run long enough, use the previous trajectory. DUCT TAPE.
+    for i in 1:length(sol.u)
+        if sol.u[i].t[end] < tspan[2]*0.8
+            sol.u[i] = sol.u[i-1]
         end
     end
 
@@ -776,7 +784,8 @@ for i in 1:Int(1/chunk_proportion)^2
         plt,
         ΔCa_range,
         Δx_range,
-        reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+        reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        c=cgrad([:black, :blue], [0.8])
     );
 
     # Measure: Minimum distance in the slow projection to the equilibrium point.
@@ -956,7 +965,7 @@ maxSTOsPerBurst(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx)
 plotCaX(true_ΔCa, true_Δx)
 println(cleanup(mmoSymbolics(sol[index], makeParams(true_ΔCa, true_Δx))))
 
-@load "$(scan_directory)/chunk_64_ranges.jld2" ranges
+@load "$(scan_directory)/chunk_1_ranges.jld2" ranges
 println(ranges)
 
 plt2 = plot(
