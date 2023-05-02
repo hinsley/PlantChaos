@@ -815,7 +815,7 @@ begin
     # Upper Bautin Point (GH)
     #ΔCa = -45.1575230179832
     #Δx = 11.944
-    map_resolution = 10000
+    map_resolution = 1000
     fill_ins = 0
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
@@ -879,10 +879,14 @@ begin
     # Equilibrium point.
     scatter!(plt, [Ca_eq], [x_eq], label="Equilibrium point", color=:red, ms=5)
     # Trajectories.
-    for spike_count in unique(spike_counts)
-        Cas = [sol[i].u[j][5] for i in 1:length(sol) for j in 1:length(sol[i].u) if spike_counts[i] == spike_count]
-        xs = [sol[i].u[j][1] for i in 1:length(sol) for j in 1:length(sol[i].u) if spike_counts[i] == spike_count]
-        plot!(plt, Cas, xs, label=@sprintf("\$%d\$", spike_count), c=spike_count, ms=2, alpha=0.3)
+    for spike_count in reverse(unique(spike_counts))
+        for i in 1:length(sol)
+            if spike_counts[i] == spike_count
+                Cas = [sol[i][j][5] for j in 1:length(sol[i].u)]
+                xs = [sol[i][j][1] for j in 1:length(sol[i].u)]
+                plot!(plt, Cas, xs, label=@sprintf("\$%d\$", spike_count), c=spike_count, ms=2, alpha=0.3)
+            end
+        end
     end
 
     display(plt)
