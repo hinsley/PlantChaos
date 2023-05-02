@@ -811,7 +811,7 @@ begin
     # Solve.
     prob = ODEProblem{false}(Plant.melibeNew, u0[1], tspan, p)
     prob_func(prob, i, repeat) = remake(prob, u0=u0[i])
-    #monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
+    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
     function condition(u, t, integrator)
         p = integrator.p
         # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
