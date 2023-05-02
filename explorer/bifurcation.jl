@@ -1,8 +1,14 @@
 using DelimitedFiles
+using FileIO
+
+img = rotr90(load("./explorer/ISI_variance.png"))
+min_x, max_x = -150, 369.675
+min_y, max_y = -20, 29.9375
+image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf")
-lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinc")
+lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinic")
 lines!(bifax, readdlm("./explorer/snic.csv", ',', Float64), label="snic")
 snpo = readdlm("./explorer/snpo.csv", ',', Float64)
 lines!(bifax, snpo, label="snpo")

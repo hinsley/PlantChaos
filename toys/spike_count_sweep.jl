@@ -792,7 +792,7 @@ begin
     # Upper Bautin Point (GH)
     #ΔCa = -45.1575230179832
     #Δx = 11.944
-    map_resolution = 200
+    map_resolution = 10000
     fill_ins = 0
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
