@@ -498,8 +498,8 @@ using FiniteDiff
 #@gif for ΔCa in range(-50.0, 175.0, length=500)
 begin
     # Arbitrary point
-    #ΔCa = -39.5 # Comment this out if making a gif.
-    #Δx = -1.8
+    ΔCa = -14.7858 # Comment this out if making a gif.
+    Δx = 8.7455
     # Bogdanov-Takens
     #ΔCa = -10.2369287539234
     #Δx = -10.8111392512278
@@ -517,8 +517,8 @@ begin
     # Start below the equilibrium point.
     v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=1) # Use this most of the time.
     #v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=1) # For the upper BP.
-    #state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0] # Use this most of the time.
-    state = @SVector Float32[0.9, 0.0, 0.137, 0.389, 1.4, v_eq, 0.0] # For showing bistability in BT.
+    state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0] # Use this most of the time.
+    #state = @SVector Float32[0.9, 0.0, 0.137, 0.389, 1.4, v_eq, 0.0] # For showing bistability in BT.
     #state = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq, v_eq, state[7]]
     prob = ODEProblem{false}(Plant.melibeNew, state, tspan, params)
     monteprob=EnsembleProblem(prob)
@@ -807,8 +807,8 @@ display(plt)
 # Return maps.
 begin
     # Arbitrary point.
-    ΔCa = -38
-    Δx = -1
+    ΔCa = -62.224
+    Δx = 1
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
@@ -820,12 +820,22 @@ begin
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
     x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
+    V_margin = 1f-1 # Margin around V_eq to avoid numerical issues.
+    min_V = -60 #-55 # Minimum V value to sample.
+    max_V = -43 # Maximum V value to sample.
+    # Plotting font sizes
+    titlefontsize=24
+    guidefontsize=20
+    tickfontsize=16
     p = makeParams(ΔCa, Δx)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
     V_range = range(-70, -15, length=100)
 
+    ##########
+    # Ca maximum return map.
+
     # Generate initial conditions along the Ca nullcline.
-    V0 = collect(range(V_eq, -43, length=map_resolution))
+    V0 = collect(range(V_eq+V_margin, max_V, length=map_resolution))
     Ca0 = [Ca_null_Ca(p, V) for V in V0]
     x0 = [xinf(p, V)-x_offset for V in V0]
     u0 = [@SVector Float32[x0[i], state[2], state[3], state[4], Ca0[i], V0[i], state[7]] for i in 1:length(V0)]
@@ -837,6 +847,7 @@ begin
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
     function condition(u, t, integrator)
         p = integrator.p
+        # TODO: Correct this comment.
         # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
         if u[6] > -20 return -1f0 end
         (t < 50) ? 1f0 : -p[15] * (p[13] * u[1] * (p[12] - u[6] + p[17]) - u[5])
@@ -864,13 +875,16 @@ begin
     plt = plot(
         xlabel="\$Ca\$",
         ylabel="\$x\$",
-        xlims=(0.5, 1.25),
+        xlims=(0.3, 1.25),
         ylims=(0, 0.95),
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
         size=(1000, 750),
         c=spike_counts,
         legend=false,
-        margin=5mm
+        margin=5mm,
+        titlefontsize=titlefontsize,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize
     )
 
     # Nullclines.
@@ -891,58 +905,99 @@ begin
 
     display(plt)
 
-    for i in 1:fill_ins
-        println(i)
-        # Fill in sparsest location on the return map.
-        distances = [(Ca_initial[j] - Ca_initial[j+1])^2 + (Ca_final[j] - Ca_final[j+1])^2 for j in 1:length(V0)-1]
-        index = findmax(distances)[2]
-        new_V0 = collect(range(V0[index], V0[index+1], length=fill_in_resolution+2))[2:end-1] # New initial voltages to add to the return map.
-        new_Ca0 = [Ca_null_Ca(p, V) for V in new_V0] # New initial Cas to add to the return map.
-        new_x0 = [xinf(p, V)-x_offset for V in new_V0] # New initial xs to add to the return map.
-        new_u0 = [SVector{7, Float32}(new_x0[j], state[2], state[3], state[4], new_Ca0[j], new_V0[j], state[7]) for j in 1:length(new_V0)] # New initial conditions to add to the return map.
+    # Plot the return map.
+    plt = plot(
+        xlabel="\$Ca_n\$",
+        ylabel="\$Ca_{n+1}\$",
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+        size=(1000, 750),
+        legend=false,
+        margin=5mm,
+        titlefontsize=titlefontsize,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize
+    )
 
-        # Solve.
-        prob = ODEProblem{false}(Plant.melibeNew, new_u0[1], tspan, p)
-        monteprob = EnsembleProblem(prob, prob_func = (prob,i,repeat) -> remake(prob, u0 = new_u0[i]))
-        function condition(u, t, integrator)
-            # Get two nearest points on the Ca nullcline to the x line (u[1]).
-            # If the x line crosses the Ca nullcline, terminate the solver.
-            # Find the last point on the Ca nullcline that is less than u[5].
-            Ca_null_index = findlast(Ca_null .< u[5])
-            # Linearly interpolate the Ca nullcline to find the x value at u[5].
-            Ca_null_x = xinf(p, V_range[Ca_null_index]) + (u[5] - Ca_null[Ca_null_index])/(Ca_null[Ca_null_index + 1] - Ca_null[Ca_null_index])*(xinf(p, V_range[Ca_null_index + 1]) - xinf(p, V_range[Ca_null_index]))
+    # Fixed point line.
+    plot!(plt, [Ca0[1], Ca0[end]], [Ca0[1], Ca0[end]], label="Fixed point line", color=:red)
+    # Return map points.
+    scatter!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, ms=2)
 
-            # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
-            return Ca_null_x - u[1]
-        end
-        affect!(integrator) = terminate!(integrator) # Stop the solver
-        cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
-        #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUArray(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, saveat=range(tspan[1], tspan[2], length=1500))
-        @time sol = solve(monteprob, Tsit5(), callback=cb, trajectories=fill_in_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[2], length=1500), verbose=false)
-        new_Ca_initial = [sol[j].u[1][5] for j in 1:length(sol)]
-        new_Ca_final = [sol[j].u[end][5] for j in 1:length(sol)]
+    display(plt)
+    ##########
 
-        # Insert new initial conditions into the old ones.
-        Ca_initial = [Ca_initial[1:index]; new_Ca_initial; Ca_initial[index+1:end]]
-        Ca_final = [Ca_final[1:index]; new_Ca_final; Ca_final[index+1:end]]
-        V0 = [V0[1:index]; new_V0; V0[index+1:end]]
-        Ca0 = [Ca0[1:index]; new_Ca0; Ca0[index+1:end]]
-        x0 = [x0[1:index]; new_x0; x0[index+1:end]]
-        u0 = [u0[1:index]; new_u0; u0[index+1:end]]
+    ##########
+    # Ca minimum return map.
+    
+    # Generate initial conditions along the Ca nullcline.
+    V0 = collect(range(min_V, V_eq-V_margin, length=map_resolution))
+    Ca0 = [Ca_null_Ca(p, V) for V in V0]
+    x0 = [xinf(p, V)+x_offset for V in V0]
+    u0 = [@SVector Float32[x0[i], state[2], state[3], state[4], Ca0[i], V0[i], state[7]] for i in 1:length(V0)]
+    Ca_null = [Ca_null_Ca(p, V) for V in V_range]
 
-        # Compute new spike count.
-        for j in 1:length(sol)
-            spikes = 0
-            for k in 1:length(sol[j])-1
-                if sol[j][k][6] < V_threshold < sol[j][k+1][6]
-                    spikes += 1
-                end
+    # Solve.
+    prob = ODEProblem{false}(Plant.melibeNew, u0[1], tspan, p)
+    prob_func(prob, i, repeat) = remake(prob, u0=u0[i])
+    monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
+    function condition(u, t, integrator)
+        p = integrator.p
+        # TODO: Correct this comment.
+        # Return the distance between u and the Ca nullcline in x if to the left of the equilibrium.
+        if u[1] >= x_eq || u[5] >= Ca_eq || u[6] >= V_eq return 1f0 end
+        (t < 100) ? 1f0 : p[15] * (p[13] * u[1] * (p[12] - u[6] + p[17]) - u[5])
+    end
+    affect!(integrator) = terminate!(integrator) # Stop the solver
+    cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[end], length=1500), verbose=false)
+    Ca_initial = [sol[i][1][5] for i in 1:length(sol)]
+    Ca_final = [sol[i][end][5] for i in 1:length(sol)]
+
+    # Compute spike counts.
+    spike_counts = []
+    for i in 1:length(sol)
+        spikes = 0
+        for j in 1:length(sol[i])-1
+            if sol[i][j][6] < V_threshold < sol[i][j+1][6]
+                spikes += 1
             end
-            insert!(spike_counts, index+j, spikes)
+        end
+        push!(spike_counts, spikes)
+    end
+
+    # Plot the phase portrait.
+    plt = plot(
+        xlabel="\$Ca\$",
+        ylabel="\$x\$",
+        xlims=(0.3, 1.25),
+        ylims=(0, 0.95),
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+        size=(1000, 750),
+        c=spike_counts,
+        legend=false,
+        margin=5mm,
+        titlefontsize=titlefontsize,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize
+    )
+
+    # Nullclines.
+    plot!(plt, [Ca_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range], label="Ca nullcline")
+    plot!(plt, [x_null_Ca(p, V) for V in V_range], [xinf(p, V) for V in V_range], label="x nullcline")
+    # Equilibrium point.
+    scatter!(plt, [Ca_eq], [x_eq], label="Equilibrium point", color=:red, ms=5)
+    # Trajectories.
+    for spike_count in unique(spike_counts)
+        for i in 1:length(sol)
+            if spike_counts[i] == spike_count
+                Cas = [sol[i][j][5] for j in 1:length(sol[i].u)]
+                xs = [sol[i][j][1] for j in 1:length(sol[i].u)]
+                plot!(plt, Cas, xs, label=@sprintf("\$%d\$", spike_count), c=spike_count, ms=2, alpha=0.3)
+            end
         end
     end
 
-    # TODO: Wait until this point to plot the phase portrait, so the hard-to-reach areas are filled in on the phase portrait.
+    display(plt)
 
     # Plot the return map.
     plt = plot(
@@ -951,13 +1006,21 @@ begin
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
         size=(1000, 750),
         legend=false,
-        margin=5mm
+        margin=5mm,
+        titlefontsize=titlefontsize,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize,
+        #xlim=(0.61, 0.65),
+        #ylim=(0.61, 0.65)
     )
 
     # Fixed point line.
     plot!(plt, [Ca0[1], Ca0[end]], [Ca0[1], Ca0[end]], label="Fixed point line", color=:red)
     # Return map points.
-    scatter!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, ms=2)
+    plot!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, ms=2)
+
+    display(plt)
+    ##########
 end
 ##########
 
