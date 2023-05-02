@@ -10,4 +10,4 @@ Markov160K = [
            0.0058    0.0115    0.0135    0.0177    0.0233    0.0199    0] 
 
 
-graphplot(Markov160K, names=1:7, edge_width=(d,s,w) -> Markov160K[s,d], nodesize=0.3, markercolor=Makie.wong_colors(), nodeshape=:circle) usin
+graphplot(Markov160K, names=1:7, edge_width=(d,s,w) -> Markov160K[s,d], nodesize=0.3, markercolor=Makie.wong_colors(), nodeshape=:circle)
