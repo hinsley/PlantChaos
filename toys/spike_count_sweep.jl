@@ -807,8 +807,8 @@ display(plt)
 # Return maps.
 begin
     # Arbitrary point.
-    ΔCa = -62.224
-    Δx = 1
+    ΔCa = -25
+    Δx = -1.46
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
@@ -819,9 +819,9 @@ begin
     fill_ins = 0
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
-    x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
+    x_offset = 1f-2 # Offset from xinf to avoid numerical issues.
     V_margin = 1f-1 # Margin around V_eq to avoid numerical issues.
-    min_V = -60 #-55 # Minimum V value to sample.
+    min_V = -57 # Minimum V value to sample.
     max_V = -43 # Maximum V value to sample.
     # Plotting font sizes
     titlefontsize=24
@@ -996,6 +996,8 @@ begin
             end
         end
     end
+    println(lowest_t)
+    println(lowest_t_i)
 
     display(plt)
 
@@ -1017,7 +1019,7 @@ begin
     # Fixed point line.
     plot!(plt, [Ca0[1], Ca0[end]], [Ca0[1], Ca0[end]], label="Fixed point line", color=:red)
     # Return map points.
-    plot!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, ms=2)
+    scatter!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, ms=2)
 
     display(plt)
     ##########
