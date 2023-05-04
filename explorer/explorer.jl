@@ -11,6 +11,9 @@ p = Observable(Plant.default_params)
 Δx = @lift($p[end-1])
 
 u0 = Observable(Plant.default_state)
+initCa = @lift ($u0[5])
+initx = @lift ($u0[1])
+initV = @lift ($u0[6])
 
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
@@ -54,6 +57,42 @@ widgetax[1,3] = resetbutton = Button(fig, label = "reset", buttoncolor = RGBf(.2
 speedslider = SliderGrid(widgetax[2,:], (label = "speed", range=1:.1:5, format = "{:.1f}", startvalue = 2))
 
 ctrlax = GridLayout(fig[5,1:2], tellwidth = false)
+
+initctrlax = GridLayout(ctrlax[1,1], tellwidth = false)
+
+Label(initctrlax[1,1], "V: ")
+initctrlax[1,2] = initV_tb = Textbox(fig, validator = Float32, placeholder="$(initV[])", width=150)
+
+on(initV) do newV
+    initV_tb.displayed_string = string(newV)
+end
+
+Label(initctrlax[1,3], "Ca: ")
+initctrlax[1,4] = initCa_tb = Textbox(fig, validator = Float32, placeholder="$(initCa[])", width=150)
+
+on(initCa) do newCa
+    initCa_tb.displayed_string = string(newCa)
+end
+
+Label(initctrlax[1,5], "x: ")
+initctrlax[1,6] = initx_tb = Textbox(fig, validator = Float32, placeholder="$(initx[])", width=150)
+
+on(initx) do newx
+    initx_tb.displayed_string = string(newx)
+end
+
+initupdatebutton = Button(initctrlax[1,7], label = "update", buttoncolor = RGBf(.2,.2,.2))
+
+on(initupdatebutton.clicks) do clicks
+    newV = parse(Float64, initV_tb.displayed_string[])
+    newCa = parse(Float64, initCa_tb.displayed_string[])
+    newx = parse(Float64, initx_tb.displayed_string[])
+
+    u0.val = (newx, u0[][2:4]..., newCa, newV, u0[][end])
+    auto_dt_reset!(dynsys[].integ)
+    u0[] = u0[]
+    build_map!(map_prob, mapics[])
+end
 
 bifctrlax = GridLayout(ctrlax[1,2], tellwidth = false)
 
