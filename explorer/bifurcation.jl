@@ -29,10 +29,31 @@ bifpoint = select_point(bifax.scene, marker = :circle)
 
 on(bifpoint) do pars
     delCa, delx = pars
-    bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
     p.val = (p[][1:end-2]..., delx, delCa)
     auto_dt_reset!(dynsys[].integ)
     p[] = p[]
     build_map!(map_prob, mapics[])
     #reset_limits!(mapax)
+end
+
+Label(bifaxctrlax[1,1], "ΔCa: ")
+bifaxctrlax[1,2] = delCa_tb = Textbox(fig, validator = Float32, placeholder="$(ΔCa[])", width=150)
+
+on(ΔCa) do delCa
+    delCa_tb.displayed_string = string(delCa)
+end
+
+Label(bifaxctrlax[1,3], "Δx: ")
+bifaxctrlax[1,4] = delx_tb = Textbox(fig, validator = Float32, placeholder="$(Δx[])", width=150)
+
+on(Δx) do delx
+    delx_tb.displayed_string = string(delx)
+end
+
+updatebutton = Button(bifaxctrlax[2,1:4], label = "update", buttoncolor = RGBf(.2,.2,.2))
+
+on(updatebutton.clicks) do clicks
+    delCa = parse(Float64, delCa_tb.displayed_string[])
+    delx = parse(Float64, delx_tb.displayed_string[])
+    bifpoint[]=Point2(delCa, delx)
 end

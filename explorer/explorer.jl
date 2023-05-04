@@ -7,6 +7,9 @@ using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
 p = Observable(Plant.default_params)
+ΔCa = @lift($p[end])
+Δx = @lift($p[end-1])
+
 u0 = Observable(Plant.default_state)
 
 #use DynamicalSystems interface
@@ -26,9 +29,13 @@ trajax.ylabel = "x"
 trajax.zlabel = "V"
 
 bifax = Axis(fig[1:2,2])
-bifax.title = "Bifurcation Diagram (ΔCa: $((@lift $p[17])[]), Δx: $((@lift $p[16])[]))"
+bifax.title = "Bifurcation Diagram (ΔCa: $(ΔCa[]), Δx: $(Δx[]))"
 bifax.xlabel = "ΔCa"
 bifax.ylabel = "Δx"
+
+onany(ΔCa, Δx) do delCa, delx
+    bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
+end
 
 mapax = Axis(fig[3:4,2], aspect = DataAspect())
 mapax.title = "1D Map"
@@ -61,6 +68,8 @@ widgetax[3,:] = scantype = Menu(fig,
 
 maxlyap = @lift lyapunov($dynsys, 100000; Ttr = 10000)
 lyaplab = Label(widgetax[4,:], @lift "max lyapunov = $(round($maxlyap; digits=5))")
+
+bifaxctrlax = GridLayout(fig[5,2], tellwidth = false)
 
 include("./trajectory.jl")
 include("./bifurcation.jl")
