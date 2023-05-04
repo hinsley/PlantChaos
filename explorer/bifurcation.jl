@@ -14,16 +14,16 @@ snpo = readdlm("./explorer/snpo.csv", ',', Float64)
 lines!(bifax, snpo, label="snpo")
 
 scatter!(bifax, hopf[1,2], hopf[2,2], color=:blue, marker=:star4, label="BT", markersize=16)
-scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:red, marker=:star6, label="GH", markersize=16)
-scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="GH", markersize=16)
-scatter!(bifax, snpo[1,827], snpo[2,827], color=:orange, marker=:star5, label="CPC", markersize=16)
+scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:red, marker=:star6, label="BP", markersize=16)
+scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="BP", markersize=16)
+# scatter!(bifax, snpo[1,827], snpo[2,827], color=:orange, marker=:star5, label="CPC", markersize=16)
 
 bifaxpoint = @lift Point2f( $p[17],$p[16])
 scatter!(bifax, bifaxpoint)
 
 axislegend(bifax, position=:lb)
 
-limits!(bifax, -150, 400, -20, 50)
+limits!(bifax, -150, 150, -20, 30)
 
 bifpoint = select_point(bifax.scene, marker = :circle)
 
