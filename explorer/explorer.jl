@@ -39,6 +39,8 @@ end
 
 mapax = Axis(fig[3:4,2], aspect = DataAspect())
 mapax.title = "1D Map"
+mapax.xlabel = rich("Ca", subscript("n"))
+mapax.ylabel = rich("Ca", subscript("n+1"))
 rowsize!(fig.layout,2,Relative(1/2))
 
 traceax = Axis(fig[3,1])
