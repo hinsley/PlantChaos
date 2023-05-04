@@ -55,5 +55,5 @@ updatebutton = Button(bifaxctrlax[2,1:4], label = "update", buttoncolor = RGBf(.
 on(updatebutton.clicks) do clicks
     delCa = parse(Float64, delCa_tb.displayed_string[])
     delx = parse(Float64, delx_tb.displayed_string[])
-    bifpoint[]=Point2(delCa, delx)
+    bifpoint[]=Point2f(delCa, delx)
 end
