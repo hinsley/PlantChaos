@@ -36,23 +36,23 @@ on(bifpoint) do pars
     #reset_limits!(mapax)
 end
 
-Label(bifaxctrlax[1,1], "ΔCa: ")
-bifaxctrlax[1,2] = delCa_tb = Textbox(fig, validator = Float32, placeholder="$(ΔCa[])", width=150)
+Label(bifctrlax[1,1], "ΔCa: ")
+bifctrlax[1,2] = delCa_tb = Textbox(fig, validator = Float32, placeholder="$(ΔCa[])", width=150)
 
 on(ΔCa) do delCa
     delCa_tb.displayed_string = string(delCa)
 end
 
-Label(bifaxctrlax[1,3], "Δx: ")
-bifaxctrlax[1,4] = delx_tb = Textbox(fig, validator = Float32, placeholder="$(Δx[])", width=150)
+Label(bifctrlax[1,3], "Δx: ")
+bifctrlax[1,4] = delx_tb = Textbox(fig, validator = Float32, placeholder="$(Δx[])", width=150)
 
 on(Δx) do delx
     delx_tb.displayed_string = string(delx)
 end
 
-updatebutton = Button(bifaxctrlax[2,1:4], label = "update", buttoncolor = RGBf(.2,.2,.2))
+bifupdatebutton = Button(bifctrlax[1,5], label = "update", buttoncolor = RGBf(.2,.2,.2))
 
-on(updatebutton.clicks) do clicks
+on(bifupdatebutton.clicks) do clicks
     delCa = parse(Float64, delCa_tb.displayed_string[])
     delx = parse(Float64, delx_tb.displayed_string[])
     bifpoint[]=Point2f(delCa, delx)
