@@ -1,10 +1,16 @@
 using DelimitedFiles
 using FileIO
 
-img = rotr90(load("./explorer/ISI_variance.png"))
+isiimg = rotr90(load("./explorer/ISI_variance.png"))
 min_x, max_x = -150, 369.675
 min_y, max_y = -20, 29.9375
-image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
+image!(bifax, [min_x, max_x], [min_y, max_y], isiimg, interpolate=false)
+
+beimg = rotr90(load("./explorer/block_entropy.png"))
+min_x, max_x = -50, 100
+min_y, max_y = -5, 1
+
+image!(bifax, [min_x, max_x], [min_y, max_y], beimg, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf")
@@ -23,7 +29,7 @@ scatter!(bifax, bifaxpoint)
 
 axislegend(bifax, position=:lb)
 
-limits!(bifax, -150, 150, -20, 30)
+limits!(bifax, -50, 100, -5, 1)
 
 bifpoint = select_point(bifax.scene, marker = :circle)
 
