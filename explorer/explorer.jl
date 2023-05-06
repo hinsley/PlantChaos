@@ -7,7 +7,13 @@ using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
 p = Observable(Plant.default_params)
+ΔCa = @lift($p[end])
+Δx = @lift($p[end-1])
+
 u0 = Observable(Plant.default_state)
+initCa = @lift ($u0[5])
+initx = @lift ($u0[1])
+initV = @lift ($u0[6])
 
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
@@ -26,41 +32,69 @@ trajax.ylabel = "x"
 trajax.zlabel = "V"
 
 bifax = Axis(fig[1:2,2])
-bifax.title = "Bifurcation Diagram (ΔCa: $((@lift $p[17])[]), Δx: $((@lift $p[16])[]))"
+bifax.title = "Bifurcation Diagram (ΔCa: $(ΔCa[]), Δx: $(Δx[]))"
 bifax.xlabel = "ΔCa"
 bifax.ylabel = "Δx"
 
+onany(ΔCa, Δx) do delCa, delx
+    bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
+end
+
 mapax = Axis(fig[3:4,2], aspect = DataAspect())
 mapax.title = "1D Map"
-rowsize!(fig.layout,2,Relative(1/2))
+mapax.xlabel = rich("Ca", subscript("n"))
+mapax.ylabel = rich("Ca", subscript("n+1"))
 
 traceax = Axis(fig[3,1])
 traceax.title = "Voltage Trace"
 traceax.ylabel = "V"
 traceax.xlabel = "t"
 
-eigenax = Axis(fig[4,1])
-eigenax.title = "Eigenvalues"
-eigenax.xlabel = "Re(λ)"
-eigenax.ylabel = "Im(λ)"
-# using ModelingToolkit
-# generate_jacobian(modelingtoolkitize(dynsys[].integ.sol.prob))[1]
-include("./jacobian.jl") |>eval
-eig = @lift eigen(jacobian($u0,$p,0f0))
-λreal = @lift collect(real($eig.values))
-λimag = @lift collect(imag($eig.values))
-scatter!(eigenax, λreal, λimag)
-
-widgetax = GridLayout(fig[5,1], tellwidth = false)
+widgetax = GridLayout(fig[4,1], tellwidth = false)
 widgetax[1,1] = pausebutton = Button(fig, label = "pause", buttoncolor = RGBf(.2,.2,.2))
 widgetax[1,2] = clearbutton = Button(fig, label = "clear", buttoncolor = RGBf(.2,.2,.2))
 widgetax[1,3] = resetbutton = Button(fig, label = "reset", buttoncolor = RGBf(.2,.2,.2))
 speedslider = SliderGrid(widgetax[2,:], (label = "speed", range=1:.1:5, format = "{:.1f}", startvalue = 2))
-widgetax[3,:] = scantype = Menu(fig,
-    options = ["LZ Complexity", "Spike Count Variance", "Conditional Block Entropy"])
 
-maxlyap = @lift lyapunov($dynsys, 100000; Ttr = 10000)
-lyaplab = Label(widgetax[4,:], @lift "max lyapunov = $(round($maxlyap; digits=5))")
+ctrlax = GridLayout(fig[5,1:2], tellwidth = false)
+
+initctrlax = GridLayout(ctrlax[1,1], tellwidth = false)
+
+Label(initctrlax[1,1], "V: ")
+initctrlax[1,2] = initV_tb = Textbox(fig, validator = Float32, placeholder="$(initV[])", width=150)
+
+on(initV) do newV
+    initV_tb.displayed_string = string(newV)
+end
+
+Label(initctrlax[1,3], "Ca: ")
+initctrlax[1,4] = initCa_tb = Textbox(fig, validator = Float32, placeholder="$(initCa[])", width=150)
+
+on(initCa) do newCa
+    initCa_tb.displayed_string = string(newCa)
+end
+
+Label(initctrlax[1,5], "x: ")
+initctrlax[1,6] = initx_tb = Textbox(fig, validator = Float32, placeholder="$(initx[])", width=150)
+
+on(initx) do newx
+    initx_tb.displayed_string = string(newx)
+end
+
+initupdatebutton = Button(initctrlax[1,7], label = "update", buttoncolor = RGBf(.2,.2,.2))
+
+on(initupdatebutton.clicks) do clicks
+    newV = parse(Float64, initV_tb.displayed_string[])
+    newCa = parse(Float64, initCa_tb.displayed_string[])
+    newx = parse(Float64, initx_tb.displayed_string[])
+
+    u0.val = (newx, u0[][2:4]..., newCa, newV, u0[][end])
+    auto_dt_reset!(dynsys[].integ)
+    u0[] = u0[]
+    build_map!(map_prob, mapics[])
+end
+
+bifctrlax = GridLayout(ctrlax[1,2], tellwidth = false)
 
 include("./trajectory.jl")
 include("./bifurcation.jl")
