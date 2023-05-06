@@ -491,6 +491,7 @@ end
 
 using Plots
 using Plots.PlotMeasures
+using Colors
 
 using FiniteDiff
 
@@ -714,22 +715,37 @@ plt = heatmap(
     axis=nothing,
     grid=nothing,
     legend=false,
-    left_margin=-1.6mm,
-    right_margin=-1.6mm,
-    top_margin=-2mm,
-    bottom_margin=-2mm,
     ticks=nothing,
     title="",
-    xlabel="",
-    ylabel="",
+    # Margins for frameless plot
+    #left_margin=-1.6mm,
+    #right_margin=-1.6mm,
+    #top_margin=-2mm,
+    #bottom_margin=-2mm,
+    # Margins for plot with frame
+    left_margin=40mm,
+    bottom_margin=32mm,
+    guidefontsize=48,
+    xlabel="\$\\Delta_{Ca}\$",
+    ylabel="\$\\Delta_x\$",
+    #xlabel="",
+    #ylabel="",
     size=(3840, 2160),
-    xlim=(-150, 150)
+    # Full parameter plane
+    xlim=(-130, 100),
+    ylim=(-12, 15)
+    # Zoomed in
+    #xlim=(-100, 100),
+    #ylim=(-5, 5)
+    # Horizontal AH strip
+    #xlim=(-50, 100),
+    #ylim=(-5, 1)
 )
 
 for i in 1:Int(1/chunk_proportion)^2
     println("Plotting chunk $(i) of $(Int(1/chunk_proportion)^2).")
     @load "$(scan_directory)/chunk_$(i)_ranges.jld2" ranges
-    @load "$(scan_directory)/chunk_$(i).jld2" sol
+    #@load "$(scan_directory)/chunk_$(i).jld2" sol
     
     ΔCa_range = range(ranges["ΔCa_min"], ranges["ΔCa_max"], length=Int(ΔCa_resolution*chunk_proportion))
     Δx_range = range(ranges["Δx_min"], ranges["Δx_max"], length=Int(Δx_resolution*chunk_proportion))
@@ -742,15 +758,15 @@ for i in 1:Int(1/chunk_proportion)^2
     end
 
     # If the simulation didn't run long enough, use the previous trajectory. DUCT TAPE.
-    for i in 1:length(sol.u)
-        if sol.u[i].t[end] < tspan[2]*0.8
-            sol.u[i] = sol.u[i-1]
-        end
-    end
+    #for i in 1:length(sol.u)
+    #    if sol.u[i].t[end] < tspan[2]*0.8
+    #        sol.u[i] = sol.u[i-1]
+    #    end
+    #end
 
     # Truncate first 20% of simulations.
-    percent_to_skip = 0.2
-    first_timestep = Int(round(percent_to_skip*length(sol.u[i].u)))+1
+    #percent_to_skip = 0.2
+    #first_timestep = Int(round(percent_to_skip*length(sol.u[i].u)))+1
 
     # Measure: Max number of STOs per burst.
     # We don't truncate here since it's already being done by the measure computation functions.
@@ -761,14 +777,16 @@ for i in 1:Int(1/chunk_proportion)^2
     #    reshape([maxSTOsPerBurst(cleanup(mmoSymbolics(sol.u[i].u, params[i]))) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     #);
 
-    # Measure: Block entropy.
+    # Measure: Block entropy of STOs per burst.
     # We don't truncate here since it's already being done by the measure computation functions.
     #block_size = 3
+    #metricVector = [blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)]
+    #metricVector = [value == 0 ? NaN : value for value in metricVector]
     #heatmap!(
     #    plt,
     #    ΔCa_range,
     #    Δx_range,
-    #    reshape([blockEntropy(cleanup(mmoSymbolics(sol.u[i].u, params[i])), block_size) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
+    #    reshape(metricVector, Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion))
     #);
 
     # Measure: Spike voltage amplitude variance.
@@ -780,12 +798,22 @@ for i in 1:Int(1/chunk_proportion)^2
     #) ;
 
     # Measure: Inter-spike interval variance.
+    #metricVector = [log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)]
+    #@save "$(scan_directory)/chunk_$(i)_metricVector.jld2" metricVector
+    @load "$(scan_directory)/chunk_$(i)_metricVector.jld2" metricVector
     heatmap!(
         plt,
         ΔCa_range,
         Δx_range,
-        reshape([log(1+interSpikeIntervalVariance(sol.u[i].u[first_timestep:end], sol.u[i].t[first_timestep:end], params[i])) for i in 1:length(sol.u)], Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
-        c=cgrad([:black, :blue], [0.8])
+        reshape(metricVector, Int(Δx_resolution*chunk_proportion), Int(ΔCa_resolution*chunk_proportion)),
+        c=cgrad([
+            Colors.RGB(6/255, 70/255, 53/255),
+            Colors.RGB(6/255, 70/255, 53/255),
+            Colors.RGB(135/255, 158/255, 131/255),
+            Colors.RGB(204/255, 222/255, 209/255),
+            Colors.RGB(0/255, 50/255, 0/255),
+            Colors.RGB(150/255, 160/255, 160/255)
+        ], [0.45, 0.45, 0.73, 0.68, 0.8, 0.7, 0.91])
     );
 
     # Measure: Minimum distance in the slow projection to the equilibrium point.
