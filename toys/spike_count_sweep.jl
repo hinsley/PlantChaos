@@ -494,15 +494,140 @@ using Plots.PlotMeasures
 
 using FiniteDiff
 
+# Precompute x dune mesh.
+Ca_min = -1.0
+Ca_max = 4.0
+Ca_resolution = 1000
+x_resolution = 1000
+Δx_min = -15
+Δx_max = 30
+Δx_resolution = 10000
+V_min = -49 # For visualizations of the dune.
+V_min = -70
+V_max = -30 # For visualizations of the dune.
+V_max = -20
+V_resolution = 1000
+azimuth = -60
+elevation = 30
+
+V_range = range(V_min, V_max, length=V_resolution)
+Δxs = range(Δx_min, Δx_max, length=Δx_resolution)
+x_nullclines = []
+plt = plot(
+    legend=false,
+    xlabel="\$Ca\$",
+    ylabel="\$x\$",
+    zlabel="\$V\$",
+    xlims=(Ca_min, Ca_max),
+    zlims=(V_min, V_max),
+    camera=(azimuth, elevation)
+)
+for Δx in Δxs
+    x_nullcline = [] # Tuples (Ca, x, V)
+    params = makeParams(0.0, Δx)
+    for V in V_range
+        Ca = x_null_Ca(params, V)
+        x = xinf(params, V)
+        push!(x_nullcline, (Ca, x, V))
+    end
+    push!(x_nullclines, x_nullcline)
+    plot!(plt, [point[1] for point in x_nullcline], [point[2] for point in x_nullcline], [point[3] for point in x_nullcline], lw=3.0)
+end
+# Draw a point in the $(x, V)$ plane projected onto the x dune.
+function x_dune_Ca(x, V)
+    V_prior = findlast(v -> v <= V, V_range)
+    V_posterior = V_prior + 1
+    function left_of_x_nullcline(Δx)
+        params = makeParams(0.0, Δx)
+        x_prior = xinf(params, V_range[V_prior])
+        x_posterior = xinf(params, V_range[V_posterior])
+        # Linearly interpolate.
+        x_interpolated = x_prior + (x_posterior - x_prior)*(V - V_range[V_prior])/(V_range[V_posterior] - V_range[V_prior])
+        return x <= x_interpolated
+    end
+    # Do a linear interpolation.
+    Δx_prior = findlast(left_of_x_nullcline, Δxs)
+    Δx_posterior = Δx_prior + 1
+    params_prior = makeParams(0.0, Δxs[Δx_prior])
+    params_posterior = makeParams(0.0, Δxs[Δx_posterior])
+    x_prior = xinf(params_prior, V_range[V_prior])
+    x_posterior = xinf(params_posterior, V_range[V_posterior])
+    t = (x - x_prior)/(x_posterior - x_prior)
+    Δx = Δxs[Δx_prior] + t*(Δxs[Δx_posterior] - Δxs[Δx_prior])
+    params = Tuple(i == 16 ? Δx : Plant.default_params[i] for i in 1:length(Plant.default_params))
+    Ca = x_null_Ca(params, V)
+    return Ca
+end
+display(plt)
+
+ΔCa = 150.0
+Δx = -3.0
+tspan = (0, 700)
+u0 = Float64[Plant.default_state...]
+p = makeParams(ΔCa, Δx)
+V_eq, Ca_eq, x_eq = Ca_x_eq(p)
+u0[1] = x_eq-0.05
+u0[6] = V_eq
+u0[5] = x_dune_Ca(u0[1], u0[6])
+prob = ODEProblem(Plant.melibeNew!, u0, tspan, p)
+function g(resid,u,p,t)
+    resid[1] = u[5] - x_dune_Ca(u[1], u[6])
+    resid[2:end] .= 0
+end
+cb = ManifoldProjection(g)
+@time sol = solve(prob,Tsit5(),save_everystep=false,callback=cb,abstol=1e-6,reltol=1e-6)
+#@gif for azimuth in range(0, 360, length=100)
+plt = plot(
+    sol,
+    idxs=(5,1,6),
+    legend=false,
+    title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+    xlabel="\$Ca\$",
+    ylabel="\$x\$",
+    zlabel="\$V\$",
+    camera=(30, 30)#azimuth, elevation)
+)
+# Plot in slow subsystem (Ca, x).
+slowplt = plot(
+    legend=false,
+    title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+    xlabel="\$Ca\$",
+    ylabel="\$x\$"
+)
+V_range = range(-70, 20, length=1000)
+plot!(slowplt, [Ca_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range], lw=3.0)
+plot!(slowplt, [x_null_Ca(p, V) for V in V_range], [Plant.xinf(p, V) for V in V_range], lw=3.0)
+plot!(
+    slowplt,
+    sol,
+    idxs=(5, 1),
+    xlims=(0, 1.6),
+    ylims=(0, 1)
+)
+scatter!(
+    slowplt,
+    [u0[5]],
+    [u0[1]]
+)
+# Voltage plot vs time.
+vplt = plot(
+    [point[6] for point in sol.u],
+    legend=false,
+    title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+    xlabel="\$t\$",
+    ylabel="\$V\$"
+)
+#end
+
 ########## Run a single solution and plot a multi-figure diagram.
 #@gif for ΔCa in range(-50.0, 175.0, length=500)
 begin
     # Arbitrary point
-    ΔCa = -14.7858 # Comment this out if making a gif.
-    Δx = 8.7455
+    #ΔCa = -14.7858 # Comment this out if making a gif.
+    #Δx = 8.7455
     # Bogdanov-Takens
-    #ΔCa = -10.2369287539234
-    #Δx = -10.8111392512278
+    ΔCa = -10.2359
+    Δx = -10.8111392512278
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
@@ -513,28 +638,49 @@ begin
     #voltage_tspan = (0.0f0, 2.0f4) # Comment this out to show the whole voltage trace.
     tspan = (0.0f0, 1.0f5)
     margin = 0.1f0
+    titlefontsize=24
+    guidefontsize=16
+    tickfontsize=12
+    which_root = 2 # Which root to use for the equilibrium point.
+
     params = makeParams(ΔCa, Δx)
     # Start below the equilibrium point.
-    v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=1) # Use this most of the time.
-    #v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=1) # For the upper BP.
+    v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=which_root)
     state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0] # Use this most of the time.
     #state = @SVector Float32[0.9, 0.0, 0.137, 0.389, 1.4, v_eq, 0.0] # For showing bistability in BT.
     #state = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq, v_eq, state[7]]
-    prob = ODEProblem{false}(Plant.melibeNew, state, tspan, params)
-    monteprob=EnsembleProblem(prob)
+    
+    prob = ODEProblem(Plant.melibeNew, state, tspan, params)
+    monteprob = EnsembleProblem(prob)
+
     sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=1, adaptive=false, dt=1.0f0, verbose=false)
     fig1 = plot(
         sol,
         idxs=(5, 1),
         lw=3.0,
         legend=false,
-        #xlims=(0.55, 1.25),
-        #ylims=(0.1, 0.95),
-        xlims=(min([v[5] for v in sol[1].u]...)-margin, max([v[5] for v in sol[1].u]...)+margin),
-        ylims=(min([v[1] for v in sol[1].u]...)-margin, max([v[1] for v in sol[1].u]...)+margin),
-        xlabel="Ca",
-        ylabel="x",
-        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx)
+        xlims=(0.7, 2.0),
+        ylims=(0.79, 0.99),
+        #xlims=(min([v[5] for v in sol[1].u]...)-margin, max([v[5] for v in sol[1].u]...)+margin),
+        #ylims=(min([v[1] for v in sol[1].u]...)-margin, max([v[1] for v in sol[1].u]...)+margin),
+        xlabel="\$Ca\$",
+        ylabel="\$x\$",
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize,
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$ (Bogdanov-Takens)", ΔCa, Δx),
+        titlefontsize=titlefontsize
+    )
+    state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 1.8, v_eq, 0.0]
+    prob = ODEProblem(Plant.melibeNew, state, tspan, params)
+    monteprob = EnsembleProblem(prob)
+    sol2 = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=1, adaptive=false, dt=1.0f0, verbose=false)
+    plot!(
+        fig1,
+        sol2,
+        idxs=(5, 1),
+        lw=3.0,
+        xlims=(0.7, 2.0),
+        ylims=(0.79, 0.99)
     )
     V_range = nothing
     try
@@ -580,7 +726,9 @@ begin
         xlims=real_bounds,
         ylims=imag_bounds,
         color=:black,
-        markersize=6.0
+        markersize=6.0,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize
     )
     plot!(fig2, [real_bounds...], [0, 0], color=:black, lw=1.0)
     plot!(fig2, [0, 0], [imag_bounds...], color=:black, lw=1.0)
@@ -588,10 +736,22 @@ begin
         sol,
         idxs=(6),
         legend=false,
-        xlims=voltage_tspan,
-        ylims=(-70, 30),
-        xlabel="t",
-        ylabel="V",
+        #xlims=voltage_tspan,
+        xlims=(0, 10000),
+        #ylims=(-70, 30),
+        ylims=(-55, 30),
+        xlabel="\$t\$",
+        ylabel="\$V\$",
+        lw=3.0,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize
+    )
+    plot!(
+        fig3,
+        sol2,
+        idxs=(6),
+        xlims=(0, 10000),
+        ylims=(-55, 30),
         lw=3.0
     )
     plt = plot(
@@ -808,14 +968,14 @@ display(plt)
 begin
     # Arbitrary point.
     ΔCa = -25
-    Δx = -1.46
+    Δx = -1.8
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
     # Upper Bautin Point (GH)
     #ΔCa = -45.1575230179832
     #Δx = 11.944
-    map_resolution = 1000
+    map_resolution = 100
     fill_ins = 0
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
@@ -836,6 +996,8 @@ begin
 
     # Generate initial conditions along the Ca nullcline.
     V0 = collect(range(V_eq+V_margin, max_V, length=map_resolution))
+    # Discontinuity nbhd only.
+    V0 = collect(range(-38.43, -36, length=map_resolution))
     Ca0 = [Ca_null_Ca(p, V) for V in V0]
     x0 = [xinf(p, V)-x_offset for V in V0]
     u0 = [@SVector Float32[x0[i], state[2], state[3], state[4], Ca0[i], V0[i], state[7]] for i in 1:length(V0)]
@@ -915,7 +1077,10 @@ begin
         margin=5mm,
         titlefontsize=titlefontsize,
         guidefontsize=guidefontsize,
-        tickfontsize=tickfontsize
+        tickfontsize=tickfontsize,
+        aspect_ratio=:equal,
+        #xlim=(0, 1),
+        #ylim=(0, 1)
     )
 
     # Fixed point line.
@@ -996,8 +1161,6 @@ begin
             end
         end
     end
-    println(lowest_t)
-    println(lowest_t_i)
 
     display(plt)
 
@@ -1012,8 +1175,9 @@ begin
         titlefontsize=titlefontsize,
         guidefontsize=guidefontsize,
         tickfontsize=tickfontsize,
-        #xlim=(0.61, 0.65),
-        #ylim=(0.61, 0.65)
+        aspect_ratio=:equal,
+        #xlim=(0.83, 0.832),
+        #ylim=(0.487, 0.49)
     )
 
     # Fixed point line.
