@@ -641,7 +641,7 @@ begin
     titlefontsize=24
     guidefontsize=16
     tickfontsize=12
-    which_root = 2 # Which root to use for the equilibrium point.
+    which_root = 1 # Which root to use for the equilibrium point.
 
     params = makeParams(ΔCa, Δx)
     # Start below the equilibrium point.
@@ -669,18 +669,6 @@ begin
         tickfontsize=tickfontsize,
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$ (Bogdanov-Takens)", ΔCa, Δx),
         titlefontsize=titlefontsize
-    )
-    state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 1.8, v_eq, 0.0]
-    prob = ODEProblem(Plant.melibeNew, state, tspan, params)
-    monteprob = EnsembleProblem(prob)
-    sol2 = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=1, adaptive=false, dt=1.0f0, verbose=false)
-    plot!(
-        fig1,
-        sol2,
-        idxs=(5, 1),
-        lw=3.0,
-        xlims=(0.7, 2.0),
-        ylims=(0.79, 0.99)
     )
     V_range = nothing
     try
@@ -718,7 +706,7 @@ begin
         imag_bounds = (imag_bounds[1] - eigenvalue_margin*imag_range/2, imag_bounds[2] + eigenvalue_margin*imag_range/2)
     end
     fig2=scatter(
-        [evalue[2] == 0 ? evalue[1] : 0 for evalue in transformed_evalues],
+        [evalue[1] for evalue in transformed_evalues],
         [evalue[2] for evalue in transformed_evalues],
         legend=false,
         xlabel=@sprintf("\$\\textrm{sign}(\\textrm{Re}(\\lambda)) \\cdot \\sqrt[%d]{|\\textrm{Re}(\\lambda)|}\$", eigenvalue_dilation),
@@ -745,14 +733,6 @@ begin
         lw=3.0,
         guidefontsize=guidefontsize,
         tickfontsize=tickfontsize
-    )
-    plot!(
-        fig3,
-        sol2,
-        idxs=(6),
-        xlims=(0, 10000),
-        ylims=(-55, 30),
-        lw=3.0
     )
     plt = plot(
         fig1,
