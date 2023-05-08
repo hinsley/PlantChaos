@@ -1,6 +1,6 @@
 module Plant
 
-export melibeNew, melibeNew!, default_params, default_state,
+export melibeNew, melibeNew!, melibeNewReverse!, default_params, default_state,
        Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa
 
 using StaticArrays
@@ -101,6 +101,25 @@ function melibeNew!(du, u, p, t)
     du[4] = dh(u[4], u[6])
     du[5] = dCa(p, u[5], u[1], u[6])
     du[6] = dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
+    du[7] = 0.0e0
+end
+
+function melibeNewReverse!(du, u, p, t)
+    # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
+
+    # du1 = dx(p, u[1] V)
+    # du2 = dy(y, V)
+    # du3 = dn(n, V)
+    # du4 = dh(h, V)
+    # du5 = dCa(p, Ca, u[1] V)
+    # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
+    # du7 = 0.0e0
+    du[1] = -dx(p, u[1], u[6])
+    du[2] = -dy(u[2], u[6])
+    du[3] = -dn(u[3], u[6])
+    du[4] = -dh(u[4], u[6])
+    du[5] = -dCa(p, u[5], u[1], u[6])
+    du[6] = -dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
     du[7] = 0.0e0
 end
 
