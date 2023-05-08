@@ -718,7 +718,7 @@ begin
         imag_bounds = (imag_bounds[1] - eigenvalue_margin*imag_range/2, imag_bounds[2] + eigenvalue_margin*imag_range/2)
     end
     fig2=scatter(
-        [evalue[1] for evalue in transformed_evalues],
+        [evalue[2] == 0 ? evalue[1] : 0 for evalue in transformed_evalues],
         [evalue[2] for evalue in transformed_evalues],
         legend=false,
         xlabel=@sprintf("\$\\textrm{sign}(\\textrm{Re}(\\lambda)) \\cdot \\sqrt[%d]{|\\textrm{Re}(\\lambda)|}\$", eigenvalue_dilation),
