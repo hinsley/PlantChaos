@@ -624,11 +624,11 @@ vplt = plot(
 #@gif for ΔCa in range(-50.0, 175.0, length=500)
 begin
     # Arbitrary point
-    #ΔCa = -14.7858 # Comment this out if making a gif.
-    #Δx = 8.7455
+    ΔCa = -38.087296 # Comment this out if making a gif.
+    Δx = -1.0728123
     # Bogdanov-Takens
-    ΔCa = -10.2359
-    Δx = -10.8111392512278
+    #ΔCa = -10.2359
+    #Δx = -10.8111392512278
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
@@ -975,15 +975,15 @@ display(plt)
 # Return maps.
 begin
     # Arbitrary point.
-    ΔCa = -25
-    Δx = -1.8
+    ΔCa = -38.087296
+    Δx = -1.0728123
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
     # Upper Bautin Point (GH)
     #ΔCa = -45.1575230179832
     #Δx = 11.944
-    map_resolution = 100
+    map_resolution = 1000
     fill_ins = 0
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
@@ -1005,7 +1005,7 @@ begin
     # Generate initial conditions along the Ca nullcline.
     V0 = collect(range(V_eq+V_margin, max_V, length=map_resolution))
     # Discontinuity nbhd only.
-    V0 = collect(range(-38.43, -36, length=map_resolution))
+    #V0 = collect(range(-38.43, -36, length=map_resolution))
     Ca0 = [Ca_null_Ca(p, V) for V in V0]
     x0 = [xinf(p, V)-x_offset for V in V0]
     u0 = [@SVector Float32[x0[i], state[2], state[3], state[4], Ca0[i], V0[i], state[7]] for i in 1:length(V0)]
@@ -1019,7 +1019,7 @@ begin
         p = integrator.p
         # TODO: Correct this comment.
         # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
-        if u[6] > -20 return -1f0 end
+        if u[6] > -20 || u[6] < V_eq return -1f0 end
         (t < 50) ? 1f0 : -p[15] * (p[13] * u[1] * (p[12] - u[6] + p[17]) - u[5])
     end
     affect!(integrator) = terminate!(integrator) # Stop the solver
