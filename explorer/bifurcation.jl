@@ -40,6 +40,7 @@ on(bifpoint) do pars
     p[] = p[]
     build_map!(map_prob, mapics[])
     #reset_limits!(mapax)
+    empty!(traj[])
 end
 
 Label(bifctrlax[1,1], "ΔCa: ")

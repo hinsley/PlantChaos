@@ -85,6 +85,28 @@ function melibeNew(u::AbstractArray{T}, p, t) where T
     ]
 end
 
+function melibeBackward(u::AbstractArray{T}, p, t) where T
+    # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
+
+    # du1 = dx(p, u[1] V)
+    # du2 = dy(y, V)
+    # du3 = dn(n, V)
+    # du4 = dh(h, V)
+    # du5 = dCa(p, Ca, u[1] V)
+    # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
+    # du7 = 0.0e0
+    # return @SVector T[du1, du2, du3, du4, du5, du6, du7]
+    return @SVector T[
+        -1*dx(p, u[1], u[6]),
+        dy(u[2], u[6]),
+        dn(u[3], u[6]),
+        dh(u[4], u[6]),
+        -1*dCa(p, u[5], u[1], u[6]),
+        dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7]),
+        0.0e0
+    ]
+end
+
 function melibeNew!(du, u, p, t)
     # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
 

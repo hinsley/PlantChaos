@@ -1,16 +1,15 @@
 function progress_for_one_step!(solver, traj)
     s = solver[]
-    step!(s, 5f0)
+    step!(s, stepsize[])
     push!(traj[], Point3f(s.integ.u[[5,1,6]]))
     traj[] = traj[]
 end
 
 #set length of stored trajectory with slider
-maxpoints = 1000
-traj = Observable(CircularBuffer{Point{3,Float32}}(maxpoints))
+traj = Observable(CircularBuffer{Point{3,Float32}}(maxpoints[]))
 
 # create initial trajectory
-for i = 1:maxpoints
+for i = 1:maxpoints[]
     progress_for_one_step!(dynsys, traj)
 end
 
@@ -20,6 +19,7 @@ limits!(trajax, 0, 2, 0, 1, -70, 40)
 # voltage trace
 trace = @lift [e[3] for e in $traj]
 lines!(traceax, trace)
+@lift xlims!(traceax, 0, $maxpoints)
 
 ##Interactivity
 
