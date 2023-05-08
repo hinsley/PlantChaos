@@ -2,8 +2,8 @@ using DelimitedFiles
 using FileIO
 
 img = rotr90(load("./explorer/ISI_variance.png"))
-min_x, max_x = -150, 369.675
-min_y, max_y = -20, 29.9375
+min_x, max_x = -130, 100
+min_y, max_y = -12, 15
 image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
