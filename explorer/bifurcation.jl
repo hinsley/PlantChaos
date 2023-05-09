@@ -6,11 +6,11 @@ min_x, max_x = -130, 100
 min_y, max_y = -12, 15
 image!(bifax, [min_x, max_x], [min_y, max_y], isiimg, interpolate=false)
 
-beimg = rotr90(load("./explorer/block_entropy.png"))
+maxstoimg = rotr90(load("./explorer/max_sto.png"))
 min_x, max_x = -50, 100
 min_y, max_y = -5, 1
 
-image!(bifax, [min_x, max_x], [min_y, max_y], beimg, interpolate=false)
+image!(bifax, [min_x, max_x], [min_y, max_y], maxstoimg, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf", linewidth = 3)
