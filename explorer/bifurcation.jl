@@ -34,12 +34,15 @@ limits!(bifax, -50, 100, -5, 1)
 bifpoint = select_point(bifax.scene, marker = :circle)
 
 on(bifpoint) do pars
-    delCa, delx = pars
-    p.val = (p[][1:end-2]..., delx, delCa)
-    auto_dt_reset!(dynsys[].integ)
-    p[] = p[]
-    build_map!(map_prob, mapics[])
-    #reset_limits!(mapax)
+    # do not trigger when reset limit
+    if !ispressed(mapax, Keyboard.left_control)
+        delCa, delx = pars
+        p.val = (p[][1:end-2]..., delx, delCa)
+        auto_dt_reset!(dynsys[].integ)
+        p[] = p[]
+        build_map!(map_prob, mapics[])
+        #reset_limits!(mapax)
+    end
 end
 
 Label(bifctrlax[1,1], "ΔCa: ")
