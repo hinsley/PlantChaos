@@ -97,7 +97,6 @@ on(initupdatebutton.clicks) do clicks
     u0.val = (newx, u0[][2:4]..., newCa, newV, u0[][end])
     auto_dt_reset!(dynsys[].integ)
     u0[] = u0[]
-    build_map!(map_prob, mapics[])
 end
 
 bifctrlax = GridLayout(ctrlax[1,2], tellwidth = false)
