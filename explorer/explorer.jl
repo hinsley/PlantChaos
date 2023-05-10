@@ -31,7 +31,7 @@ trajax.xlabel = "Ca"
 trajax.ylabel = "x"
 trajax.zlabel = "V"
 
-bifax = Axis(fig[1:2,2])
+bifax = Axis(fig[1:2,2], xrectzoom=false, yrectzoom=false)
 bifax.title = "Bifurcation Diagram (ΔCa: $(ΔCa[]), Δx: $(Δx[]))"
 bifax.xlabel = "ΔCa"
 bifax.ylabel = "Δx"
