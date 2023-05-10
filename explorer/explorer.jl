@@ -40,10 +40,16 @@ onany(ΔCa, Δx) do delCa, delx
     bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
 end
 
-mapax = Axis(fig[3:4,2], aspect = DataAspect())
+mapwidgetax = GridLayout(fig[3:4,2], tellwidth = false)
+
+mapax = Axis(mapwidgetax[1,1], aspect=1)
 mapax.title = "1D Map"
 mapax.xlabel = rich("Ca", subscript("n"))
 mapax.ylabel = rich("Ca", subscript("n+1"))
+
+mapctrlax = GridLayout(mapwidgetax[2,1], tellwidth = false)
+cutpoints_tog = Toggle(mapctrlax[1,1])
+Label(mapctrlax[1,2], "show cut points")
 
 traceax = Axis(fig[3,1])
 traceax.title = "Voltage Trace"

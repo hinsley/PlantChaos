@@ -89,6 +89,6 @@ lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth =
 
 #lines(preimage, map)
 preimage_phase_space = @lift [Point3f(x[5], x[1], x[6]) for x in $mapics]
-scatter!(trajax, preimage_phase_space)
+scatter!(trajax, preimage_phase_space, visible = cutpoints_tog.active)
 xmap_phase_space = @lift [Point3f(x[1], x[2], x[3]) for x in $mapsol]
-scatter!(trajax, xmap_phase_space)
+scatter!(trajax, xmap_phase_space, visible = cutpoints_tog.active)
