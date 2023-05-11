@@ -13,33 +13,36 @@ min_y, max_y = -5, 1
 image!(bifax, [min_x, max_x], [min_y, max_y], beimg, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
-lines!(bifax, hopf, label="hopf")
-lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinic")
-lines!(bifax, readdlm("./explorer/snic.csv", ',', Float64), label="snic")
+lines!(bifax, hopf, label="hopf", linewidth = 3)
+lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinic", linewidth = 3)
+lines!(bifax, readdlm("./explorer/snic.csv", ',', Float64), label="snic", linewidth = 3)
 snpo = readdlm("./explorer/snpo.csv", ',', Float64)
-lines!(bifax, snpo, label="snpo")
+lines!(bifax, snpo, label="snpo", linewidth = 3)
 
-scatter!(bifax, hopf[1,2], hopf[2,2], color=:blue, marker=:star4, label="BT", markersize=16)
-scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:red, marker=:star6, label="BP", markersize=16)
-scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="BP", markersize=16)
+scatter!(bifax, hopf[1,2], hopf[2,2], color=:yellow, marker='■', label="BT", markersize=32)
+scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:purple, marker='■', label="BP", markersize=32)
+# scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="BP", markersize=16)
 # scatter!(bifax, snpo[1,827], snpo[2,827], color=:orange, marker=:star5, label="CPC", markersize=16)
 
 bifaxpoint = @lift Point2f( $p[17],$p[16])
 scatter!(bifax, bifaxpoint)
 
-axislegend(bifax, position=:lb)
+axislegend(bifax, position=:rb)
 
 limits!(bifax, -50, 100, -5, 1)
 
 bifpoint = select_point(bifax.scene, marker = :circle)
 
 on(bifpoint) do pars
-    delCa, delx = pars
-    p.val = (p[][1:end-2]..., delx, delCa)
-    auto_dt_reset!(dynsys[].integ)
-    p[] = p[]
-    build_map!(map_prob, mapics[])
-    #reset_limits!(mapax)
+    # do not trigger when reset limit
+    if !ispressed(mapax, Keyboard.left_control)
+        delCa, delx = pars
+        p.val = (p[][1:end-2]..., delx, delCa)
+        auto_dt_reset!(dynsys[].integ)
+        p[] = p[]
+        build_map!(map_prob, mapics[])
+        #reset_limits!(mapax)
+    end
 end
 
 Label(bifctrlax[1,1], "ΔCa: ")

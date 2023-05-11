@@ -31,7 +31,7 @@ trajax.xlabel = "Ca"
 trajax.ylabel = "x"
 trajax.zlabel = "V"
 
-bifax = Axis(fig[1:2,2])
+bifax = Axis(fig[1:2,2], xrectzoom=false, yrectzoom=false)
 bifax.title = "Bifurcation Diagram (ΔCa: $(ΔCa[]), Δx: $(Δx[]))"
 bifax.xlabel = "ΔCa"
 bifax.ylabel = "Δx"
@@ -40,10 +40,16 @@ onany(ΔCa, Δx) do delCa, delx
     bifax.title = "Bifurcation Diagram (ΔCa: $delCa, Δx: $delx)"
 end
 
-mapax = Axis(fig[3:4,2], aspect = DataAspect())
+mapwidgetax = GridLayout(fig[3:4,2], tellwidth = false)
+
+mapax = Axis(mapwidgetax[1,1], aspect=1)
 mapax.title = "1D Map"
 mapax.xlabel = rich("Ca", subscript("n"))
 mapax.ylabel = rich("Ca", subscript("n+1"))
+
+mapctrlax = GridLayout(mapwidgetax[2,1], tellwidth = false)
+cutpoints_tog = Toggle(mapctrlax[1,1])
+Label(mapctrlax[1,2], "show cut points")
 
 traceax = Axis(fig[3,1])
 traceax.title = "Voltage Trace"
@@ -91,7 +97,6 @@ on(initupdatebutton.clicks) do clicks
     u0.val = (newx, u0[][2:4]..., newCa, newV, u0[][end])
     auto_dt_reset!(dynsys[].integ)
     u0[] = u0[]
-    build_map!(map_prob, mapics[])
 end
 
 bifctrlax = GridLayout(ctrlax[1,2], tellwidth = false)

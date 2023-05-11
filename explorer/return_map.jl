@@ -89,6 +89,21 @@ lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth =
 
 #lines(preimage, map)
 preimage_phase_space = @lift [Point3f(x[5], x[1], x[6]) for x in $mapics]
-scatter!(trajax, preimage_phase_space)
+scatter!(trajax, preimage_phase_space, visible = cutpoints_tog.active)
 xmap_phase_space = @lift [Point3f(x[1], x[2], x[3]) for x in $mapsol]
-scatter!(trajax, xmap_phase_space)
+scatter!(trajax, xmap_phase_space, visible = cutpoints_tog.active)
+
+map_point = select_point(mapax.scene, marker = :circle)
+
+on(map_point) do pars
+    # do not trigger when reset limit
+    if !ispressed(mapax, Keyboard.left_control)
+        ca_n, _ = pars
+        V_n = find_zero((V) -> Ca_null_Ca(p[], V) - ca_n, -40)
+        x_n = xinf(p[], V_n)
+
+        u0.val = (x_n, u0[][2:4]..., ca_n, V_n, u0[][end])
+        auto_dt_reset!(dynsys[].integ)
+        u0[] = u0[]
+    end
+end
