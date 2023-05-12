@@ -619,13 +619,15 @@ vplt = plot(
     ylabel="\$V\$"
 )
 #end
-
+Ca0 = 0.488
+params = makeParams(-30, -0.91)
+V0 = find_zero((V) -> Ca_null_Ca(params, V) - Ca0, -40)
 ########## Run a single solution and plot a multi-figure diagram.
 #@gif for ΔCa in range(-50.0, 175.0, length=500)
 begin
     # Arbitrary point
-    ΔCa = -38.087296 # Comment this out if making a gif.
-    Δx = -1.0728123
+    ΔCa = 97.6410942 # Comment this out if making a gif.
+    Δx = -1.4
     # Bogdanov-Takens
     #ΔCa = -10.2359
     #Δx = -10.8111392512278
@@ -635,9 +637,9 @@ begin
     # Upper Bautin Point (GH)
     #ΔCa = -45.1575230179832
     #Δx = 11.944
-    voltage_tspan = (0.0f0, 1.0f5) # The full trace.
+    voltage_tspan = (0.0f1, 1.0f6) # The full trace.
     #voltage_tspan = (0.0f0, 2.0f4) # Comment this out to show the whole voltage trace.
-    tspan = (0.0f0, 1.0f5)
+    tspan = (0.0f1, 1.0f6)
     margin = 0.1f0
     titlefontsize=24
     guidefontsize=16
@@ -646,8 +648,8 @@ begin
 
     params = makeParams(ΔCa, Δx)
     # Start below the equilibrium point.
-    v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=which_root)
-    state = @SVector Float32[0.8, 0.0, 0.137, 0.389, 0.8, v_eq, 0.0] # Use this most of the time.
+    v_eq, Ca_eq, x_eq = Ca_x_eq(params, which_root=2)
+    state = @SVector Float32[0.25, 0.0, 0.137, 0.389, 0.67, v_eq, 0.0] # Use this most of the time.
     #state = @SVector Float32[0.9, 0.0, 0.137, 0.389, 1.4, v_eq, 0.0] # For showing bistability in BT.
     #state = @SVector Float32[x_eq, state[2], state[3], state[4], Ca_eq, v_eq, state[7]]
     
@@ -655,20 +657,21 @@ begin
     monteprob = EnsembleProblem(prob)
 
     sol = solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=1, adaptive=false, dt=1.0f0, verbose=false)
+    sol[1] = sol[1][1:end] # Remove transient.
     fig1 = plot(
         sol,
         idxs=(5, 1),
-        lw=3.0,
+        lw=2.0,
         legend=false,
-        xlims=(0.7, 2.0),
-        ylims=(0.79, 0.99),
+        xlims=(0.55, 1.25),
+        ylims=(0.05, 0.97),
         #xlims=(min([v[5] for v in sol[1].u]...)-margin, max([v[5] for v in sol[1].u]...)+margin),
         #ylims=(min([v[1] for v in sol[1].u]...)-margin, max([v[1] for v in sol[1].u]...)+margin),
         xlabel="\$Ca\$",
         ylabel="\$x\$",
         guidefontsize=guidefontsize,
         tickfontsize=tickfontsize,
-        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$ (Bogdanov-Takens)", ΔCa, Δx),
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
         titlefontsize=titlefontsize
     )
     V_range = nothing
@@ -725,21 +728,24 @@ begin
         sol,
         idxs=(6),
         legend=false,
-        #xlims=voltage_tspan,
-        xlims=(0, 10000),
+        xlims=voltage_tspan,
+        #xlims=(0, 10000),
         #ylims=(-70, 30),
-        ylims=(-55, 30),
+        ylims=(-65, 30),
         xlabel="\$t\$",
         ylabel="\$V\$",
+        xticks=nothing,
         lw=3.0,
         guidefontsize=guidefontsize,
-        tickfontsize=tickfontsize
+        tickfontsize=tickfontsize,
+        bottom_margin=4mm
     )
     plt = plot(
         fig1,
-        fig2,
+        #fig2,
         fig3,
-        layout=@layout[a{0.6h}; b c],
+        #layout=@layout[a{0.6h}; b c],
+        layout=@layout[a{0.75h}; b],
         size=(1440, 1280),
         left_margin=1cm,
         right_margin=1cm
@@ -975,26 +981,27 @@ display(plt)
 # Return maps.
 begin
     # Arbitrary point.
-    ΔCa = -38.087296
-    Δx = -1.0728123
+    ΔCa = -38.087
+    Δx = -1.073
     # Lower Bautin Point (GH)
     #ΔCa = 38.098
     #Δx = -2.70199569136383
     # Upper Bautin Point (GH)
     #ΔCa = -45.1575230179832
     #Δx = 11.944
-    map_resolution = 1000
+    map_resolution = 10000
     fill_ins = 0
     fill_in_resolution = 10
     V_threshold = -40 # Spike threshold.
     x_offset = 1f-2 # Offset from xinf to avoid numerical issues.
     V_margin = 1f-1 # Margin around V_eq to avoid numerical issues.
     min_V = -57 # Minimum V value to sample.
-    max_V = -43 # Maximum V value to sample.
+    max_V = -45 # Maximum V value to sample.
     # Plotting font sizes
     titlefontsize=24
     guidefontsize=20
     tickfontsize=16
+    tspan=(0.0f0, 1.0f5)
     p = makeParams(ΔCa, Δx)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
     V_range = range(-70, -15, length=100)
@@ -1019,13 +1026,13 @@ begin
         p = integrator.p
         # TODO: Correct this comment.
         # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
-        if u[6] > -20 || u[6] < V_eq return -1f0 end
+        if u[6] > -20 || u[5] < Ca_eq return 1f0 end
         (t < 50) ? 1f0 : -p[15] * (p[13] * u[1] * (p[12] - u[6] + p[17]) - u[5])
     end
     affect!(integrator) = terminate!(integrator) # Stop the solver
     cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
     #@time sol = solve(monteprob, GPUTsit5(), EnsembleGPUArray(), trajectories=trunc(Int, ΔCa_resolution*Δx_resolution*chunk_proportion^2), adaptive=false, dt=3.0f0, saveat=range(tspan[1], tspan[2], length=1500))
-    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[end], length=1500), verbose=false)
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[end], length=2000), verbose=false)
     Ca_initial = [sol[i][1][5] for i in 1:length(sol)]
     Ca_final = [sol[i][end][5] for i in 1:length(sol)]
 
@@ -1045,8 +1052,8 @@ begin
     plt = plot(
         xlabel="\$Ca\$",
         ylabel="\$x\$",
-        xlims=(0.3, 1.25),
-        ylims=(0, 0.95),
+        xlims=(0.7, 1.3),
+        ylims=(0.1, 0.95),
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
         size=(1000, 750),
         c=spike_counts,
@@ -1080,7 +1087,7 @@ begin
         xlabel="\$Ca_n\$",
         ylabel="\$Ca_{n+1}\$",
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
-        size=(1000, 750),
+        size=(1000, 1000),
         legend=false,
         margin=5mm,
         titlefontsize=titlefontsize,
@@ -1122,7 +1129,7 @@ begin
     end
     affect!(integrator) = terminate!(integrator) # Stop the solver
     cb = ContinuousCallback(condition, affect!, affect_neg! = nothing) # Define the callback
-    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[end], length=1500), verbose=false)
+    @time sol = solve(monteprob, Tsit5(), EnsembleThreads(), callback=cb, trajectories=map_resolution, adaptive=false, dt=1.0f0, saveat=range(tspan[1], tspan[end], length=2000), verbose=false)
     Ca_initial = [sol[i][1][5] for i in 1:length(sol)]
     Ca_final = [sol[i][end][5] for i in 1:length(sol)]
 
@@ -1142,8 +1149,8 @@ begin
     plt = plot(
         xlabel="\$Ca\$",
         ylabel="\$x\$",
-        xlims=(0.3, 1.25),
-        ylims=(0, 0.95),
+        xlims=(0.35, 0.95),
+        ylims=(0.1, 0.95),
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
         size=(1000, 750),
         c=spike_counts,
@@ -1177,7 +1184,7 @@ begin
         xlabel="\$Ca_n\$",
         ylabel="\$Ca_{n+1}\$",
         title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
-        size=(1000, 750),
+        size=(1000, 1000),
         legend=false,
         margin=5mm,
         titlefontsize=titlefontsize,
@@ -1197,6 +1204,45 @@ begin
     ##########
 end
 ##########
+plt = plot(
+        xlabel="\$Ca_n\$",
+        ylabel="\$Ca_{n+1}\$",
+        title=@sprintf("\$\\Delta_{Ca} = %.3f, \\Delta_x = %.3f\$", ΔCa, Δx),
+        size=(1000, 1000),
+        legend=false,
+        margin=5mm,
+        titlefontsize=titlefontsize,
+        guidefontsize=guidefontsize,
+        tickfontsize=tickfontsize,
+        aspect_ratio=:equal,
+        xlim=(0.72, 0.735),
+        ylim=(0.72, 0.735)
+)
+plot!(plt, [Ca0[1], Ca0[end]], [Ca0[1], Ca0[end]], label="Fixed point line", color=:red)
+# Return map points.
+scatter!(plt, Ca_initial, Ca_final, label="Return map", c=spike_counts, markerstrokecolor=spike_counts, lw=3)
+cobweb = [0.7237, 0.73175, 0.72605, 0.72494, 0.72437]
+cobweb_priors = []
+cobweb_posteriors = []
+for i in 1:length(cobweb)-1
+    push!(cobweb_priors, cobweb[i])
+    push!(cobweb_posteriors, cobweb[i])
+    push!(cobweb_priors, cobweb[i])
+    push!(cobweb_posteriors, cobweb[i+1])
+end
+push!(cobweb_priors, cobweb[end])
+push!(cobweb_posteriors, cobweb[end])
+push!(cobweb_priors, cobweb[end])
+push!(cobweb_posteriors, cobweb[1])
+push!(cobweb_priors, cobweb[1])
+push!(cobweb_posteriors, cobweb[1])
+plot!(
+    plt,
+    cobweb_priors,
+    cobweb_posteriors,
+    color=:black
+)
+
 
 println(Ca_initial)
 
