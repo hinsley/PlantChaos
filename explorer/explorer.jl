@@ -17,7 +17,9 @@ initV = @lift ($u0[6])
 
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
-    alg = BS3(),
+    alg = Tsit5(),
+    abstol=1e-6,
+    reltol=1e-6
 ))
 
 set_theme!(theme_black())
@@ -49,12 +51,13 @@ mapax.ylabel = rich("Ca", subscript("n+1"))
 
 mapctrlax = GridLayout(mapwidgetax[2,1], tellwidth = false)
 cutpoints_tog = Toggle(mapctrlax[1,1])
-Label(mapctrlax[1,2], "show cut points")
+Label(mapctrlax[1,2], "show Poincaré section")
 
 traceax = Axis(fig[3,1])
 traceax.title = "Voltage Trace"
 traceax.ylabel = "V"
 traceax.xlabel = "t"
+hidexdecorations!(traceax; label=false)
 
 widgetax = GridLayout(fig[4,1], tellwidth = false)
 widgetax[1,1] = pausebutton = Button(fig, label = "pause", buttoncolor = RGBf(.2,.2,.2))
