@@ -4,7 +4,7 @@ using DifferentialEquations
 
 include("../model/Plant.jl")
 
-function solve(u0s=[Plant.default_state], ps=[Plant.default_params], tspans=[(0.0f0, 1.0f4)], )
+function solve(u0s=[Plant.default_state], ps=[Plant.default_params], tspans=[(0.0f0, 1.0f4)], dt=1.0f-1)
     # Solve the system for the given initial conditions and parameters
     # u0s: initial conditions
     # ps: parameters
@@ -13,7 +13,7 @@ function solve(u0s=[Plant.default_state], ps=[Plant.default_params], tspans=[(0.
     prob_func(prob, i, repeat) = remake(prob, u0=u0s[i], p=ps[i])
     monteprob = EnsembleProblem(prob, prob_func=prob_func, safetycopy=false)
     
-    @time sol = DifferentialEquations.solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=length(u0s), adaptive=false, dt=1.0f0, verbose=false)
+    @time sol = DifferentialEquations.solve(monteprob, Tsit5(), EnsembleThreads(), trajectories=length(u0s), adaptive=false, dt=dt, verbose=false)
 end
 
 end

@@ -19,7 +19,7 @@ function recurrence_count(sol, eq; delta=default_delta)
     # Count the number of times the solution visits the neighborhood of an equilibrium.
     count = 0
     was_near_eq = false
-    for i in length(sol)
+    for i in 1:length(sol)
         is_near_eq = near_eq(sol.u[i], eq; delta=delta)
         if is_near_eq && !was_near_eq
             count += 1
@@ -33,7 +33,7 @@ function max_linger_time(sol, eq; delta=default_delta)
     # Find the maximum time the solution spends in the neighborhood of an equilibrium.
     longest_linger_time = 0
     linger_interval_start = nothing
-    for i in length(sol)
+    for i in 1:length(sol)
         if near_eq(sol.u[i], eq; delta=delta) && linger_interval_start === nothing
             linger_interval_start = sol.t[i]
         elseif linger_interval_start !== nothing
