@@ -50,6 +50,7 @@ dn(n, V) = (ninf(V) - n) / tn(V)
 xinf(p, V) = 1.0 / (1.0 + exp(0.15 * (p[16] - V - 50.0)))
 IT(p, x, V) = p[6] * x * (V - p[8])
 dx(p, x, V) = (xinf(p, V) - x) / p[14]
+xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 
 dy(y, V) = (1.0 / (1.0 + exp(10.0 * (V + 50.0))) - y) / (14.2 + 20.8 / (1.0 + exp((V + 68.0) / 2.2)))
 
