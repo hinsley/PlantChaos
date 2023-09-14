@@ -1,7 +1,7 @@
 module Plant
 
 export melibeNew, melibeNew!, melibeNewReverse!, default_params, default_state,
-       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa
+       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf
 
 using StaticArrays
 
@@ -25,113 +25,109 @@ default_params = @SVector Float32[
     0.0e0     # ΔCa
 ]
 
-Vs(V) = (127.0 * V + 8265.0) / 105.0
+ Vs(V) = (127.0f0 * V + 8265.0f0) / 105.0f0
 
-am(V) = 0.1 * (50.0 - Vs(V)) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)
-bm(V) = 4.0 * exp((25.0 - Vs(V))/18.0)
-minf(V) = am(V) / (am(V) + bm(V))
+ am(V) = 0.1f0 * (50.0f0 - Vs(V)) / (exp((50.0f0 - Vs(V)) / 10.0f0) - 1.0f0)
+ bm(V) = 4.0f0 * exp((25.0f0 - Vs(V))/18.0f0)
+ minf(V) = am(V) / (am(V) + bm(V))
 # Fast inward sodium and calcium current
-II(p, h, V) = p[2] * h * minf(V)^3.0 * (V - p[8])
+ II(p, h, V) = @inbounds p[2] * h * minf(V)^3.0f0 * (V - @inbounds p[8])
 
-ah(V) = 0.07 * exp((25.0 - Vs(V)) / 20.0)
-bh(V) = 1.0 / (1.0 + exp((55.0 - Vs(V)) / 10.0))
-hinf(V) = ah(V) / (ah(V) + bh(V))
-th(V) = 12.5 / (ah(V) + bh(V))
-Ih(p, y, V) = p[4] * y * (V - p[10]) / (1.0 + exp(-(63.0 + V) / 7.8))^3.0
-dh(h, V) = (hinf(V) - h) / th(V)
+ ah(V) = 0.07f0 * exp((25.0f0 - Vs(V)) / 20.0f0)
+ bh(V) = 1.0f0 / (1.0f0 + exp((55.0f0 - Vs(V)) / 10.0f0))
+ hinf(V) = ah(V) / (ah(V) + bh(V))
+ th(V) = 12.5f0 / (ah(V) + bh(V))
+ Ih(p, y, V) = @inbounds p[4] * y * (V - @inbounds p[10]) / (1.0f0 + exp(-(63.0f0 + V) / 7.8f0))^3.0f0
+ dh(h, V) = (hinf(V) - h) / th(V)
 
-an(V) = 0.01 * (55.0 - Vs(V)) / (exp((55.0 - Vs(V)) / 10.0) - 1.0)
-bn(V) = 0.125 * exp((45.0 - Vs(V)) / 80.0)
-ninf(V) = an(V) / (an(V) + bn(V))
-tn(V) = 12.5 / (an(V) + bn(V))
-IK(p, n, V) = p[3] * n^4.0 * (V - p[9])
-dn(n, V) = (ninf(V) - n) / tn(V)
+ an(V) = 0.01f0 * (55.0f0 - Vs(V)) / (exp((55.0f0 - Vs(V)) / 10.0f0) - 1.0f0)
+ bn(V) = 0.125f0 * exp((45.0f0 - Vs(V)) / 80.0f0)
+ ninf(V) = an(V) / (an(V) + bn(V))
+ tn(V) = 12.5f0 / (an(V) + bn(V))
+ IK(p, n, V) = @inbounds p[3] * n^4.0f0 * (V - p[9])
+ dn(n, V) = (ninf(V) - n) / tn(V)
 
-xinf(p, V) = 1.0 / (1.0 + exp(0.15 * (p[16] - V - 50.0)))
-IT(p, x, V) = p[6] * x * (V - p[8])
-dx(p, x, V) = (xinf(p, V) - x) / p[14]
-xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
+ xinf(p, V) = 1.0f0 / (1.0f0 + exp(0.15f0 * (@inbounds p[16] - V - 50.0f0)))
+ IT(p, x, V) = @inbounds p[6] * x * (V - @inbounds p[8])
+ dx(p, x, V) = (xinf(p, V) - x) / @inbounds p[14]
+ xinfinv(p, xinf) = @inbounds p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 
-dy(y, V) = (1.0 / (1.0 + exp(10.0 * (V + 50.0))) - y) / (14.2 + 20.8 / (1.0 + exp((V + 68.0) / 2.2)))
+ dy(y, V) = (1.0 / (1.0 + exp(10.0 * (V + 50.0))) - y) / (14.2 + 20.8 / (1.0 + exp((V + 68.0) / 2.2)))
 
-Ileak(p, V) = p[5] * (V - p[11])
+ Ileak(p, V) = @inbounds p[5] * (V - @inbounds p[11])
 
-IKCa(p, Ca, V) = p[7] * Ca * (V - p[9]) / (0.5 + Ca)
-dCa(p, Ca, x, V) = p[15] * (p[13] * x * (p[12] - V + p[17]) - Ca)
+ IKCa(p, Ca, V) = @inbounds p[7] * Ca * (V - @inbounds p[9]) / (0.5f0 + Ca)
+ dCa(p, Ca, x, V) = @inbounds p[15] * (@inbounds p[13] * x * (@inbounds p[12] - V + @inbounds p[17]) - Ca)
 
-function dV(p, x, y, n, h, Ca, V, Isyn)
+ function dV(p, x, n, h, Ca, V)
+    # TODO: Add a function for Isyn per (12) in the appendix of the paper.
+    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ileak(p, V)) #/ p[1]
+end
+ function dV(p, x, y, n, h, Ca, V, Isyn)
     # TODO: Add a function for Isyn per (12) in the appendix of the paper.
     return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
 end
 
 function melibeNew(u::AbstractArray{T}, p, t) where T
-    # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
+    @fastmath @inbounds begin
+        x,n,h,Ca,V = u
 
-    # du1 = dx(p, u[1] V)
-    # du2 = dy(y, V)
-    # du3 = dn(n, V)
-    # du4 = dh(h, V)
-    # du5 = dCa(p, Ca, u[1] V)
-    # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
-    # du7 = 0.0e0
-    # return @SVector T[du1, du2, du3, du4, du5, du6, du7]
-    return @SVector T[
-        dx(p, u[1], u[6]),
-        dy(u[2], u[6]),
-        dn(u[3], u[6]),
-        dh(u[4], u[6]),
-        dCa(p, u[5], u[1], u[6]),
-        dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7]),
-        0.0e0
-    ]
+        Vs::T = (127f0*x + 8265f0) / 105f0
+        am::T = 0.1f0 * (50f0 - Vs) / (exp((50f0 - Vs) / 10f0) - 1f0)
+        bm::T = 4f0 * exp((25f0 - Vs)/18f0)
+        minf::T = am / (am + bm)
+        II::T =  p[2] * h * minf^3.0f0 * (V -  p[8])
+
+        ah::T = 0.07f0 * exp((25f0 - Vs) / 20f0)
+        bh::T = 1f0 / (1f0 + exp((55f0 - Vs) / 10f0))
+        hinf::T = ah / (ah + bh)
+        th::T = 12.5f0 / (ah + bh)
+        Ih::T =  p[4] * h * (V -  p[10]) / (1f0 + exp(-(63f0 + V) / 7.8f0))^3f0
+        dh::T = (hinf - h) / th
+
+        an::T = 0.01f0 * (55f0 - Vs) / (exp((55f0 - Vs) / 10f0) - 1f0)
+        bn::T = 0.125f0 * exp((45f0 - Vs) / 80f0)
+        ninf::T = an / (an + bn)
+        tn::T = 12.5f0 / (an + bn)
+        IK::T =  p[3] * n^4.0f0 * (V -  p[9])
+        dn::T = (ninf - n) / tn
+
+        xinf::T = 1f0 / (1f0 + exp(0.15f0 * ( p[16] - V - 50f0)))
+        IT::T =  p[6] * x * (V -  p[8])
+        dx::T = (xinf - x) /  p[14]
+
+        Ileak::T =  p[5] * (V -  p[11])
+
+        IKCa::T = p[7] * Ca * (V -  p[9]) / (0.5f0 + Ca)
+        dCa::T = p[15] * ( p[13] * x * ( p[12] - V +  p[17]) - Ca)
+
+        dV::T = -(II + IK + IT + IKCa + Ileak) #/p[1]
+    end
+    return SVector{5}(dx, dn, dh, dCa, dV)
 end
 
 function melibeNew!(du, u, p, t)
-    # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
-
-    # du1 = dx(p, u[1] V)
-    # du2 = dy(y, V)
-    # du3 = dn(n, V)
-    # du4 = dh(h, V)
-    # du5 = dCa(p, Ca, u[1] V)
-    # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
-    # du7 = 0.0e0
-    du[1] = dx(p, u[1], u[6])
-    du[2] = dy(u[2], u[6])
-    du[3] = dn(u[3], u[6])
-    du[4] = dh(u[4], u[6])
-    du[5] = dCa(p, u[5], u[1], u[6])
-    du[6] = dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
-    du[7] = 0.0e0
+    @inbounds du[1] = @inline dx(p, u[1], u[5])
+    @inbounds du[2] = @inline dn(u[2], u[5])
+    @inbounds du[3] = @inline dh(u[3], u[5])
+    @inbounds du[4] = @inline dCa(p, u[4], u[1], u[5])
+    @inbounds du[5] = @inline dV(p, u[1], u[2], u[3], u[4], u[5])
 end
 
 function melibeNewReverse!(du, u, p, t)
-    # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
-
-    # du1 = dx(p, u[1] V)
-    # du2 = dy(y, V)
-    # du3 = dn(n, V)
-    # du4 = dh(h, V)
-    # du5 = dCa(p, Ca, u[1] V)
-    # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
-    # du7 = 0.0e0
-    du[1] = -dx(p, u[1], u[6])
-    du[2] = -dy(u[2], u[6])
-    du[3] = -dn(u[3], u[6])
-    du[4] = -dh(u[4], u[6])
-    du[5] = -dCa(p, u[5], u[1], u[6])
-    du[6] = -dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
-    du[7] = 0.0e0
+    @inbounds du[1] = @inline -dx(p, u[1], u[5])
+    @inbounds du[2] = @inline -dn(u[3], u[5])
+    @inbounds du[3] = @inline -dh(u[4], u[5])
+    @inbounds du[4] = @inline -dCa(p, u[4], u[1], u[5])
+    @inbounds du[5] = @inline -dV(p, u[1], u[2], u[3], u[4], u[5])
 end
 
 default_state = @SVector Float32[
     0.8e0;     # x
-    5.472e-46; # y
     0.137e0;   # n
     0.389e0;   # h
     0.8e0;     # Ca
     -62.0e0;   # V
-    0.0e0      # Isyn
 ]
 
 end # module
