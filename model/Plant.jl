@@ -6,23 +6,23 @@ export melibeNew, melibeNew!, melibeNewReverse!, default_params, default_state,
 using StaticArrays
 
 default_params = @SVector Float32[
-    1.0e0,    # Cₘ
-    4.0e0,    # gI
-    0.3e0,    # gK
-    0.0e0,    # gₕ
-    0.003e0,  # gL
-    0.01e0,   # gT
-    0.03e0,   # gKCa
-    30.0e0,   # EI
-    -75.0e0,  # EK
-    70.0e0,   # Eₕ
-    -40.0e0,  # EL
-    140.0e0,  # ECa
-    0.0085e0, # Kc
-    100.0e0,  # τₓ
-    0.0003e0, # ρ
-    0.0e0,    # Δx
-    0.0e0     # ΔCa
+    1.0e0,    # 1: Cₘ
+    4.0e0,    # 2: gI
+    0.3e0,    # 3: gK
+    0.0e0,    # 4: gₕ
+    0.003e0,  # 5: gL
+    0.01e0,   # 6: gT
+    0.03e0,   # 7: gKCa
+    30.0e0,   # 8: EI
+    -75.0e0,  # 9: EK
+    70.0e0,   # 10: Eₕ
+    -40.0e0,  # 11: EL
+    140.0e0,  # 12: ECa
+    0.0085e0, # 13: Kc
+    100.0e0,  # 14: τₓ
+    0.0003e0, # 15: ρ
+    0.0e0,    # 16: Δx
+    0.0e0     # 17: ΔCa
 ]
 
 Vs(V) = (127.0 * V + 8265.0) / 105.0
