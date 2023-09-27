@@ -1,8 +1,8 @@
 using .Plant
 
-map_resolution = 500
+map_resolution = 2000
 
-x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
+const x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
 
 xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 IKCa(p, V) = p[2]*hinf(V)*minf(V)^3.0f0*(p[8]-V) + p[3]*ninf(V)^4.0f0*(p[9]-V) + p[6]*xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
@@ -28,7 +28,7 @@ end
 function generate_ics(p, state; res = map_resolution)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
     # Generate initial conditions along the Ca nullcline.
-    Vs = range(V_eq, -45f0, length=res)
+    Vs = range(V_eq, V_eq+20, length=res)
     u0s = [SVector{7,Float32}([
         xinf(p, V)-x_offset,
         state[2],
@@ -80,7 +80,7 @@ end
 
 build_map!(map_prob, mapics[])
 
-preimage = @lift getindex.($mapics, 1)
+preimage = @lift getindex.($mapics, 5)
 xmap = @lift getindex.($mapsol.u,2)
 #plot
 lines!(mapax, preimage, xmap)

@@ -6,21 +6,21 @@ using OrdinaryDiffEq, DynamicalSystems, GLMakie
 using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
-p = Observable(Plant.default_params)
-ΔCa = @lift($p[end])
-Δx = @lift($p[end-1])
+p = Observable(Plant.default_params);
+ΔCa = @lift($p[end]);
+Δx = @lift($p[end-1]);
 
-u0 = Observable(Plant.default_state)
-initCa = @lift ($u0[5])
-initx = @lift ($u0[1])
-initV = @lift ($u0[6])
+u0 = Observable(Plant.default_state);
+initCa = @lift ($u0[5]);
+initx = @lift ($u0[1]);
+initV = @lift ($u0[6]);
 
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
     alg = Tsit5(),
     abstol=1e-6,
     reltol=1e-6
-))
+));
 
 set_theme!(theme_black())
 set_window_config!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina Swim InterNeuron (SIN) Model")

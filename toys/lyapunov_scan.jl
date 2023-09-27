@@ -15,7 +15,7 @@ end_p = [Plant.default_params...]
 end_p[17] = -20.0 # Cashift
 end_p[16] = -1.1 # xshift
 
-resolution = 1000 # How many points to sample.
+resolution = 50 # How many points to sample.
 Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
 x_shifts = LinRange(start_p[16], end_p[16], resolution)
 ps = [[Plant.default_params...] for i in 1:resolution]
