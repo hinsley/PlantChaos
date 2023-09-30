@@ -59,9 +59,9 @@ Ileak(p, V) = p[5] * (V - p[11])
 IKCa(p, Ca, V) = p[7] * Ca * (V - p[9]) / (0.5 + Ca)
 dCa(p, Ca, x, V) = p[15] * (p[13] * x * (p[12] - V + p[17]) - Ca)
 
-function dV(p, x, y, n, h, Ca, V, Isyn)
+function dV(p, x, y, n, h, Ca, V)#, Isyn)
     # TODO: Add a function for Isyn per (12) in the appendix of the paper.
-    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
+    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V)) / p[1] # + Isyn) / p[1]
 end
 
 function melibeNew(u::AbstractArray{T}, p, t) where T
@@ -81,8 +81,8 @@ function melibeNew(u::AbstractArray{T}, p, t) where T
         dn(u[3], u[6]),
         dh(u[4], u[6]),
         dCa(p, u[5], u[1], u[6]),
-        dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7]),
-        0.0e0
+        dV(p, u[1], u[2], u[3], u[4], u[5], u[6])#, u[7]),
+        #0.0e0
     ]
 end
 
@@ -101,8 +101,8 @@ function melibeNew!(du, u, p, t)
     du[3] = dn(u[3], u[6])
     du[4] = dh(u[4], u[6])
     du[5] = dCa(p, u[5], u[1], u[6])
-    du[6] = dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
-    du[7] = 0.0e0
+    du[6] = dV(p, u[1], u[2], u[3], u[4], u[5], u[6])#, u[7])
+    #du[7] = 0.0e0
 end
 
 function melibeNewReverse!(du, u, p, t)
@@ -120,8 +120,8 @@ function melibeNewReverse!(du, u, p, t)
     du[3] = -dn(u[3], u[6])
     du[4] = -dh(u[4], u[6])
     du[5] = -dCa(p, u[5], u[1], u[6])
-    du[6] = -dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
-    du[7] = 0.0e0
+    du[6] = -dV(p, u[1], u[2], u[3], u[4], u[5], u[6])#, u[7])
+    #du[7] = 0.0e0
 end
 
 default_state = @SVector Float32[
@@ -131,7 +131,7 @@ default_state = @SVector Float32[
     0.389e0;   # h
     0.8e0;     # Ca
     -62.0e0;   # V
-    0.0e0      # Isyn
+    #0.0e0      # Isyn
 ]
 
 end # module
