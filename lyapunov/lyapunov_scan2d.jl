@@ -14,7 +14,7 @@ end_p = [Plant.default_params...]
 end_p[17] = 100.0 # Cashift
 end_p[16] = 1. # xshift
 
-resolution = 5 # How many points to sample.
+resolution = 100 # How many points to sample.
 Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
 x_shifts = LinRange(start_p[16], end_p[16], resolution)
 ps = [[Plant.default_params[1:15]; [x_shifts[i], Ca_shifts[j]]] for i in 1:resolution, j in 1:resolution]
@@ -31,63 +31,54 @@ u0 = @SVector Float32[
 
 using DynamicalSystems, OrdinaryDiffEq
 using LinearAlgebra: norm
-sys = CoupledODEs(Plant.melibeNew, u0, ps[1]; diffeq = (alg = RK4(), adaptive = false, dt = .5f0))
-d0 = 1f-5
-_d1 = randn(Float32, length(u0))
+sys = CoupledODEs(Plant.melibeNew, u0, ps[1]; diffeq = (alg = RK4(), adaptive = false, dt = 1f0))
+d0 = 1e-5
+_d1 = [randn(), 0., randn(4)..., 0.]
 _d2 = _d1/norm(_d1)*d0
 psys = ParallelDynamicalSystem(sys, [u0, u0 + _d2])
 
-λ = 0f0
-begin
-    d = λdist(psys)/d0
-    λ += log(d)/.5f0
-    println("λ: ",λ)
-    println("d: ",d)
-    λrescale!(psys, d)
-    derr = λdist(psys)/d0
-    println("derror: ", derr)
-    step!(psys)
-    nothing
-end
+function test_lyap_plot(sys, T, Ttr)
+    d0 = 1e-2
+    _d1 = [randn(), 0., randn(4)..., 0.]
+    _d2 = _d1/norm(_d1)*d0
+    psys = ParallelDynamicalSystem(sys, [u0, u0 + _d2])
+    λs = Float64[]
+    for i in 1:T
+        d = λdist(psys)/d0
+        λrescale!(psys, d)
+        step!(psys)
+        if i>Ttr
+            push!(λs, log(d))
+        end
+    end
+    # build average of normalized cumsums
+    num_avg = 500
+    max_period = 10000
+    dt = 1.0
+    max_i = ceil(Int, max_period/dt)
+    λtot = zeros(length(λs)-max_i)
+    idxs = floor.(Int, LinRange(1, max_i-1, num_avg))
+    for i in idxs
+        #return length(collect(1:(length(λs)-max_i)))
+        λtot = λtot .+ cumsum(λs[i:end-max_i+i-1])./collect(1:(length(λs)-max_i))
+    end
+    λtot = λtot ./ length(idxs)
+    λs = λtot
 
 
-
-step!(psys)
-
-d = λdist(psys)/d0
-
-λrescale!(psys, 1f0)
-
- #plot trajectory. It is a tonic spiker and should be stable.
- """let F = Figure()
-    traj = trajectory(sys, 100000)
+    F = Figure()
+    traj = trajectory(sys, T, Δt = 1.0)
+    println(length(traj[1][:,6]))
     ax = Axis(F[1,1], xlabel = "Time", ylabel = "v")
-    lines!(ax, traj[1][:,6])
+    #lines!(ax, traj[1][:,6]./maximum(traj[1][:,1]).*maximum(λs), color = :blue)
+    ais2 = vcat(zeros(Ttr), λs)
+    #lines!(ax, ais2, color = :red)
+    lines!(ax, λs, color = :green)
+    λs = cumsum(λs)./collect(1:length(λs))
+    lines!(ax, λs, color = :blue)
     F
 end
-"""
-#lyapunov(psys, 10000f0; Ttr = 100000f0, d0 = d0, d0_upper = 100f0*d0, d0_lower = .01f0*d0, Δt = 1f0)
-function λrescale!(pds::ParallelDynamicalSystem, a)
-    u1 = current_state(pds, 1)
-    u2 = current_state(pds, 2)
-    if ismutable(u2) # if mutable we assume `Array`
-        @. u2 = u1 + (u2 - u1)/a
-    else # if not mutable we assume `SVector`
-        u2 = @. u1 + (u2 - u1)/a
-    end
-    set_state!(pds, u2, 2)
-end
-function λdist(ds::ParallelDynamicalSystem)
-    u1 = current_state(ds, 1)
-    u2 = current_state(ds, 2)
-    # Compute euclidean dinstace in a loop (don't care about static or not)
-    d = zero(eltype(u1))
-    @inbounds for i in eachindex(u1)
-        d += (u1[i] - u2[i])^2
-    end
-    return sqrt(d)
-end
-
+test_lyap_plot(sys, 500000, 10000)
 
 
 systems = [deepcopy(psys) for _ in 1:Threads.nthreads() - 1]
@@ -100,10 +91,8 @@ Threads.@threads for I in 1:resolution^2
     system = systems[Threads.threadid()]
     set_parameter!(system, 16, x_shifts[i])
     set_parameter!(system, 17, Ca_shifts[j])
-    lyaparray[i,j] = lyapunovspectrum(system, 1000, Ttr = 100, di,)
+    lyaparray[i,j] = lyapunov(system, 1000000, Ttr = 100000)
 end
-
-
 
 let fig = Figure(resolution = (2000,2000))
     ax = Axis(fig[1,1], xlabel = L"\Delta Ca", ylabel = L"\Delta x")

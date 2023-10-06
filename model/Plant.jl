@@ -77,7 +77,7 @@ function melibeNew(u::AbstractArray{T}, p, t) where T
     # return @SVector T[du1, du2, du3, du4, du5, du6, du7]
     return @SVector T[
         dx(p, u[1], u[6]),
-        dy(u[2], u[6]),
+        0.0*dy(u[2], u[6]),
         dn(u[3], u[6]),
         dh(u[4], u[6]),
         dCa(p, u[5], u[1], u[6]),
@@ -97,7 +97,7 @@ function melibeNew!(du, u, p, t)
     # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
     # du7 = 0.0e0
     du[1] = dx(p, u[1], u[6])
-    du[2] = dy(u[2], u[6])
+    du[2] = 0.0*dy(u[2], u[6])
     du[3] = dn(u[3], u[6])
     du[4] = dh(u[4], u[6])
     du[5] = dCa(p, u[5], u[1], u[6])
@@ -116,7 +116,7 @@ function melibeNewReverse!(du, u, p, t)
     # du6 = dV(p, u[1] y, n, h, Ca, V, Isyn)
     # du7 = 0.0e0
     du[1] = -dx(p, u[1], u[6])
-    du[2] = -dy(u[2], u[6])
+    du[2] = -0.0*dy(u[2], u[6])
     du[3] = -dn(u[3], u[6])
     du[4] = -dh(u[4], u[6])
     du[5] = -dCa(p, u[5], u[1], u[6])
@@ -126,7 +126,7 @@ end
 
 default_state = @SVector Float32[
     0.8e0;     # x
-    5.472e-46; # y
+    0e0; # y
     0.137e0;   # n
     0.389e0;   # h
     0.8e0;     # Ca
