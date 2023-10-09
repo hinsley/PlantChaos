@@ -1,6 +1,5 @@
 function progress_for_one_step!(solver, traj)
     s = solver[]
-    step!(s, 5f0)
     push!(traj[], Point3f(s.integ.u[[5,1,6]]))
     traj[] = traj[]
 end
