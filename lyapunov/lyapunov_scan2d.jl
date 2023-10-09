@@ -71,4 +71,3 @@ let fig = Figure(resolution = (2000,2000))
 end
 
 save(homedir() * "/Dropbox/lyapunov.png",fig)
-

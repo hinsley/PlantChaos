@@ -11,8 +11,6 @@ function moving_avg(r, warr)
     return r
 end
 
-function total
-
 r = sin.(cumsum(rand(4000))./2000*20*pi) #.+ rand(1000)/10
 warr = [2100]#fill(25, 20)
 a = moving_avg(r, warr)
