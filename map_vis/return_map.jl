@@ -1,5 +1,5 @@
 
-map_resolution = 500
+map_resolution = 300
 
 # generate initial conditions
 # find equilibrium in full subsystem
@@ -28,24 +28,24 @@ function fastplant(u,p)
 end
 
 ics_probs = [NonlinearProblem(fastplant, zeros(3), zeros(17)) for i=1:Threads.nthreads()]
-ics_Cas = @lift range($eq[5], $eq[5] + $(mapslider.sliders[1].value), length = map_resolution)
+ics_xs = @lift range($eq[1], $eq[1] - $(mapslider.sliders[1].value), length = map_resolution)
 
-function generate_ics!(ics_probs, p, eq, Cas, x)
+function generate_ics!(ics_probs, p, eq, xs, Ca)
     ics = Vector{SVector{6,Float64}}(undef, map_resolution)
-    for i=1:length(Cas)
+    Threads.@threads for i=1:length(xs)
         fastu = solve(
-            remake(ics_probs[1], 
-                p = vcat(p[1:15], x, Cas[i]),
+            remake(ics_probs[Threads.threadid()], 
+                p = vcat(p[1:15], xs[i], Ca),
                 u0 = eq[[3,4,6]]
             ),
             NewtonRaphson()
         ).u
-        ics[i] = @SVector [x, 0.0, fastu[1], fastu[2], Cas[i], fastu[3]]
+        ics[i] = @SVector [xs[i], 0.0, fastu[1], fastu[2], Ca, fastu[3]]
     end
     return ics
 end
 
-mapics = @lift generate_ics!(ics_probs, $p, $eq, $ics_Cas, $eq[1])
+mapics = @lift generate_ics!(ics_probs, $p, $eq, $ics_xs, $eq[5])
 
 # integrate to find map
 
@@ -67,31 +67,30 @@ end
 function condition(u, t, integrator)
     p = integrator.p
     # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
-    ((t < 50) || (u[5] < p.eq[5])) ? 1.0 : -u[1] + p.eq[1]
+    ((t < 50) || (u[1] > p.eq[1])) ? 1.0 : -u[5] + p.eq[5]
 end
 
 affect!(integrator) = terminate!(integrator) # Stop the solver
 cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 
 monteprob = @lift EnsembleProblem($map_prob, prob_func=prob_func, output_func= output_func, safetycopy=false)
-mapsol = @lift solve($monteprob, BS3(),EnsembleThreads(), trajectories=map_resolution,
-    callback=cb, merge_callbacks = true, verbose=false)
+mapsol = @lift solve($monteprob, RK4(),EnsembleThreads(), trajectories=map_resolution,
+    callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
 
 on(mapslider.sliders[1].value) do val
-    mapics[] = generate_ics!(ics_probs, p[], eq[], range(eq[][5], eq[][5] + val, length = map_resolution), eq[][1])
-    mapsol[] = solve(monteprob[], BS3(),EnsembleThreads(), trajectories=map_resolution,
-        callback=cb, merge_callbacks = true, verbose=false)
+    mapsol[] = solve(monteprob[], RK4(),EnsembleThreads(), trajectories=map_resolution,
+        callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
     reset_limits!(mapax)
     reset_limits!(trajax)
 end
 
-preimage = @lift getindex.($mapics, 5)
+preimage = @lift getindex.($mapics, 1)
 
 cass = @lift([$mapsol[i][1,:] for i in 1:map_resolution])
 xss = @lift([$mapsol[i][2,:] for i in 1:map_resolution])
 vss = @lift([$mapsol[i][3,:] for i in 1:map_resolution])
 
-camap = @lift [$mapsol[i][1,end] for i in 1:map_resolution]
+xmap = @lift [$mapsol[i][2,end] for i in 1:map_resolution]
 
 function glue_trajs(mapsol)
     cass = Float64[]
@@ -114,7 +113,7 @@ xss = @lift $_ans[2]
 vss = @lift $_ans[3]
 
 #plot
-lines!(mapax, preimage, camap)
+lines!(mapax, preimage, xmap)
 lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth = 2,)
 
 colorrng = @lift range(0,1, length = length($cass))

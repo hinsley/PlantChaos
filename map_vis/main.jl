@@ -32,8 +32,8 @@ begin
     mapwidgetax = GridLayout(fig[3:4,2], tellwidth = false)
     mapax = Axis(mapwidgetax[1,1], aspect=1)
     mapax.title = "1D Map"
-    mapax.xlabel = rich("Ca", subscript("n"))
-    mapax.ylabel = rich("Ca", subscript("n+1"))
+    mapax.xlabel = rich("x", subscript("n"))
+    mapax.ylabel = rich("x", subscript("n+1"))
 
     widgetax = GridLayout(fig[4,1], tellwidth = false)
     mapslider = SliderGrid(widgetax[2,:], (label = "map", range=.01:.01:0.4, format = "{:.0}", startvalue = .2, snap = false))
