@@ -1,7 +1,11 @@
 [deps]
 BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DynamicalSystems = "61744808-ddfa-5f27-97ff-6e42cc95d634"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

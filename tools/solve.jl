@@ -1,6 +1,6 @@
 module Solve export solve
 
-using DifferentialEquations
+using OrdinaryDiffEq
 
 include("../model/Plant.jl")
 

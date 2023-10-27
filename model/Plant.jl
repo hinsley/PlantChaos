@@ -63,6 +63,10 @@ function dV(p, x, y, n, h, Ca, V)#, Isyn)
     # TODO: Add a function for Isyn per (12) in the appendix of the paper.
     return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V)) / p[1] # + Isyn) / p[1]
 end
+function dV(p, x, y, n, h, Ca, V, Isyn)
+    # TODO: Add a function for Isyn per (12) in the appendix of the paper.
+    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V)+ Isyn) / p[1]
+end
 
 function melibeNew(u::AbstractArray{T}, p, t) where T
     # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
@@ -134,7 +138,7 @@ end
 
 default_state = @SVector Float32[
     0.8e0;     # x
-    0e0; # y
+    #0e0; # y
     0.137e0;   # n
     0.389e0;   # h
     0.8e0;     # Ca
