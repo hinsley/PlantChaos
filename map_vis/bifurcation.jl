@@ -1,5 +1,3 @@
-using DelimitedFiles
-using FileIO
 
 isiimg = rotr90(load("./explorer/ISI_variance.png"))
 min_x, max_x = -130, 100
@@ -38,7 +36,6 @@ on(bifpoint) do pars
     if !ispressed(mapax, Keyboard.left_control)
         delCa, delx = pars
         p.val = (p[][1:end-2]..., delx, delCa)
-        auto_dt_reset!(integ[])
         p[] = p[]
         reset_limits!(mapax)
         reset_limits!(trajax)

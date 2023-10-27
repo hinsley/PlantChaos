@@ -1,10 +1,8 @@
 
-using .Plant
-map_resolution = 200
-using NonlinearSolve
+map_resolution = 500
+
 # generate initial conditions
 # find equilibrium in full subsystem
-using Roots
 include("../tools/equilibria.jl")
 
 eq_guess = @lift SVector{6}(Equilibria.eq($p) .+ .01)
@@ -30,7 +28,7 @@ function fastplant(u,p)
 end
 
 ics_probs = [NonlinearProblem(fastplant, zeros(3), zeros(17)) for i=1:Threads.nthreads()]
-ics_Cas = @lift range($eq[5], $eq[5] + .1, length = map_resolution)
+ics_Cas = @lift range($eq[5], $eq[5] + $(mapslider.sliders[1].value), length = map_resolution)
 
 function generate_ics!(ics_probs, p, eq, Cas, x)
     ics = Vector{SVector{6,Float64}}(undef, map_resolution)
@@ -60,6 +58,7 @@ _map_prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 1e6), zeros(17))
 map_prob = @lift remake(_map_prob, p = (p = $p, eq = $eq))
 
 prob_func(prob, i, repeat) = remake(prob, u0=mapics[][i])
+
 function output_func(sol,i)
     ts = range(0, sol.t[end], length = 500)
     (sol(ts, idxs = [5,1,6]), false)
@@ -77,6 +76,14 @@ cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 monteprob = @lift EnsembleProblem($map_prob, prob_func=prob_func, output_func= output_func, safetycopy=false)
 mapsol = @lift solve($monteprob, BS3(),EnsembleThreads(), trajectories=map_resolution,
     callback=cb, merge_callbacks = true, verbose=false)
+
+on(mapslider.sliders[1].value) do val
+    mapics[] = generate_ics!(ics_probs, p[], eq[], range(eq[][5], eq[][5] + val, length = map_resolution), eq[][1])
+    mapsol[] = solve(monteprob[], BS3(),EnsembleThreads(), trajectories=map_resolution,
+        callback=cb, merge_callbacks = true, verbose=false)
+    reset_limits!(mapax)
+    reset_limits!(trajax)
+end
 
 preimage = @lift getindex.($mapics, 5)
 
@@ -112,7 +119,7 @@ lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth =
 
 colorrng = @lift range(0,1, length = length($cass))
 
-lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal, linewidth = 1.5)
+lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal, linewidth = .5, fxaa = false)
  
 """map_point = select_point(mapax.scene, marker = :circle)
 
