@@ -54,7 +54,7 @@ function mapf(u,p,t) # unpacks the parameter tuple
     return melibeNew(u,p,t)
 end
 
-_map_prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 1e6), zeros(17))
+_map_prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 1e5), zeros(17))
 map_prob = @lift remake(_map_prob, p = (p = $p, eq = $eq))
 
 prob_func(prob, i, repeat) = remake(prob, u0=mapics[][i])
@@ -92,6 +92,13 @@ vss = @lift([$mapsol[i][3,:] for i in 1:map_resolution])
 
 xmap = @lift [$mapsol[i][2,end] for i in 1:map_resolution]
 
+function calculate_hom_box(xmap, preimage)
+    d = diff(xmap.- preimage)
+    i = findfirst(i -> d[i]*d[i+1] < 0, 1:(length(d)-1))
+    return preimage[i], preimage[i+1], xmap[i], xmap[i+1]
+
+
+
 function glue_trajs(mapsol)
     cass = Float64[]
     xss = Float64[]
@@ -120,19 +127,3 @@ colorrng = @lift range(0,1, length = length($cass))
 
 lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal, linewidth = .5, fxaa = false)
  
-"""map_point = select_point(mapax.scene, marker = :circle)
-
-on(map_point) do pars
-    # do not trigger when reset limit
-    if !ispressed(mapax, Keyboard.left_control)
-        ca_n, _ = pars
-        V_n = find_zero((V) -> Ca_null_Ca(p[], V) - ca_n, -40)
-        x_n = xinf(p[], V_n)
-
-        u0.val = (x_n, u0[][2:4]..., ca_n, V_n, u0[][end])
-        auto_dt_reset!(dynsys[].integ)
-        u0[] = u0[]
-    end
-end"""
-nothing
-fig
