@@ -29,14 +29,13 @@ function generate_ics(p, state; res = map_resolution)
     V_eq, Ca_eq, x_eq = Ca_x_eq(p)
     # Generate initial conditions along the Ca nullcline.
     Vs = range(V_eq, V_eq+20, length=res)
-    u0s = [SVector{7,Float32}([
+    u0s = [SVector{6,Float32}([
         xinf(p, V)-x_offset,
         state[2],
         state[3],
         state[4],
         Ca_null_Ca(p, V),
-        V, 
-        state[7]]) for V in Vs]
+        V]) for V in Vs]
 end
 
 #generate initial conditions along the Ca nullcline
