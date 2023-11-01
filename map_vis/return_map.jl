@@ -1,5 +1,5 @@
 
-map_resolution = 300
+map_resolution = 100
 
 # generate initial conditions
 # find equilibrium in full subsystem
@@ -28,10 +28,12 @@ function fastplant(u,p)
 end
 
 ics_probs = [NonlinearProblem(fastplant, zeros(3), zeros(17)) for i=1:Threads.nthreads()]
-ics_xs = @lift range($eq[1], $eq[1] - $(mapslider.sliders[1].value), length = map_resolution)
+ics_xs = @lift range($eq[1] - $(mapslider.sliders[2].value), 
+    $eq[1] - $(mapslider.sliders[1].value),
+    length = map_resolution)
 
-function generate_ics!(ics_probs, p, eq, xs, Ca)
-    ics = Vector{SVector{6,Float64}}(undef, map_resolution)
+function generate_ics!(ics_probs, p, eq, xs, Ca, res)
+    ics = Vector{SVector{6,Float64}}(undef, res)
     Threads.@threads for i=1:length(xs)
         fastu = solve(
             remake(ics_probs[Threads.threadid()], 
@@ -45,7 +47,7 @@ function generate_ics!(ics_probs, p, eq, xs, Ca)
     return ics
 end
 
-mapics = @lift generate_ics!(ics_probs, $p, $eq, $ics_xs, $eq[5])
+mapics = @lift generate_ics!(ics_probs, $p, $eq, $ics_xs, $eq[5], map_resolution)
 
 # integrate to find map
 
@@ -77,8 +79,8 @@ monteprob = @lift EnsembleProblem($map_prob, prob_func=prob_func, output_func= o
 mapsol = @lift solve($monteprob, RK4(),EnsembleThreads(), trajectories=map_resolution,
     callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
 
-on(mapslider.sliders[1].value) do val
-    mapsol[] = solve(monteprob[], RK4(),EnsembleThreads(), trajectories=map_resolution,
+onany(mapslider.sliders[1].value, mapslider.sliders[2].value) do val, _
+    mapsol[] = solve(monteprob[], RK4(),EnsembleThreads(), trajectories=map_resolution[],
         callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
     reset_limits!(mapax)
     reset_limits!(trajax)
@@ -96,7 +98,7 @@ function calculate_hom_box(xmap, preimage)
     d = diff(xmap.- preimage)
     i = findfirst(i -> d[i]*d[i+1] < 0, 1:(length(d)-1))
     return preimage[i], preimage[i+1], xmap[i], xmap[i+1]
-
+end
 
 
 function glue_trajs(mapsol)
@@ -125,5 +127,20 @@ lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth =
 
 colorrng = @lift range(0,1, length = length($cass))
 
-lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal, linewidth = .5, fxaa = false)
- 
+lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal,
+ linewidth = 1.0, fxaa = false, alpha = 0.5)
+
+function refine_map!(mapsol, mapics, p, eq, xs, Ca, res)
+    ics = Vector{SVector{6,Float64}}(undef, res)
+    Threads.@threads for i=1:length(xs)
+        fastu = solve(
+            remake(ics_probs[Threads.threadid()], 
+                p = vcat(p[1:15], xs[i], Ca),
+                u0 = eq[[3,4,6]]
+            ),
+            NewtonRaphson()
+        ).u
+        ics[i] = @SVector [xs[i], 0.0, fastu[1], fastu[2], Ca, fastu[3]]
+    end
+    return ics
+end

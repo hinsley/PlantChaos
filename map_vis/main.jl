@@ -17,8 +17,12 @@ set_window_config!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina S
 
 begin
     fig = Figure(resolution = (1500, 1000).*1.3);
-
+    lights = [
+        AmbientLight(0.8),
+    ]
+  
     trajax = Axis3(fig[1:2,1], azimuth = 5pi/13, elevation = pi/25)
+    trajax.scene.lights = lights
     trajax.title = "Trajectory"
     trajax.xlabel = "Ca"
     trajax.ylabel = "x"
@@ -36,7 +40,12 @@ begin
     mapax.ylabel = rich("x", subscript("n+1"))
 
     widgetax = GridLayout(fig[4,1], tellwidth = false)
-    mapslider = SliderGrid(widgetax[2,:], (label = "map", range=.01:.01:0.4, format = "{:.0}", startvalue = .2, snap = false))
+    mapslider = SliderGrid(widgetax[2,:], 
+        (label = "map end", range=.01:.01:0.4, format = "{:.0}",
+             startvalue = .2, snap = false),
+        (label = "map begin", range=.01:.01:0.4, format = "{:.0}",
+             startvalue = 0., snap = false),
+        )
 end
 
 #include("./trajectory.jl")
