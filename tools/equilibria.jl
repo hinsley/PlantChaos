@@ -28,7 +28,7 @@ function Ca_x_eq(p; which_root=Nothing)
     if which_root == Nothing
         v_eq = length(v_eqs) > 1 ? v_eqs[2] : v_eqs[1]
     else
-        v_eq = v_eqs[which_root]
+        v_eq = length(v_eqs) > which_root-1 ? v_eqs[which_root] : v_eqs[end]
     end
     Ca_eq = Ca_null_Ca(p, v_eq)
     x_eq = Plant.xinf(p, v_eq)
@@ -41,5 +41,7 @@ function eq(p; which_root=Nothing)
     v_eq, Ca_eq, x_eq = Ca_x_eq(p; which_root=which_root)
     return [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.default_state[4], Ca_eq, v_eq]#, Plant.default_state[7]]
 end
+
+
 
 end

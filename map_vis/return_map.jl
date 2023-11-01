@@ -1,8 +1,10 @@
 
 map_resolution = 100
+max_minima = 10
 
 # generate initial conditions
-# find equilibrium in full subsystem
+
+## find equilibrium in full subsystem
 include("../tools/equilibria.jl")
 
 eq_guess = @lift SVector{6}(Equilibria.eq($p) .+ .01)
@@ -12,8 +14,8 @@ eq = @lift solve(
     remake(_eq_prob, p = $p, u0 = $eq_guess),
     NewtonRaphson()
 ).u
-# find equilibria of fast subsystem along x= x_eq
 
+# find equilibria of fast subsystem along the ca = ca_eq line
 function fastplant(u,p)
     Ca = p[17]
     x = p[16]
@@ -49,7 +51,7 @@ end
 
 mapics = @lift generate_ics!(ics_probs, $p, $eq, $ics_xs, $eq[5], map_resolution)
 
-# integrate to find map
+# calculate the map trajectory for every value along the ca = ca_eq line
 
 function mapf(u,p,t) # unpacks the parameter tuple
     p = p.p
@@ -79,6 +81,21 @@ monteprob = @lift EnsembleProblem($map_prob, prob_func=prob_func, output_func= o
 mapsol = @lift solve($monteprob, RK4(),EnsembleThreads(), trajectories=map_resolution,
     callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
 
+# calculate the trajectories leaving from the unstable manifold of the saddle point if it exists
+function get_saddle(prob, p)
+    v_eqs = find_zeros(v -> Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    if length(v_eqs) < 5
+        return fill(NaN, 6)
+    end
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    return eq = [x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+end
+
+saddle = @lift get_saddle(_eq_prob, $p)
+
+# ensure that the map is recalculated whent the map limits are changed
 onany(mapslider.sliders[1].value, mapslider.sliders[2].value) do val, _
     mapsol[] = solve(monteprob[], RK4(),EnsembleThreads(), trajectories=map_resolution[],
         callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
@@ -122,7 +139,7 @@ xss = @lift $_ans[2]
 vss = @lift $_ans[3]
 
 #plot
-lines!(mapax, preimage, xmap)
+lines!(mapax, preimage, xmap, color = range(0.,1., length=map_resolution), colormap = :thermal)
 lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth = 2,)
 
 colorrng = @lift range(0,1, length = length($cass))

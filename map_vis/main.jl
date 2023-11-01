@@ -41,9 +41,9 @@ begin
 
     widgetax = GridLayout(fig[4,1], tellwidth = false)
     mapslider = SliderGrid(widgetax[2,:], 
-        (label = "map end", range=.01:.01:0.4, format = "{:.0}",
+        (label = "map end", range=.01:.001:0.4, format = "{:.0}",
              startvalue = .2, snap = false),
-        (label = "map begin", range=.01:.01:0.4, format = "{:.0}",
+        (label = "map begin", range=.01:.001:0.4, format = "{:.0}",
              startvalue = 0., snap = false),
         )
 end
