@@ -23,6 +23,7 @@ scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:purple, marker='■', label="
 # scatter!(bifax, snpo[1,827], snpo[2,827], color=:orange, marker=:star5, label="CPC", markersize=16)
 
 bifaxpoint = @lift Point2f( $p[17],$p[16])
+
 scatter!(bifax, bifaxpoint)
 
 axislegend(bifax, position=:rb)
@@ -34,6 +35,16 @@ bifpoint = select_point(bifax.scene, marker = :circle)
 on(bifpoint) do pars
     # do not trigger when reset limit
     if !ispressed(mapax, Keyboard.left_control)
+        # delete saddle plots
+        if !isnothing(sadplot1)
+            delete!(trajax.scene, sadplot1)
+            global sadplot1 = nothing
+            delete!(trajax.scene, sadplot2)
+            global sadplot2 = nothing
+            delete!(mapax, sadplot3)
+            global sadplot3 = nothing
+        end
+    
         delCa, delx = pars
         p.val = (p[][1:end-2]..., delx, delCa)
         p[] = p[]

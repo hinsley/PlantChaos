@@ -1,15 +1,16 @@
 using Pkg
 Pkg.activate("./map_vis")
 Pkg.instantiate()
-using GLMakie, OrdinaryDiffEq, StaticArrays, FileIO, Roots, NonlinearSolve, DelimitedFiles
+using GLMakie, OrdinaryDiffEq, StaticArrays, FileIO,
+    Roots, DelimitedFiles, NonlinearSolve,
+    LinearAlgebra, ForwardDiff, Optim
+
 using DataStructures: CircularBuffer
 include("../model/Plant.jl")
 using .Plant
+using Peaks, Interpolations
 
 p = Observable(convert.(Float64,(Plant.default_params)));
-ΔCa = @lift($p[end]);
-Δx = @lift($p[end-1]);
-
 u0 = Observable(convert.(Float64,Plant.default_state));
 
 set_theme!(theme_black())
@@ -29,7 +30,7 @@ begin
     trajax.zlabel = "V"
 
     bifax = Axis(fig[1:2,2], xrectzoom=false, yrectzoom=false)
-    bifax.title = "Bifurcation Diagram (ΔCa: $(ΔCa[]), Δx: $(Δx[]))"
+    bifax.title = "Bifurcation Diagram"
     bifax.xlabel = "ΔCa"
     bifax.ylabel = "Δx"
     bifax.title = "bifurcation diagram"
@@ -40,11 +41,19 @@ begin
     mapax.ylabel = rich("x", subscript("n+1"))
 
     widgetax = GridLayout(fig[4,1], tellwidth = false)
-    mapslider = SliderGrid(widgetax[2,:], 
-        (label = "map end", range=.01:.001:0.4, format = "{:.0}",
+    refinemin_button = Button(widgetax[1,1], label = "refine min", labelcolor = :black)
+    refinemax_button = Button(widgetax[1,2], label = "refine max", labelcolor = :black)
+    show_unstable_button = Button(widgetax[1,3], label = "show unstable", labelcolor = :black)
+
+    mapslider = SliderGrid(widgetax[2,:],
+        (label = "map end", range=.00001:.00001:0.4, format = "{:.0}",
              startvalue = .2, snap = false),
-        (label = "map begin", range=.01:.001:0.4, format = "{:.0}",
+        (label = "map begin", range=.00001:.00001:0.4, format = "{:.0}",
              startvalue = 0., snap = false),
+        (label = "map iterates", range=1:1:500, format = "{:.0}",
+             startvalue = 1, snap = false);
+        width = 900,
+        tellwidth = false
         )
 end
 

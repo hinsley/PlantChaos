@@ -39,7 +39,7 @@ function eq(p; which_root=Nothing)
     # Returns the full state vector of the equilibrium.
     # If using y and h currents, make sure to use finf functions for those.
     v_eq, Ca_eq, x_eq = Ca_x_eq(p; which_root=which_root)
-    return [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.default_state[4], Ca_eq, v_eq]#, Plant.default_state[7]]
+    return [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]#, Plant.default_state[7]]
 end
 
 
