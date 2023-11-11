@@ -75,17 +75,22 @@ function get_saddle_traj(prob,p)
 end
 
 # for calculating the horizontal lines coming from local mins and maxes
+# TODO: RENAME THIS
 function calculate_hom_box(xmap, preimage)
-    d = xmap.- preimage
-    ixs = findall(i -> d[i]*d[i+1] < 0, 2:(length(d)-1))
-    if length(ixs) < 2 
-        return [[(NaN,NaN), (NaN,NaN)], [(NaN,NaN), (NaN,NaN)]]
+    # Get the last place where xmap - preimage changes sign
+    for i in eachindex(xmap)
+        # Detect a sign change in i+1 versus i
+        try
+            if sign(xmap[i+1] - preimage[i+1]) * sign(xmap[i] - preimage[i]) == -1
+                # Return the mean of this point and the next.
+                residue_i = xmap[i] - preimage[i]
+                residue_i1 = xmap[i+1] - preimage[i+1]
+                return (residue_i1*preimage[i]-residue_i*preimage[i+1])/(residue_i1-residue_i)
+            end
+        catch BoundsError
+            return NaN
+        end
     end
-    (minx, mini) = findmin(xmap[1:ixs[end]])
-    lns = []
-    push!(lns, [(minx,minx), (preimage[mini], minx)])
-    push!(lns, [(preimage[ixs[1]], preimage[ixs[1]]), (minx, preimage[ixs[1]])])
-    return lns
 end
 
 # for calculating single points on the map for refining near minima
@@ -147,6 +152,8 @@ affect!(integrator) = terminate!(integrator) # Stop the solver
 function calculate_return_map(monteprob,ics_probs, p, slider1, slider2; resolution = 100)
     eq = SVector{6}(Equilibria.eq(p))
 
+    println(p[17], ",", p[16])
+
     # find equilibria of fast subsystem along the ca = ca_eq line
     preimage = collect(range(eq[1] - slider2, eq[1] - slider1, length = resolution))
     mapics = generate_ics!(ics_probs, p, eq, preimage, eq[5], resolution)
@@ -167,7 +174,20 @@ function calculate_return_map(monteprob,ics_probs, p, slider1, slider2; resoluti
         (preimage[end], eq[1]),
         (preimage[1], eq[1]),
     ]
+    # get the horizontal lines going to the saddle periodic orbit
+    saddle_po = calculate_hom_box(xmap, preimage)
+    if isnan(saddle_po)
+        ln2 = [
+            (preimage[1], eq[1]),
+            (preimage[1], eq[1]),
+        ]
+    else
+        ln2 = [
+            (preimage[end], saddle_po),
+            (saddle_po, saddle_po),
+        ]
+    end
     # get the horizontal lines coming from the local mins and maxes
     lerp = linear_interpolation(reverse(preimage), reverse(mapics))
-    return (preimage, xmap, cass, xss, vss, ln1, lerp, eq)
+    return (preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq)
 end 
