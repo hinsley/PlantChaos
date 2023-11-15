@@ -20,7 +20,7 @@ end_p[17] = -30.#150.0 # Cashift
 end_p[16] = -1.15#1. # xshift
 #end_p[16] = 1.#1. # xshift
 
-resolution = 200 # How many points to sample.
+resolution = 100 # How many points to sample.
 Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
 x_shifts = LinRange(start_p[16], end_p[16], resolution)
 ps = [[Plant.default_params[1:15]; [x_shifts[i], Ca_shifts[j]]] for i in 1:resolution, j in 1:resolution]
@@ -48,7 +48,7 @@ function melibeNew(u::AbstractArray{T}, p, t) where T
     ]
 end
 
-sys = CoupledODEs(melibeNew, u0, ps[1]; diffeq = (alg = BS3(), dtmax = 6.0, abstol = 1e-7, reltol = 1e-7))
+sys = CoupledODEs(melibeNew, u0, ps[1]; diffeq = (alg = RK4(), dtmax = 6.0, abstol = 1e-7, reltol = 1e-7))
 d0 = 1e-6
 _d1 = randn(7)
 _d2 = _d1/norm(_d1)*d0
@@ -135,5 +135,5 @@ i"""
 
 #save(homedir() * "/Dropbox/lyapunov_pd.png",fig)
 
-using CSV
-CSV.write(homedir() * "/Dropbox/lyapunov_pd.csv", CSV.Tables.table(lyaparray2))
+#using CSV
+#CSV.write(homedir() * "/Dropbox/lyapunov_pd.csv", CSV.Tables.table(lyaparray2))

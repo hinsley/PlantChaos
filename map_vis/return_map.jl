@@ -1,5 +1,5 @@
 
-map_resolution = 200
+map_resolution = 100
 max_minima = 15
 
 include("./return_map_utils.jl")
@@ -18,14 +18,15 @@ cass = @lift $_ans[3]
 xss = @lift $_ans[4]
 vss = @lift $_ans[5]
 ln1 = @lift $_ans[6]
-lerp = @lift $_ans[7]
-eq = @lift $_ans[8]
+ln2 = @lift $_ans[7]
+lerp = @lift $_ans[8]
+eq = @lift $_ans[9]
 
 # plot the map
 lines!(mapax, preimage, xmap, color = range(0.,1., length=map_resolution), colormap = :thermal)
 lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth = 2,)
 lines!(mapax, ln1, color = :white, linewidth = 1.0, linestyle = :dash)
-#lines!(mapax, ln2, color = :pink, linestyle = :dash, linewidth = 1)
+lines!(mapax, ln2, color = :pink, linestyle = :dash, linewidth = 1)
 #lines!(mapax, ln3, color = :red, linestyle = :dash, linewidth = 1)
 
 
