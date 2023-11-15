@@ -44,11 +44,14 @@ begin
     refinemin_button = Button(widgetax[1,1], label = "refine min", labelcolor = :black)
     refinemax_button = Button(widgetax[1,2], label = "refine max", labelcolor = :black)
     show_unstable_button = Button(widgetax[1,3], label = "show unstable", labelcolor = :black)
+    map_switch_menu = Menu(widgetax[1,4], options = ["x_eq", "x_eq + v count"], default = "x_eq")
+    Label(widgetax[1,5], "map calc method")
+    print_button = Button(widgetax[1,5], label = "generate fig", labelcolor = :black)
 
     mapslider = SliderGrid(widgetax[2,:],
-        (label = "map end", range=.00001:.00001:0.4, format = "{:.0}",
+        (label = "map end", range=.00001:.00001:0.6, format = "{:.0}",
              startvalue = .2, snap = false),
-        (label = "map begin", range=.00001:.00001:0.4, format = "{:.0}",
+        (label = "map begin", range=.00001:.00001:0.6, format = "{:.0}",
              startvalue = 0., snap = false),
         (label = "map iterates", range=1:1:500, format = "{:.0}",
              startvalue = 1, snap = false);

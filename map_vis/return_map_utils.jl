@@ -130,7 +130,6 @@ function iterate_map(preimage, xmap)
 
 end
 
-
 #functions for the ensemble problem
 
 function output_func(sol,i)
