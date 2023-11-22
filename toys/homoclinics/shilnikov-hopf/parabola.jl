@@ -37,14 +37,14 @@ lerp = result[8]
 eq = result[9]
 
 function flat_maxima(xmap, flatness_threshold)
-    # Find local maxima in xmap
+    # Find local maxima in xmap.
     maxima_indices, _ = Peaks.findmaxima(xmap)
 
-    # Filter maxima based on flatness criteria
+    # Filter maxima based on flatness criteria.
     valid_maxima_indices = Int[]
     for idx in maxima_indices[2:end-1]
         try
-            # Check if the maximum is flat
+            # Check if the maximum is flat.
             if all(abs(xmap[idx] - xmap[i]) <= flatness_threshold for i in (idx-1):(idx+1))
                 push!(valid_maxima_indices, idx)
             end
@@ -56,13 +56,28 @@ function flat_maxima(xmap, flatness_threshold)
     return valid_maxima_indices
 end
 
-# Example usage
-flatness_threshold = 1e-3  # Adjust this for the flatness threshold
+flatness_threshold = 1e-3  # Adjust this for the flatness threshold.
 
 flatmaxes = flat_maxima(xmap, flatness_threshold)
-
-# Optionally, to get the values of the flat maxima:
 flat_maxima_values = xmap[flatmaxes]
+
+# Refine flat maxima.
+# ...For calculating single points on the map for refining near maxima.
+function xreturn(lerp,prob,x)
+    # get initial conditions by linear interpolation
+    ics = lerp(x)
+    # solve the map
+    prob = remake(prob, u0 = ics)
+    sol = solve(prob, RK4(), abstol = 1e-8, reltol = 1e-8, callback = cb)
+    # return the final value
+    return sol[1,end]
+end
+# Sharpen the flat maxima.
+for (flatmax_i, xmap_i) in enumerate(flatmaxes) # Maybe get rid of enumerate when doing continuation for speed?
+    opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), preimage[xmap_i+1], preimage[xmap_i-1])
+    xmap[xmap_i] = -Optim.minimum(opt)
+    flat_maxima_values[flatmax_i] = xmap[xmap_i]
+end
 
 # plot the map
 begin
