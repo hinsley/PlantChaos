@@ -1,34 +1,40 @@
-using GLMakie, CUDA
+
+using Pkg; Pkg.activate("./lyapunov_2")
+using GLMakie, CUDA, StaticArrays
 using LinearAlgebra: norm
+
+include("./lyapunov.jl")
+include("./model.jl")
 
 resolution = 100 # How many points to sample.
 
 # generate parameter space
-xspace = LinRange(-1.5, 1.5, resolution)
-caspace = LinRange(-45, -20, resolution)
-ps = [[xspace[i], caspace[j]] for i in 1:resolution, j in 1:resolution]
+xspace = LinRange(-1.5, 1.5, resolution) |> collect |> cu
+caspace = LinRange(-45, -20, resolution) |> collect |> cu
 
-# generate initial conditions
-d0 = 1e-7
-u0 = let
-    u0 = rand(Float32, 5)
-    perturb = randn(5)
-    perturb = perturb/norm(perturb)*d0
-    u0 + perturb
-end
+#initialize scan data
+lyapunov_exponents = CUDA.zeros(resolution, resolution)
 
+T = 100f0
+TTr = 100f0
+dt = 1f0
+d0 = 1f-7
+rescale_dt = Int32(10)
 
+tr = @cuda lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
+        TTr, dt, d0, rescale_dt)
 
-begin
-    lyaparray = Array{Float64}(undef,resolution,resolution)
-    for i in 1:resolution, j in 1:resolution
-        sys = CoupledODEs(melibeNew, u0, ps[i,j])
-        lyaparray[i,j] = lyapunov(sys, 1000000; Ttr = 10000,d0 = 1e-6, Δt = .1)
-    end
-    heatmap(x_shifts, Ca_shifts, lyaparray, xlabel="Ca_shift", ylabel="Lyapunov exponent")
-end
+CUDA.registers(tr)
+CUDA.memory(tr)
 
-F = Figure()
-ax = Axis(F[1,1], xlabel = "x_shift", ylabel = "Ca_shift")
-heatmap!(ax, x_shifts, Ca_shifts, lyaparray, colormap = :thermal)
-F
+data = @cuda threads=(2,2) blocks=(1,1) lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
+        TTr, dt, d0, rescale_dt)
+
+        """du = @MVector zeros(5)
+u = @MVector rand(5)
+k = @MMatrix zeros(3,5)
+xshift = 0f0
+cashift = 0f0
+
+runge_kutta_step!(f!, du, u, k, xshift, cashift, dt)
+"""

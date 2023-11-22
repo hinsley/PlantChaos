@@ -1,68 +1,106 @@
 
-function runge_kutta_step(f, u, p, dt)
-    k1 = dt * f(u, p)
-    k2 = dt * f(u + 0.5f0 * k1, p)
-    k3 = dt * f(u + 0.5f0 * k2, p)
-    k4 = dt * f(u + k3, p)
-    return u + (k1 + 2f0 * k2 + 2 * k3 + k4) / 6f0
+function runge_kutta_step!(f, du, u, k, x_shift, Ca_shift, dt)
+    @inbounds begin
+    f(du, u, x_shift, Ca_shift)
+    @. k[1,:] = dt * du
+    f(du, u + 0.5f0 * k[1,:], x_shift, Ca_shift)
+    @. k[2,:] = dt * du
+    f(du, u + 0.5f0 * k[2,:], x_shift, Ca_shift)
+    @. k[3,:] = dt * du
+    f(du, u + 0.5f0 * k[3,:], x_shift, Ca_shift)
+    u = u + (k[1,:] + 2f0 * k[2,:] + 2f0 * k[3,:] + dt * du) / 6f0
+    end
 end
 
 function dist(u1, u2)
-    sqrt(sum((u - u1).^2))
+    i=Int32(1)
+    d = 0f0
+    while i < 6
+        @inbounds d += (u1[i] - u2[i])^2
+        i += Int32(1)
+    end
+    return d
 end
 
-function lyapunov_kernel!(f, us, u1s, ps, lyapunov_exponents, T;
-        TTr = 0f0, dt = 1f0, d0 = 1f-9, rescale_dt = 10)
+#TTr = 0f0, dt = 1f0, d0 = 1f-9, rescale_dt::Int32 = Int32(10)
+function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
+        TTr, dt, d0, rescale_dt)
 
-    idx = threadIdx().x + (blockIdx().x - Int32(1)) * blockDim().x
-    if idx > length(ps) return end
+    xix = threadIdx().x + (blockIdx().x - Int32(1)) * blockDim().x
+    caix = threadIdx().y + (blockIdx().y - Int32(1)) * blockDim().y
+    if xix > length(xs) return end
+    if caix > length(cas) return end
+
+    #initial conditions
+    u = @MVector rand(5)
+    du = @MVector zeros(5)
+    pert = @MVector randn(5)
+    u1 = @. u + pert / norm(pert) * d0
+    k = @MMatrix zeros(3,5)
     
-    @inbounds begin
-        p = ps[idx]
-        u = us[idx]
-        u1 = u1s[idx]
-    end
-
+    #integration
     d = dist(u, u1)
-    t0 = 0f0
     λ_total = 0f0
-
-    for t = vcat(-TTr:dt:0,dt:dt:T) # TODO get rid of steprange
-        rescale_count = 0
+    t = -TTr
+    while t < T
+        rescale_count = 0f0
         while rescale_count < rescale_dt
-            u = runge_kutta_step(f, u, p, dt)
-            u1 = runge_kutta_step(f, u1, p, dt)
+            @inbounds runge_kutta_step!(f!, du, u, k, xs[xix], cas[caix], dt)
+            @inbounds runge_kutta_step!(f!, du, u1, k, xs[xix], cas[caix], dt)
             rescale_count += dt
-            t == 0f0 && break
+            t += dt
+            t*(t-dt) <= 0f0 && break
+            t > T && break
         end
         #rescale
         dnew = dist(u, u1)
-        λ_total += log(dnew/d)
-        u1 = u1 + (u1 - u) / dnew * d0
+        @cuprintln("dnew $dnew")
+        if t>0f0
+            λ_total += log(dnew/(d + eps(Float32)))
+        end
+        @. u1 = u1 + (u1 - u) / (dnew  / d0)
         d = dist(u,u1) # calculated explicitly for numerical precision.
     end
-    lyapunov_exponents[idx] = λ_total / T 
+    @inbounds lyapunov_exponents[xix, caix] = λ_total / T
+    return
 end
 
-function lyapunov(f, ps, T, N, resolution; TTr = 0f0, dt = 1f0,
-        d0 = 1f-9, d0_upper = d0*1f+3, d0_lower = d0*1f-3)
-    N
-    u = CUDA.rand(resolution, resolution)
+function lyapunov(f, xs, cas, T, TTr, dt, d0, rescale_dt)
+    # calculate batch size()
 
-    lyapunov_exponents = CUDA.fill(0.0f0, N)
+    lyapunov_exponents = CUDA.zeros(length(xs), length(cas))
+    @cuda threads=(32,32) blocks=(1,1) lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
+        TTr, dt, d0, rescale_dt)
+    return lyapunov_exponents
+end
 
-    # Copy initial conditions to GPU
-    CUDA.copyto!(u, initial_conditions)
+function optimal_launch_configuration(kernel)
+    device = CUDA.device()
+    warp_size = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_WARP_SIZE)
+    num_multiprocessors = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT)
+    # threads
+    max_threads_per_block = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
+    max_threads_per_multiprocessor = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR)
+    # blocks
+    max_blocks_per_multiprocessor = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR)
+    # registers
+    max_registers_per_block = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK)
+    max_registers_per_multiprocessor = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR)
+    max_registers_per_thread = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_THREAD)
+    # shared memory
+    max_shared_memory_per_block = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK)
+    max_shared_memory_per_multiprocessor = CUDA.attribute(device,
+        CUDA.DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR)
 
-    # Define grid and block sizes
-    threads_per_block = 256
-    blocks = ceil(Int, N / threads_per_block)
-
-    # Launch the kernel
-    @cuda blocks=blocks threads=threads_per_block lyapunov_kernel!(u, parameters, lyapunov_exponents, dt, total_time)
-
-    # Copy results back to CPU
-    lyapunov_exponents_cpu = Array(lyapunov_exponents)
-
-    return lyapunov_exponents_cpu
+    
+    return blocks, threads_per_block
 end
