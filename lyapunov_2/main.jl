@@ -18,7 +18,7 @@ lyapunov_exponents = CUDA.zeros(resolution, resolution)
 T = 100f0
 TTr = 100f0
 dt = 1f0
-d0 = 1f-7
+d0 = 1f-3
 rescale_dt = Int32(10)
 
 tr = @cuda lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
@@ -27,9 +27,16 @@ tr = @cuda lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
 CUDA.registers(tr)
 CUDA.memory(tr)
 
-data = @cuda threads=(2,2) blocks=(1,1) lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
-        TTr, dt, d0, rescale_dt)
+#CUDA.@profile lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
+#        TTr, dt, d0, rescale_dt)
 
+data = @cuda threads=1 blocks=1 lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
+        TTr, .01, d0, rescale_dt)
+
+        
+        
+        
+        
         """du = @MVector zeros(5)
 u = @MVector rand(5)
 k = @MMatrix zeros(3,5)

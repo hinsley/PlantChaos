@@ -12,16 +12,6 @@ function runge_kutta_step!(f, du, u, k, x_shift, Ca_shift, dt)
     end
 end
 
-function dist(u1, u2)
-    i=Int32(1)
-    d = 0f0
-    while i < 6
-        @inbounds d += (u1[i] - u2[i])^2
-        i += Int32(1)
-    end
-    return d
-end
-
 #TTr = 0f0, dt = 1f0, d0 = 1f-9, rescale_dt::Int32 = Int32(10)
 function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
         TTr, dt, d0, rescale_dt)
@@ -35,11 +25,12 @@ function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
     u = @MVector rand(5)
     du = @MVector zeros(5)
     pert = @MVector randn(5)
-    u1 = @. u + pert / norm(pert) * d0
+    u1 = u + pert / norm(pert) * d0
     k = @MMatrix zeros(3,5)
     
     #integration
-    d = dist(u, u1)
+    d = norm(u-u1)
+    @cuprintln("d $d")
     λ_total = 0f0
     t = -TTr
     while t < T
@@ -53,13 +44,13 @@ function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
             t > T && break
         end
         #rescale
-        dnew = dist(u, u1)
+        a = norm(u-u1)
         @cuprintln("dnew $dnew")
         if t>0f0
             λ_total += log(dnew/(d + eps(Float32)))
         end
-        @. u1 = u1 + (u1 - u) / (dnew  / d0)
-        d = dist(u,u1) # calculated explicitly for numerical precision.
+        u1 = u1 + (u1 - u) / (dnew  / d0)
+        d = norm(u-u1) # calculated explicitly for numerical precision.
     end
     @inbounds lyapunov_exponents[xix, caix] = λ_total / T
     return
