@@ -15,7 +15,7 @@ x_shift = -1.28
 p = SVector{17}(vcat(Plant.default_params[1:15], [x_shift, ca_shift]))
 u0 = convert.(Float64, Plant.default_state)
 map_resolution = 1000
-preimage_range = (0.05, 0)#(0.3, 0) # Distance from the equilibrium.
+preimage_range = (0.3, 0) # Distance from the equilibrium.
 
 set_theme!(theme_black())
 
