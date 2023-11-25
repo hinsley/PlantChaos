@@ -15,7 +15,7 @@ x_shift = -1.28
 p = SVector{17}(vcat(Plant.default_params[1:15], [x_shift, ca_shift]))
 u0 = convert.(Float64, Plant.default_state)
 map_resolution = 1000
-preimage_range = (0.3, 0) # Distance from the equilibrium.
+preimage_range = (0.05, 0)#(0.3, 0) # Distance from the equilibrium.
 
 set_theme!(theme_black())
 
@@ -79,7 +79,38 @@ for (flatmax_i, xmap_i) in enumerate(flatmaxes) # Maybe get rid of enumerate whe
     flat_maxima_values[flatmax_i] = xmap[xmap_i]
 end
 
-# plot the map
+# Refine the saddle PO preimage height.
+begin
+    saddle_po_preimage = calculate_hom_box(xmap, preimage)
+    old_saddle_po = nothing
+    ##### Convoluted method (maybe more accurate? solves for ICs in a principled way versus lerping)
+    # # Get expected ICs of the saddle PO.
+    # ics = lerp(saddle_po)
+    # n, h, V = fastplant([ics[2], ics[3], ics[5]], p)
+    # new_ics = [ics[1], n, h, ics[4], V, ics[6]]
+    # # Solve the saddle PO.
+    # prob = remake(map_prob, u0 = new_ics)
+    # Finish programming this.
+    #####
+    ##### Quick method.
+    saddle_po_refinement_iterates = 0
+    while saddle_po_preimage != old_saddle_po # Iterate until convergence.
+        old_saddle_po = saddle_po_preimage
+        # Solve the saddle PO.
+        saddle_po_xmap = xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), saddle_po_preimage)
+        # Insert (saddle_po_preimage, saddle_po_xmap) into the map.
+        # Get the index of the last preimage value less than saddle_po_preimage.
+        insertion_idx = findfirst(x -> x < saddle_po_preimage, preimage)
+        insert!(preimage, insertion_idx, saddle_po_preimage)
+        insert!(xmap, insertion_idx, saddle_po_xmap)
+        saddle_po_preimage = calculate_hom_box(xmap, preimage)
+        saddle_po_refinement_iterates += 1
+    end
+    println("Saddle PO location converged after $(saddle_po_refinement_iterates-1) refinements.")
+    #####
+end
+
+# Plot the map
 begin
     fig = Figure(resolution=(1500, 1000).*1.3)
     
@@ -88,7 +119,7 @@ begin
     mapax.xlabel = rich("x", subscript("n"))
     mapax.ylabel = rich("x", subscript("n+1"))
 
-    lines!(mapax, preimage, xmap, color = range(0.,1., length=map_resolution), colormap = :thermal)
+    lines!(mapax, preimage, xmap, color = range(0.,1., length=length(xmap)), colormap = :thermal)
     lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth = 2,)
     lines!(mapax, ln1, color = :white, linewidth = 1.0, linestyle = :dash)
     lines!(mapax, ln2, color = :pink, linestyle = :dash, linewidth = 1)
