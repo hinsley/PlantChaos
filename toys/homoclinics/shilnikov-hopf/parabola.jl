@@ -83,16 +83,6 @@ end
 begin
     saddle_po_preimage = calculate_hom_box(xmap, preimage)
     old_saddle_po = nothing
-    ##### Convoluted method (maybe more accurate? solves for ICs in a principled way versus lerping)
-    # # Get expected ICs of the saddle PO.
-    # ics = lerp(saddle_po)
-    # n, h, V = fastplant([ics[2], ics[3], ics[5]], p)
-    # new_ics = [ics[1], n, h, ics[4], V, ics[6]]
-    # # Solve the saddle PO.
-    # prob = remake(map_prob, u0 = new_ics)
-    # Finish programming this.
-    #####
-    ##### Quick method.
     saddle_po_refinement_iterates = 0
     while saddle_po_preimage != old_saddle_po # Iterate until convergence.
         old_saddle_po = saddle_po_preimage
@@ -107,7 +97,6 @@ begin
         saddle_po_refinement_iterates += 1
     end
     println("Saddle PO location converged after $(saddle_po_refinement_iterates-1) refinements.")
-    #####
 end
 
 # Plot the map
