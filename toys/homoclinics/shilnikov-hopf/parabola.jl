@@ -11,7 +11,7 @@ using .Plant
 using Peaks, Interpolations
 
 ca_shift = -40
-x_shift = -1.28
+x_shift = -1.33
 p = SVector{17}(vcat(Plant.default_params[1:15], [x_shift, ca_shift]))
 u0 = convert.(Float64, Plant.default_state)
 map_resolution = 1000
@@ -63,7 +63,7 @@ flat_maxima_values = xmap[flatmaxes]
 
 # Refine flat maxima.
 # ...For calculating single points on the map for refining near maxima.
-function xreturn(lerp,prob,x)
+function xreturn(lerp, prob, x)
     # get initial conditions by linear interpolation
     ics = lerp(x)
     # solve the map
@@ -114,4 +114,100 @@ begin
     lines!(mapax, ln2, color = :pink, linestyle = :dash, linewidth = 1)
 
     display(fig)
+end
+
+##### Locate an initial point on the Shilnikov-Hopf homoclinic parabola.
+
+# Initial parameters p must be beneath the Shilnikov-Hopf parabola (in the quiescent region).
+
+critical_point_index = 1 # Which critical point to use for finding the parabola. Selected by index, starting with 1 at the far right.
+step_size = 1e-3 # Initial step size for xshift.
+saddle_po_recompute_radius = 1e-3 # How far to recompute the map around the saddle PO.
+
+critical_point = preimage[flatmaxes[critical_point_index]] # The critical point on the chosen ``finger.''
+critical_value = xmap[flatmaxes[critical_point_index]] # The height of the critical point on the chosen ``finger.''
+while critical_value > saddle_po_preimage # Move up until passing the Shilnikov-Hopf parabola.
+    # Move the finger up.
+    x_shift += step_size
+    p = SVector{17}(vcat(Plant.default_params[1:15], [x_shift, ca_shift]))
+    ##### Recompute the map around the saddle PO and the critical point without computing the entire map.
+    # Generate a new preimage collection for the saddle PO in the map -- this is needed for the refinement algorithm to work with.
+    saddle_po_nbhd_preimage = [
+        saddle_po_preimage + saddle_po_recompute_radius,
+        saddle_po_preimage - saddle_po_recompute_radius
+    ]
+    # Recompute the heights in the saddle PO neighborhood (nbhd).
+    # Note: xreturn does a lerp of the initial conditions, which may not be appropriate. Consider using a different method.
+    saddle_po_nbhd_xmap = [xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x) for x in saddle_po_nbhd_preimage]
+    # Compute the new saddle PO.
+    saddle_po_preimage = calculate_hom_box(saddle_po_nbhd_xmap, saddle_po_nbhd_preimage)
+    # Refine the saddle PO until convergence.
+    begin
+        old_saddle_po = nothing
+        saddle_po_refinement_iterates = 0
+        while saddle_po_preimage != old_saddle_po # Iterate until convergence.
+            old_saddle_po = saddle_po_preimage
+            # Solve the saddle PO.
+            saddle_po_xmap = xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), saddle_po_preimage)
+            # Insert (saddle_po_preimage, saddle_po_xmap) into the map.
+            # Get the index of the last preimage value less than saddle_po_preimage.
+            insertion_idx = findfirst(x -> x < saddle_po_preimage, saddle_po_nbhd_preimage)
+            insert!(saddle_po_nbhd_preimage, insertion_idx, saddle_po_preimage)
+            insert!(saddle_po_nbhd_xmap, insertion_idx, saddle_po_xmap)
+            saddle_po_preimage = calculate_hom_box(saddle_po_nbhd_xmap, saddle_po_nbhd_preimage)
+            saddle_po_refinement_iterates += 1
+        end
+        println("Saddle PO converged at $(saddle_po_preimage) after $(saddle_po_refinement_iterates-1) refinements.")
+    end
+    # Refine the critical point.
+    opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), critical_point-critical_point_recompute_radius, critical_point+critical_point_recompute_radius)
+    critical_point = Optim.minimizer(opt)
+    critical_value = -Optim.minimum(opt)
+    ##### End recomputation of the map.
+end
+
+last_direction_up = true # Whether the last step was up or down.
+while critical_value != saddle_po_preimage && step_size > 1e-16
+    step_size /= 2
+    if last_direction_up
+        x_shift -= step_size
+    else
+        x_shift += step_size
+    end
+    last_direction_up = !last_direction_up
+    p = SVector{17}(vcat(Plant.default_params[1:15], [x_shift, ca_shift]))
+    ##### Recompute the map around the saddle PO and the critical point without computing the entire map.
+    # Generate a new preimage collection for the saddle PO in the map -- this is needed for the refinement algorithm to work with.
+    saddle_po_nbhd_preimage = [
+        saddle_po_preimage + saddle_po_recompute_radius,
+        saddle_po_preimage - saddle_po_recompute_radius
+    ]
+    # Recompute the heights in the saddle PO neighborhood (nbhd).
+    # Note: xreturn does a lerp of the initial conditions, which may not be appropriate. Consider using a different method.
+    saddle_po_nbhd_xmap = [xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x) for x in saddle_po_nbhd_preimage]
+    # Compute the new saddle PO.
+    saddle_po_preimage = calculate_hom_box(saddle_po_nbhd_xmap, saddle_po_nbhd_preimage)
+    # Refine the saddle PO until convergence.
+    begin
+        old_saddle_po = nothing
+        saddle_po_refinement_iterates = 0
+        while saddle_po_preimage != old_saddle_po # Iterate until convergence.
+            old_saddle_po = saddle_po_preimage
+            # Solve the saddle PO.
+            saddle_po_xmap = xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), saddle_po_preimage)
+            # Insert (saddle_po_preimage, saddle_po_xmap) into the map.
+            # Get the index of the last preimage value less than saddle_po_preimage.
+            insertion_idx = findfirst(x -> x < saddle_po_preimage, saddle_po_nbhd_preimage)
+            insert!(saddle_po_nbhd_preimage, insertion_idx, saddle_po_preimage)
+            insert!(saddle_po_nbhd_xmap, insertion_idx, saddle_po_xmap)
+            saddle_po_preimage = calculate_hom_box(saddle_po_nbhd_xmap, saddle_po_nbhd_preimage)
+            saddle_po_refinement_iterates += 1
+        end
+        println("Saddle PO converged at $(saddle_po_preimage) after $(saddle_po_refinement_iterates-1) refinements.")
+    end
+    # Refine the critical point.
+    opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), critical_point-critical_point_recompute_radius, critical_point+critical_point_recompute_radius)
+    critical_point = Optim.minimizer(opt)
+    critical_value = -Optim.minimum(opt)
+    ##### End recomputation of the map.
 end

@@ -79,9 +79,9 @@ end
 function calculate_hom_box(xmap, preimage)
     # Get the last place where xmap - preimage changes sign
     for i in eachindex(xmap)
-        # Detect a sign change in i+1 versus i
+        # Detect a sign change in i+1 versus i (from negative to positive)
         try
-            if sign(xmap[i+1] - preimage[i+1]) * sign(xmap[i] - preimage[i]) == -1
+            if sign(xmap[i+1] - preimage[i+1]) < sign(xmap[i] - preimage[i])
                 # Return the mean of this point and the next.
                 residue_i = xmap[i] - preimage[i]
                 residue_i1 = xmap[i+1] - preimage[i+1]
