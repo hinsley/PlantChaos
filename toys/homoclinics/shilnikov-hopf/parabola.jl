@@ -123,6 +123,7 @@ end
 critical_point_index = 1 # Which critical point to use for finding the parabola. Selected by index, starting with 1 at the far right.
 step_size = 1e-3 # Initial step size for xshift.
 saddle_po_recompute_radius = 1e-3 # How far to recompute the map around the saddle PO.
+critical_point_recompute_radius = 1e-4 # How far to recompute the map around the critical point.
 
 critical_point = preimage[flatmaxes[critical_point_index]] # The critical point on the chosen ``finger.''
 critical_value = xmap[flatmaxes[critical_point_index]] # The height of the critical point on the chosen ``finger.''
@@ -157,7 +158,7 @@ while critical_value > saddle_po_preimage # Move up until passing the Shilnikov-
             saddle_po_preimage = calculate_hom_box(saddle_po_nbhd_xmap, saddle_po_nbhd_preimage)
             saddle_po_refinement_iterates += 1
         end
-        println("Saddle PO converged at $(saddle_po_preimage) after $(saddle_po_refinement_iterates-1) refinements.")
+        # println("Saddle PO converged at $(saddle_po_preimage) after $(saddle_po_refinement_iterates-1) refinements.")
     end
     # Refine the critical point.
     opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), critical_point-critical_point_recompute_radius, critical_point+critical_point_recompute_radius)
@@ -167,7 +168,9 @@ while critical_value > saddle_po_preimage # Move up until passing the Shilnikov-
 end
 
 last_direction_up = true # Whether the last step was up or down.
-while critical_value != saddle_po_preimage && step_size > 1e-16
+old_x_shift = nothing
+while critical_value != saddle_po_preimage && x_shift != old_x_shift
+    old_x_shift = x_shift
     step_size /= 2
     if last_direction_up
         x_shift -= step_size
@@ -203,7 +206,7 @@ while critical_value != saddle_po_preimage && step_size > 1e-16
             saddle_po_preimage = calculate_hom_box(saddle_po_nbhd_xmap, saddle_po_nbhd_preimage)
             saddle_po_refinement_iterates += 1
         end
-        println("Saddle PO converged at $(saddle_po_preimage) after $(saddle_po_refinement_iterates-1) refinements.")
+        # println("Saddle PO converged at $(saddle_po_preimage) after $(saddle_po_refinement_iterates-1) refinements.")
     end
     # Refine the critical point.
     opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), critical_point-critical_point_recompute_radius, critical_point+critical_point_recompute_radius)
@@ -211,3 +214,5 @@ while critical_value != saddle_po_preimage && step_size > 1e-16
     critical_value = -Optim.minimum(opt)
     ##### End recomputation of the map.
 end
+
+println("Shilnikov-Hopf parabola contains ($(ca_shift), $(x_shift)).")
