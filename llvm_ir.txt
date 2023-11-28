@@ -1,0 +1,3430 @@
+; PTX CompilerJob of MethodInstance for lyapunov_kernel!(::typeof(f!), ::CuDeviceVector{Float32, 1}, ::CuDeviceVector{Float32, 1}, ::CuDeviceMatrix{Float32, 1}, ::Float32, ::Float32, ::Float32, ::Float32, ::Float32) for sm_61
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:26 within `lyapunov_kernel!`
+define ptx_kernel void @_Z16lyapunov_kernel_2f_13CuDeviceArrayI7Float32Li1ELi1EES0_IS1_Li1ELi1EES0_IS1_Li2ELi1EES1_S1_S1_S1_S1_({ i64, i32 } %state, { i8 addrspace(1)*, i64, [1 x i64], i64 } %0, { i8 addrspace(1)*, i64, [1 x i64], i64 } %1, { i8 addrspace(1)*, i64, [2 x i64], i64 } %2, float %3, float %4, float %5, float %6, float %7) local_unnamed_addr #1 {
+initialize_rng:
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl within `lyapunov_kernel!`
+  %8 = call i64 @julia_initialize_rng_state_17797({ i64, i32 } %state)
+  %.fca.0.extract207 = extractvalue { i8 addrspace(1)*, i64, [1 x i64], i64 } %0, 0
+  %.fca.3.extract210 = extractvalue { i8 addrspace(1)*, i64, [1 x i64], i64 } %0, 3
+  %.fca.0.extract198 = extractvalue { i8 addrspace(1)*, i64, [1 x i64], i64 } %1, 0
+  %.fca.0.extract = extractvalue { i8 addrspace(1)*, i64, [2 x i64], i64 } %2, 0
+  %.fca.2.0.extract = extractvalue { i8 addrspace(1)*, i64, [2 x i64], i64 } %2, 2, 0
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:29 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:92 within `#threadIdx`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:46 within `threadIdx_x`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `_index`
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+      %9 = call i32 @llvm.nvvm.read.ptx.sreg.tid.x()
+; └└└└
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:78 within `#blockIdx`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:56 within `blockIdx_x`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `_index`
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+      %10 = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()
+; └└└└
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:85 within `#blockDim`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:51 within `blockDim_x`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `_index`
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+      %11 = call i32 @llvm.nvvm.read.ptx.sreg.ntid.x()
+; └└└└
+; ┌ @ int.jl:88 within `*`
+   %12 = mul i32 %10, %11
+; └
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:92 within `#threadIdx`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:46 within `threadIdx_x`
+; ││┌ @ int.jl:87 within `+`
+     %13 = add i32 %12, %9
+; └└└
+; ┌ @ int.jl:87 within `+`
+   %14 = add i32 %13, 1
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:30 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:92 within `#threadIdx`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:46 within `threadIdx_y`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `_index`
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+      %15 = call i32 @llvm.nvvm.read.ptx.sreg.tid.y()
+; └└└└
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:78 within `#blockIdx`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:56 within `blockIdx_y`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `_index`
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+      %16 = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.y()
+; └└└└
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:85 within `#blockDim`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:51 within `blockDim_y`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `_index`
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:7 within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+      %17 = call i32 @llvm.nvvm.read.ptx.sreg.ntid.y()
+; └└└└
+; ┌ @ int.jl:88 within `*`
+   %18 = mul nuw nsw i32 %16, %17
+; └
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:92 within `#threadIdx`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/indexing.jl:46 within `threadIdx_y`
+; ││┌ @ int.jl:87 within `+`
+     %19 = add nuw nsw i32 %18, %15
+; └└└
+; ┌ @ int.jl:87 within `+`
+   %20 = add nuw nsw i32 %19, 1
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:31 within `lyapunov_kernel!`
+; ┌ @ operators.jl:369 within `>`
+; │┌ @ promotion.jl:450 within `<`
+; ││┌ @ promotion.jl:381 within `promote`
+; │││┌ @ promotion.jl:358 within `_promote`
+; ││││┌ @ number.jl:7 within `convert`
+; │││││┌ @ boot.jl:784 within `Int64`
+; ││││││┌ @ boot.jl:703 within `toInt64`
+         %21 = sext i32 %14 to i64
+; ││└└└└└
+; ││ @ promotion.jl:450 within `<` @ int.jl:83
+    %.not = icmp slt i64 %.fca.3.extract210, %21
+    %.fca.3.extract201 = extractvalue { i8 addrspace(1)*, i64, [1 x i64], i64 } %1, 3
+    %22 = zext i32 %20 to i64
+    %.not2211 = icmp slt i64 %.fca.3.extract201, %22
+; └└
+  %or.cond = select i1 %.not, i1 true, i1 %.not2211
+  br i1 %or.cond, label %common.ret, label %L57
+
+common.ret:                                       ; preds = %L7069, %initialize_rng
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl within `lyapunov_kernel!`
+  ret void
+
+L57:                                              ; preds = %initialize_rng
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:35 within `lyapunov_kernel!`
+; ┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/Random/src/Random.jl:262 within `rand`
+   %23 = call fastcc {}* @julia_rand_17794({ i64, i32 } %state)
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:37 within `lyapunov_kernel!`
+  %24 = call fastcc {}* @julia_randn_17625({ i64, i32 } %state)
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:38 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:265 within `norm`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:266 within `_norm`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:276 within `macro expansion`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %25 = bitcast {}* %24 to float*
+       %26 = load float, float* %25, align 1
+; │││└└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %27 = fmul float %26, %26
+; │││└└└
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %28 = getelementptr inbounds float, float* %25, i64 1
+       %29 = load float, float* %28, align 1
+; │││└└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %30 = fmul float %29, %29
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %31 = fadd float %27, %30
+; │││└
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %32 = getelementptr inbounds float, float* %25, i64 2
+       %33 = load float, float* %32, align 1
+; │││└└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %34 = fmul float %33, %33
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %35 = fadd float %31, %34
+; │││└
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %36 = getelementptr inbounds float, float* %25, i64 3
+       %37 = load float, float* %36, align 1
+; │││└└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %38 = fmul float %37, %37
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %39 = fadd float %35, %38
+; │││└
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %40 = getelementptr inbounds float, float* %25, i64 4
+       %41 = load float, float* %40, align 1
+; │││└└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %42 = fmul float %41, %41
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %43 = fadd float %39, %42
+; │││└
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:233 within `#sqrt`
+      %44 = call float @llvm.sqrt.f32(float %43) #6
+; │││└
+; │││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:278 within `macro expansion`
+; │││┌ @ float.jl:535 within `<`
+      %45 = fcmp ule float %44, 0.000000e+00
+      %46 = call float @llvm.fabs.f32(float %44) #6
+      %47 = fcmp uge float %46, 0x7FF0000000000000
+; │││└
+     %or.cond3 = select i1 %45, i1 true, i1 %47
+     br i1 %or.cond3, label %L160, label %L388
+
+L160:                                             ; preds = %L57
+; │││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:279 within `macro expansion`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:249 within `_norm_scaled`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:257 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:241 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %48 = call float @llvm.fabs.f32(float %26) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %49 = call float @llvm.fabs.f32(float %29) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %50 = fcmp ole float %48, 0x7FF0000000000000
+          %51 = fcmp ole float %49, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %52 = call float @llvm.maxnum.f32(float %48, float %49) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %53 = and i1 %50, %51
+          %54 = select i1 %53, float %52, float 0x7FF8000000000000
+; ││││││└└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %55 = call float @llvm.fabs.f32(float %33) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %56 = call float @llvm.fabs.f32(float %54) #6
+          %57 = fcmp ole float %56, 0x7FF0000000000000
+          %58 = fcmp ole float %55, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %59 = call float @llvm.maxnum.f32(float %54, float %55) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %60 = and i1 %57, %58
+          %61 = select i1 %60, float %59, float 0x7FF8000000000000
+; ││││││└└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %62 = call float @llvm.fabs.f32(float %37) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %63 = call float @llvm.fabs.f32(float %61) #6
+          %64 = fcmp ole float %63, 0x7FF0000000000000
+          %65 = fcmp ole float %62, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %66 = call float @llvm.maxnum.f32(float %61, float %62) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %67 = and i1 %64, %65
+          %68 = select i1 %67, float %66, float 0x7FF8000000000000
+; ││││││└└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %69 = call float @llvm.fabs.f32(float %41) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %70 = call float @llvm.fabs.f32(float %68) #6
+          %71 = fcmp ole float %70, 0x7FF0000000000000
+          %72 = fcmp ole float %69, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %73 = call float @llvm.maxnum.f32(float %68, float %69) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %74 = and i1 %71, %72
+          %75 = select i1 %74, float %73, float 0x7FF8000000000000
+; │││││└└└
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:258 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:199 within `#isfinite`
+        %76 = call float @llvm.fabs.f32(float %75) #6
+        %77 = fcmp olt float %76, 0x7FF0000000000000
+; │││││└
+       br i1 %77, label %L256, label %L388
+
+L256:                                             ; preds = %L160
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:260 within `macro expansion`
+; │││││┌ @ number.jl:42 within `iszero`
+; ││││││┌ @ float.jl:533 within `==`
+         %78 = fcmp une float %75, 0.000000e+00
+; │││││└└
+       br i1 %78, label %L287, label %L388
+
+L287:                                             ; preds = %L256
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:261 within `macro expansion`
+; │││││┌ @ float.jl:411 within `/`
+        %79 = fdiv float %26, %75
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %80 = fmul float %79, %79
+; │││││└└└
+; │││││┌ @ float.jl:411 within `/`
+        %81 = fdiv float %29, %75
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %82 = fmul float %81, %81
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %83 = fadd float %80, %82
+; │││││└
+; │││││┌ @ float.jl:411 within `/`
+        %84 = fdiv float %33, %75
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %85 = fmul float %84, %84
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %86 = fadd float %83, %85
+; │││││└
+; │││││┌ @ float.jl:411 within `/`
+        %87 = fdiv float %37, %75
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %88 = fmul float %87, %87
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %89 = fadd float %86, %88
+; │││││└
+; │││││┌ @ float.jl:411 within `/`
+        %90 = fdiv float %41, %75
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %91 = fmul float %90, %90
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %92 = fadd float %89, %91
+; │││││└
+; │││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:233 within `#sqrt`
+        %93 = call float @llvm.sqrt.f32(float %92) #6
+; │││││└
+; │││││┌ @ float.jl:410 within `*`
+        %94 = fmul float %75, %93
+; │││││└
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:257 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:244 within `maxabs_nested`
+; ││││││┌ @ range.jl:891 within `iterate`
+         br label %L388
+
+L388:                                             ; preds = %L287, %L256, %L160, %L57
+         %value_phi = phi float [ %94, %L287 ], [ %75, %L160 ], [ %44, %L57 ], [ 0.000000e+00, %L256 ]
+; └└└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %95 = bitcast {}* %23 to float*
+        %96 = load float, float* %95, align 1
+        %97 = getelementptr inbounds float, float* %95, i64 1
+        %98 = load float, float* %97, align 1
+        %99 = getelementptr inbounds float, float* %95, i64 2
+        %100 = load float, float* %99, align 1
+        %101 = getelementptr inbounds float, float* %95, i64 3
+        %102 = load float, float* %101, align 1
+        %103 = getelementptr inbounds float, float* %95, i64 4
+        %104 = load float, float* %103, align 1
+; └└└└└└
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:39 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/StaticArraysCore/P6PH7/src/StaticArraysCore.jl:197 within `MArray`
+   %105 = call fastcc {}* @gpu_gc_pool_alloc({ i64, i32 } %state, i64 60)
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:43 within `lyapunov_kernel!`
+; ┌ @ float.jl:406 within `-`
+   %106 = fneg float %4
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:45 within `lyapunov_kernel!`
+; ┌ @ float.jl:535 within `<`
+   %107 = fcmp uge float %106, %3
+; └
+  br i1 %107, label %L7069, label %L735.preheader.lr.ph
+
+L735.preheader.lr.ph:                             ; preds = %L388
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:38 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `/`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `#267`
+; │││││┌ @ float.jl:411 within `/`
+        %108 = fdiv float %41, %value_phi
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `*`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `#265`
+; │││││┌ @ float.jl:410 within `*`
+        %109 = fmul float %108, %6
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ float.jl:408 within `+`
+       %110 = fadd float %109, %104
+; └└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `/`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `#267`
+; │││││┌ @ float.jl:411 within `/`
+        %111 = fdiv float %37, %value_phi
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `*`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `#265`
+; │││││┌ @ float.jl:410 within `*`
+        %112 = fmul float %111, %6
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ float.jl:408 within `+`
+       %113 = fadd float %112, %102
+; └└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `/`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `#267`
+; │││││┌ @ float.jl:411 within `/`
+        %114 = fdiv float %33, %value_phi
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `*`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `#265`
+; │││││┌ @ float.jl:410 within `*`
+        %115 = fmul float %114, %6
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ float.jl:408 within `+`
+       %116 = fadd float %115, %100
+; └└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `/`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `#267`
+; │││││┌ @ float.jl:411 within `/`
+        %117 = fdiv float %29, %value_phi
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `*`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `#265`
+; │││││┌ @ float.jl:410 within `*`
+        %118 = fmul float %117, %6
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ float.jl:408 within `+`
+       %119 = fadd float %118, %98
+; └└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `/`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:24 within `#267`
+; │││││┌ @ float.jl:411 within `/`
+        %120 = fdiv float %26, %value_phi
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `*`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:22 within `#265`
+; │││││┌ @ float.jl:410 within `*`
+        %121 = fmul float %120, %6
+; └└└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ float.jl:408 within `+`
+       %122 = fadd float %121, %96
+       %123 = bitcast i8 addrspace(1)* %.fca.0.extract207 to float addrspace(1)*
+       %124 = sext i32 %13 to i64
+       %125 = getelementptr inbounds float, float addrspace(1)* %123, i64 %124
+       %126 = bitcast i8 addrspace(1)* %.fca.0.extract198 to float addrspace(1)*
+       %127 = zext i32 %19 to i64
+       %128 = getelementptr inbounds float, float addrspace(1)* %126, i64 %127
+       %129 = fmul float %5, 0.000000e+00
+       %130 = bitcast {}* %105 to float*
+       %131 = getelementptr inbounds float, float* %130, i64 3
+       %132 = getelementptr inbounds float, float* %130, i64 6
+       %133 = getelementptr inbounds float, float* %130, i64 9
+       %134 = getelementptr inbounds float, float* %130, i64 12
+       %135 = getelementptr inbounds float, float* %130, i64 1
+       %136 = getelementptr inbounds float, float* %130, i64 4
+       %137 = getelementptr inbounds float, float* %130, i64 7
+       %138 = getelementptr inbounds float, float* %130, i64 10
+       %139 = getelementptr inbounds float, float* %130, i64 13
+       %140 = getelementptr inbounds float, float* %130, i64 2
+       %141 = getelementptr inbounds float, float* %130, i64 5
+       %142 = getelementptr inbounds float, float* %130, i64 8
+       %143 = getelementptr inbounds float, float* %130, i64 11
+       %144 = getelementptr inbounds float, float* %130, i64 14
+; └└└└└
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:45 within `lyapunov_kernel!`
+  br label %L735.preheader
+
+L735.preheader:                                   ; preds = %L6724, %L735.preheader.lr.ph
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl within `lyapunov_kernel!`
+  %.sroa.38.0 = phi float [ %110, %L735.preheader.lr.ph ], [ %1387, %L6724 ]
+  %.sroa.30.0 = phi float [ %113, %L735.preheader.lr.ph ], [ %1384, %L6724 ]
+  %.sroa.22.0 = phi float [ %116, %L735.preheader.lr.ph ], [ %1381, %L6724 ]
+  %.sroa.11.0 = phi float [ %119, %L735.preheader.lr.ph ], [ %1378, %L6724 ]
+  %.sroa.0.0 = phi float [ %122, %L735.preheader.lr.ph ], [ %1375, %L6724 ]
+  %value_phi72358 = phi float [ 0.000000e+00, %L735.preheader.lr.ph ], [ %value_phi44, %L6724 ]
+  %value_phi62357 = phi float [ %106, %L735.preheader.lr.ph ], [ %value_phi41, %L6724 ]
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:47 within `lyapunov_kernel!`
+  br label %L735
+
+L735:                                             ; preds = %__nv_powf.exit1342, %L735.preheader
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl within `lyapunov_kernel!`
+  %.sroa.38.1 = phi float [ %.sroa.38.0, %L735.preheader ], [ %1268, %__nv_powf.exit1342 ]
+  %.sroa.30.1 = phi float [ %.sroa.30.0, %L735.preheader ], [ %1258, %__nv_powf.exit1342 ]
+  %.sroa.22.1 = phi float [ %.sroa.22.0, %L735.preheader ], [ %1248, %__nv_powf.exit1342 ]
+  %.sroa.11.1 = phi float [ %.sroa.11.0, %L735.preheader ], [ %1238, %__nv_powf.exit1342 ]
+  %.sroa.0.1 = phi float [ %.sroa.0.0, %L735.preheader ], [ %1228, %__nv_powf.exit1342 ]
+  %value_phi8 = phi float [ %value_phi62357, %L735.preheader ], [ %1269, %__nv_powf.exit1342 ]
+  %value_phi9 = phi float [ 0.000000e+00, %L735.preheader ], [ %1273, %__nv_powf.exit1342 ]
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:47 within `lyapunov_kernel!`
+; ┌ @ float.jl:535 within `<`
+   %145 = fcmp uge float %value_phi9, %7
+; └
+  br i1 %145, label %L6237, label %L755
+
+L755:                                             ; preds = %L735
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:48 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:164 within `getindex`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:85 within `#arrayref`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:91 within `arrayref_bits`
+; │││┌ @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/pointer.jl:85 within `unsafe_load`
+; ││││┌ @ none within `pointerref`
+; │││││┌ @ none within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+        %146 = load float, float addrspace(1)* %125, align 4
+        %147 = load float, float addrspace(1)* %128, align 4
+; └└└└└└
+; ┌ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:4 within `runge_kutta_step!`
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:5 within `f!`
+; ││┌ @ abstractarray.jl:1296 within `getindex`
+; │││┌ @ abstractarray.jl:1324 within `_getindex`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %148 = load float, float* %95, align 1
+; ││└└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:6 within `f!`
+; ││┌ @ abstractarray.jl:1296 within `getindex`
+; │││┌ @ abstractarray.jl:1324 within `_getindex`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %149 = load float, float* %97, align 1
+; ││└└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:7 within `f!`
+; ││┌ @ abstractarray.jl:1296 within `getindex`
+; │││┌ @ abstractarray.jl:1324 within `_getindex`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %150 = load float, float* %99, align 1
+; ││└└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:8 within `f!`
+; ││┌ @ abstractarray.jl:1296 within `getindex`
+; │││┌ @ abstractarray.jl:1324 within `_getindex`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %151 = load float, float* %101, align 1
+; ││└└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:9 within `f!`
+; ││┌ @ abstractarray.jl:1296 within `getindex`
+; │││┌ @ abstractarray.jl:1324 within `_getindex`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %152 = load float, float* %103, align 1
+; ││└└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %153 = fmul float %152, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %154 = fadd float %153, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %155 = fdiv float %154, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %156 = fsub float 5.000000e+01, %155
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %157 = fmul float %156, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %158 = fdiv float %156, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %159 = call float @llvm.fma.f32(float %158, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %160 = call float @llvm.nvvm.saturate.f(float %159) #6
+     %161 = call float @llvm.nvvm.fma.rm.f(float %160, float 2.520000e+02, float 0x4168000020000000) #6
+     %162 = fadd float %161, 0xC168000FE0000000
+     %163 = fneg float %162
+     %164 = call float @llvm.fma.f32(float %158, float 0x3FF7154760000000, float %163) #6
+     %165 = call float @llvm.fma.f32(float %158, float 0x3E54AE0C00000000, float %164) #6
+     %166 = bitcast float %161 to i32
+     %167 = shl i32 %166, 23
+     %168 = bitcast i32 %167 to float
+     %169 = call float @llvm.nvvm.ex2.approx.ftz.f(float %165) #6
+     %170 = fmul float %169, %168
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %171 = fadd float %170, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %172 = fdiv float %157, %171
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %173 = fsub float 2.500000e+01, %155
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %174 = fdiv float %173, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %175 = call float @llvm.fma.f32(float %174, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %176 = call float @llvm.nvvm.saturate.f(float %175) #6
+     %177 = call float @llvm.nvvm.fma.rm.f(float %176, float 2.520000e+02, float 0x4168000020000000) #6
+     %178 = fadd float %177, 0xC168000FE0000000
+     %179 = fneg float %178
+     %180 = call float @llvm.fma.f32(float %174, float 0x3FF7154760000000, float %179) #6
+     %181 = call float @llvm.fma.f32(float %174, float 0x3E54AE0C00000000, float %180) #6
+     %182 = bitcast float %177 to i32
+     %183 = shl i32 %182, 23
+     %184 = bitcast i32 %183 to float
+     %185 = call float @llvm.nvvm.ex2.approx.ftz.f(float %181) #6
+     %186 = fmul float %185, %184
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %187 = fmul float %186, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %188 = fadd float %172, %187
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %189 = fdiv float %172, %188
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %190 = call float @llvm.fabs.f32(float %189) #6
+     %191 = fcmp olt float %190, 0x3810000000000000
+     %192 = fmul float %190, 0x4170000000000000
+     %.114.i = select i1 %191, float %192, float %190
+     %expo.i.i.1.i = select i1 %191, float -2.400000e+01, float 0.000000e+00
+     %193 = bitcast float %.114.i to i32
+     %194 = add i32 %193, -1060439283
+     %195 = and i32 %194, -8388608
+     %196 = sub i32 %193, %195
+     %197 = bitcast i32 %196 to float
+     %198 = sitofp i32 %195 to float
+     %199 = call float @llvm.fma.f32(float %198, float 0x3E80000000000000, float %expo.i.i.1.i) #6
+     %200 = fadd float %197, -1.000000e+00
+     %201 = fadd float %197, 1.000000e+00
+     %202 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %201) #8
+     %203 = fmul float %200, 2.000000e+00
+     %204 = fmul float %202, %203
+     %205 = fmul float %204, %204
+     %206 = fsub float %200, %204
+     %207 = fmul float %206, 2.000000e+00
+     %208 = fneg float %204
+     %209 = call float @llvm.fma.f32(float %208, float %200, float %207) #6
+     %210 = fmul float %202, %209
+     %211 = call float @llvm.fma.f32(float %205, float 0x3F45865C80000000, float 0x3F6A5CFB60000000) #6
+     %212 = call float @llvm.fma.f32(float %211, float %205, float 0x3F92776E60000000) #6
+     %213 = call float @llvm.fma.f32(float %212, float %205, float 0x3FBEC709E0000000) #6
+     %214 = fmul float %205, %213
+     %215 = call float @llvm.fma.f32(float %204, float 0x3FF7154760000000, float %199) #6
+     %216 = fsub float %199, %215
+     %217 = call float @llvm.fma.f32(float %204, float 0x3FF7154760000000, float %216) #6
+     %218 = call float @llvm.fma.f32(float %210, float 0x3FF7154760000000, float %217) #6
+     %219 = call float @llvm.fma.f32(float %204, float 0x3E54ABC680000000, float %218) #6
+     %220 = fmul float %214, 3.000000e+00
+     %221 = call float @llvm.fma.f32(float %220, float %210, float %219) #6
+     %222 = call float @llvm.fma.f32(float %214, float %204, float %221) #6
+     %223 = fadd float %215, %222
+     %224 = fsub float %223, %215
+     %225 = fsub float %222, %224
+     %226 = fmul float %223, 3.000000e+00
+     %227 = fneg float %226
+     %228 = call float @llvm.fma.f32(float %223, float 3.000000e+00, float %227) #6
+     %229 = call float @llvm.fma.f32(float %225, float 3.000000e+00, float %228) #6
+     %230 = call float @llvm.round.f32(float %226) #6
+     %231 = fsub float %226, %230
+     %232 = fadd float %231, %229
+     %233 = call float @llvm.fma.f32(float %232, float 0x3F23F971C0000000, float 0x3F55F0BDA0000000) #6
+     %234 = call float @llvm.fma.f32(float %233, float %232, float 0x3F83B30AC0000000) #6
+     %235 = call float @llvm.fma.f32(float %234, float %232, float 0x3FAC6AF760000000) #6
+     %236 = call float @llvm.fma.f32(float %235, float %232, float 0x3FCEBFBD80000000) #6
+     %237 = call float @llvm.fma.f32(float %236, float %232, float 0x3FE62E4300000000) #6
+     %238 = call float @llvm.fma.f32(float %237, float %232, float 1.000000e+00) #6
+     %239 = fptosi float %230 to i32
+     %240 = fcmp ogt float %230, 0.000000e+00
+     %241 = select i1 %240, i32 0, i32 -2097152000
+     %242 = add nsw i32 %241, 2130706432
+     %243 = bitcast i32 %242 to float
+     %244 = fmul float %238, %243
+     %245 = shl i32 %239, 23
+     %246 = sub i32 %245, %241
+     %247 = bitcast i32 %246 to float
+     %248 = fmul float %244, %247
+     %249 = call float @llvm.fabs.f32(float %226) #6
+     %250 = fcmp ogt float %249, 1.520000e+02
+     %251 = fcmp olt float %226, 0.000000e+00
+     %252 = select i1 %251, float 0.000000e+00, float 0x7FF0000000000000
+     %t.i.0.i = select i1 %250, float %252, float %248
+     %253 = fcmp oeq float %189, 1.000000e+00
+     br i1 %253, label %__nv_powf.exit, label %__nv_isnanf.exit.i.i
+
+__nv_isnanf.exit.i.i:                             ; preds = %L755
+     %254 = fcmp ugt float %190, 0x7FF0000000000000
+     br i1 %254, label %__nv_fadd_rn.exit.i.i, label %__nv_isnanf.exit2.i.i
+
+__nv_fadd_rn.exit.i.i:                            ; preds = %__nv_isnanf.exit.i.i
+     %255 = fadd float %189, 3.000000e+00
+     br label %__nv_powf.exit
+
+__nv_isnanf.exit2.i.i:                            ; preds = %__nv_isnanf.exit.i.i
+     %256 = fcmp oeq float %189, 0.000000e+00
+     %257 = fcmp oeq float %190, 0x7FF0000000000000
+     %or.cond5 = select i1 %256, i1 true, i1 %257
+     br i1 %or.cond5, label %258, label %__nv_isinff.exit7.i.i
+
+258:                                              ; preds = %__nv_isnanf.exit2.i.i
+     %259 = fadd float %189, %189
+     br label %__nv_powf.exit
+
+__nv_isinff.exit7.i.i:                            ; preds = %__nv_isnanf.exit2.i.i
+     %260 = fcmp olt float %189, 0.000000e+00
+     br i1 %260, label %__nv_floorf.exit.i.i, label %__nv_powf.exit
+
+__nv_floorf.exit.i.i:                             ; preds = %__nv_isinff.exit7.i.i
+     %261 = fneg float %t.i.0.i
+     br label %__nv_powf.exit
+
+__nv_powf.exit:                                   ; preds = %__nv_floorf.exit.i.i, %__nv_isinff.exit7.i.i, %258, %__nv_fadd_rn.exit.i.i, %L755
+     %.6.i = phi float [ 1.000000e+00, %L755 ], [ %255, %__nv_fadd_rn.exit.i.i ], [ %259, %258 ], [ %261, %__nv_floorf.exit.i.i ], [ %t.i.0.i, %__nv_isinff.exit7.i.i ]
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %262 = fadd float %152, -3.000000e+01
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %263 = fmul float %150, 4.000000e+00
+     %264 = fmul float %263, %.6.i
+; │││ @ operators.jl:578 within `*`
+; │││┌ @ operators.jl:535 within `afoldl`
+; ││││┌ @ float.jl:410 within `*`
+       %265 = fmul float %262, %264
+; ││└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:23 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %266 = fdiv float %173, 2.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %267 = call float @llvm.fma.f32(float %266, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %268 = call float @llvm.nvvm.saturate.f(float %267) #6
+     %269 = call float @llvm.nvvm.fma.rm.f(float %268, float 2.520000e+02, float 0x4168000020000000) #6
+     %270 = fadd float %269, 0xC168000FE0000000
+     %271 = fneg float %270
+     %272 = call float @llvm.fma.f32(float %266, float 0x3FF7154760000000, float %271) #6
+     %273 = call float @llvm.fma.f32(float %266, float 0x3E54AE0C00000000, float %272) #6
+     %274 = bitcast float %269 to i32
+     %275 = shl i32 %274, 23
+     %276 = bitcast i32 %275 to float
+     %277 = call float @llvm.nvvm.ex2.approx.ftz.f(float %273) #6
+     %278 = fmul float %277, %276
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %279 = fmul float %278, 0x3FB1EB8520000000
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:24 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %280 = fsub float 4.500000e+01, %155
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %281 = fdiv float %280, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %282 = call float @llvm.fma.f32(float %281, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %283 = call float @llvm.nvvm.saturate.f(float %282) #6
+     %284 = call float @llvm.nvvm.fma.rm.f(float %283, float 2.520000e+02, float 0x4168000020000000) #6
+     %285 = fadd float %284, 0xC168000FE0000000
+     %286 = fneg float %285
+     %287 = call float @llvm.fma.f32(float %281, float 0x3FF7154760000000, float %286) #6
+     %288 = call float @llvm.fma.f32(float %281, float 0x3E54AE0C00000000, float %287) #6
+     %289 = bitcast float %284 to i32
+     %290 = shl i32 %289, 23
+     %291 = bitcast i32 %290 to float
+     %292 = call float @llvm.nvvm.ex2.approx.ftz.f(float %288) #6
+     %293 = fmul float %292, %291
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %294 = fadd float %293, 1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %295 = fdiv float 1.000000e+00, %294
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:25 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %296 = fadd float %279, %295
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %297 = fdiv float %279, %296
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:26 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %298 = fdiv float 1.250000e+01, %296
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:27 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %299 = fsub float %297, %150
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %300 = fdiv float %299, %298
+; ││└
+; ││┌ @ abstractarray.jl:1399 within `setindex!`
+; │││┌ @ abstractarray.jl:1418 within `_setindex!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; │││││┌ @ pointer.jl:126 within `unsafe_store!`
+        store float %300, float* %99, align 1
+; ││└└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:28 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %301 = fadd float %152, -7.000000e+01
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %302 = fmul float %150, 0x3F689374C0000000
+     %303 = fmul float %302, %301
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:30 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %304 = fsub float 5.500000e+01, %155
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %305 = fmul float %304, 0x3F847AE140000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %306 = fdiv float %304, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %307 = call float @llvm.fma.f32(float %306, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %308 = call float @llvm.nvvm.saturate.f(float %307) #6
+     %309 = call float @llvm.nvvm.fma.rm.f(float %308, float 2.520000e+02, float 0x4168000020000000) #6
+     %310 = fadd float %309, 0xC168000FE0000000
+     %311 = fneg float %310
+     %312 = call float @llvm.fma.f32(float %306, float 0x3FF7154760000000, float %311) #6
+     %313 = call float @llvm.fma.f32(float %306, float 0x3E54AE0C00000000, float %312) #6
+     %314 = bitcast float %309 to i32
+     %315 = shl i32 %314, 23
+     %316 = bitcast i32 %315 to float
+     %317 = call float @llvm.nvvm.ex2.approx.ftz.f(float %313) #6
+     %318 = fmul float %317, %316
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %319 = fadd float %318, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %320 = fdiv float %305, %319
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:31 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %321 = fdiv float %280, 8.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %322 = call float @llvm.fma.f32(float %321, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %323 = call float @llvm.nvvm.saturate.f(float %322) #6
+     %324 = call float @llvm.nvvm.fma.rm.f(float %323, float 2.520000e+02, float 0x4168000020000000) #6
+     %325 = fadd float %324, 0xC168000FE0000000
+     %326 = fneg float %325
+     %327 = call float @llvm.fma.f32(float %321, float 0x3FF7154760000000, float %326) #6
+     %328 = call float @llvm.fma.f32(float %321, float 0x3E54AE0C00000000, float %327) #6
+     %329 = bitcast float %324 to i32
+     %330 = shl i32 %329, 23
+     %331 = bitcast i32 %330 to float
+     %332 = call float @llvm.nvvm.ex2.approx.ftz.f(float %328) #6
+     %333 = fmul float %332, %331
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %334 = fmul float %333, 1.250000e-01
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:32 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %335 = fadd float %320, %334
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %336 = fdiv float %320, %335
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:33 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %337 = fdiv float 1.250000e+01, %335
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:34 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %338 = fsub float %336, %149
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %339 = fdiv float %338, %337
+; ││└
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; │││┌ @ pointer.jl:126 within `unsafe_store!`
+      store float %339, float* %97, align 1
+; ││└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %340 = call float @llvm.fabs.f32(float %149) #6
+     %341 = fcmp olt float %340, 0x3810000000000000
+     %342 = fmul float %340, 0x4170000000000000
+     %.114.i305 = select i1 %341, float %342, float %340
+     %expo.i.i.1.i306 = select i1 %341, float -2.400000e+01, float 0.000000e+00
+     %343 = bitcast float %.114.i305 to i32
+     %344 = add i32 %343, -1060439283
+     %345 = and i32 %344, -8388608
+     %346 = sub i32 %343, %345
+     %347 = bitcast i32 %346 to float
+     %348 = sitofp i32 %345 to float
+     %349 = call float @llvm.fma.f32(float %348, float 0x3E80000000000000, float %expo.i.i.1.i306) #6
+     %350 = fadd float %347, -1.000000e+00
+     %351 = fadd float %347, 1.000000e+00
+     %352 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %351) #8
+     %353 = fmul float %350, 2.000000e+00
+     %354 = fmul float %352, %353
+     %355 = fmul float %354, %354
+     %356 = fsub float %350, %354
+     %357 = fmul float %356, 2.000000e+00
+     %358 = fneg float %354
+     %359 = call float @llvm.fma.f32(float %358, float %350, float %357) #6
+     %360 = fmul float %352, %359
+     %361 = call float @llvm.fma.f32(float %355, float 0x3F45865C80000000, float 0x3F6A5CFB60000000) #6
+     %362 = call float @llvm.fma.f32(float %361, float %355, float 0x3F92776E60000000) #6
+     %363 = call float @llvm.fma.f32(float %362, float %355, float 0x3FBEC709E0000000) #6
+     %364 = fmul float %355, %363
+     %365 = call float @llvm.fma.f32(float %354, float 0x3FF7154760000000, float %349) #6
+     %366 = fsub float %349, %365
+     %367 = call float @llvm.fma.f32(float %354, float 0x3FF7154760000000, float %366) #6
+     %368 = call float @llvm.fma.f32(float %360, float 0x3FF7154760000000, float %367) #6
+     %369 = call float @llvm.fma.f32(float %354, float 0x3E54ABC680000000, float %368) #6
+     %370 = fmul float %364, 3.000000e+00
+     %371 = call float @llvm.fma.f32(float %370, float %360, float %369) #6
+     %372 = call float @llvm.fma.f32(float %364, float %354, float %371) #6
+     %373 = fadd float %365, %372
+     %374 = fsub float %373, %365
+     %375 = fsub float %372, %374
+     %376 = fmul float %373, 4.000000e+00
+     %377 = fneg float %376
+     %378 = call float @llvm.fma.f32(float %373, float 4.000000e+00, float %377) #6
+     %379 = call float @llvm.fma.f32(float %375, float 4.000000e+00, float %378) #6
+     %380 = call float @llvm.round.f32(float %376) #6
+     %381 = fsub float %376, %380
+     %382 = fadd float %381, %379
+     %383 = call float @llvm.fma.f32(float %382, float 0x3F23F971C0000000, float 0x3F55F0BDA0000000) #6
+     %384 = call float @llvm.fma.f32(float %383, float %382, float 0x3F83B30AC0000000) #6
+     %385 = call float @llvm.fma.f32(float %384, float %382, float 0x3FAC6AF760000000) #6
+     %386 = call float @llvm.fma.f32(float %385, float %382, float 0x3FCEBFBD80000000) #6
+     %387 = call float @llvm.fma.f32(float %386, float %382, float 0x3FE62E4300000000) #6
+     %388 = call float @llvm.fma.f32(float %387, float %382, float 1.000000e+00) #6
+     %389 = fptosi float %380 to i32
+     %390 = fcmp ogt float %380, 0.000000e+00
+     %391 = select i1 %390, i32 0, i32 -2097152000
+     %392 = add nsw i32 %391, 2130706432
+     %393 = bitcast i32 %392 to float
+     %394 = fmul float %388, %393
+     %395 = shl i32 %389, 23
+     %396 = sub i32 %395, %391
+     %397 = bitcast i32 %396 to float
+     %398 = fmul float %394, %397
+     %399 = call float @llvm.fabs.f32(float %376) #6
+     %400 = fcmp ogt float %399, 1.520000e+02
+     %401 = fcmp olt float %376, 0.000000e+00
+     %402 = select i1 %401, float 0.000000e+00, float 0x7FF0000000000000
+     %t.i.0.i359 = select i1 %400, float %402, float %398
+     %403 = fcmp oeq float %149, 1.000000e+00
+     br i1 %403, label %__nv_powf.exit382, label %__nv_isnanf.exit.i.i362
+
+__nv_isnanf.exit.i.i362:                          ; preds = %__nv_powf.exit
+     %404 = fcmp ugt float %340, 0x7FF0000000000000
+     br i1 %404, label %__nv_fadd_rn.exit.i.i368, label %__nv_isnanf.exit2.i.i365
+
+__nv_fadd_rn.exit.i.i368:                         ; preds = %__nv_isnanf.exit.i.i362
+     %405 = fadd float %149, 4.000000e+00
+     br label %__nv_powf.exit382
+
+__nv_isnanf.exit2.i.i365:                         ; preds = %__nv_isnanf.exit.i.i362
+     %406 = fcmp oeq float %149, 0.000000e+00
+     %407 = fcmp oeq float %340, 0x7FF0000000000000
+     %or.cond7 = select i1 %406, i1 true, i1 %407
+     br i1 %or.cond7, label %408, label %__nv_isinff.exit7.i.i375
+
+408:                                              ; preds = %__nv_isnanf.exit2.i.i365
+     %409 = fadd float %149, %149
+     %410 = bitcast float %409 to i32
+     %411 = and i32 %410, 2147483647
+     %412 = bitcast i32 %411 to float
+     br label %__nv_powf.exit382
+
+__nv_isinff.exit7.i.i375:                         ; preds = %__nv_isnanf.exit2.i.i365
+     br label %__nv_powf.exit382
+
+__nv_powf.exit382:                                ; preds = %__nv_isinff.exit7.i.i375, %408, %__nv_fadd_rn.exit.i.i368, %__nv_powf.exit
+     %.6.i381 = phi float [ 1.000000e+00, %__nv_powf.exit ], [ %405, %__nv_fadd_rn.exit.i.i368 ], [ %412, %408 ], [ %t.i.0.i359, %__nv_isinff.exit7.i.i375 ]
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %413 = fadd float %152, 7.500000e+01
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %414 = fmul float %.6.i381, 0x3FD3333340000000
+     %415 = fmul float %413, %414
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:37 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %416 = fsub float %146, %152
+     %417 = fadd float %416, -5.000000e+01
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %418 = fmul float %417, 0x3FC3333340000000
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %419 = call float @llvm.fma.f32(float %418, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %420 = call float @llvm.nvvm.saturate.f(float %419) #6
+     %421 = call float @llvm.nvvm.fma.rm.f(float %420, float 2.520000e+02, float 0x4168000020000000) #6
+     %422 = fadd float %421, 0xC168000FE0000000
+     %423 = fneg float %422
+     %424 = call float @llvm.fma.f32(float %418, float 0x3FF7154760000000, float %423) #6
+     %425 = call float @llvm.fma.f32(float %418, float 0x3E54AE0C00000000, float %424) #6
+     %426 = bitcast float %421 to i32
+     %427 = shl i32 %426, 23
+     %428 = bitcast i32 %427 to float
+     %429 = call float @llvm.nvvm.ex2.approx.ftz.f(float %425) #6
+     %430 = fmul float %429, %428
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %431 = fadd float %430, 1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %432 = fdiv float 1.000000e+00, %431
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:38 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %433 = fsub float %432, %148
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %434 = fdiv float %433, 1.000000e+02
+; ││└
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; │││┌ @ pointer.jl:126 within `unsafe_store!`
+      store float %434, float* %95, align 1
+; ││└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:39 within `f!`
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %435 = fmul float %148, 0x3F847AE140000000
+     %436 = fmul float %435, %262
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:41 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %437 = fsub float 1.400000e+02, %152
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %438 = fadd float %147, %437
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %439 = fmul float %148, 0x3F816872C0000000
+     %440 = fmul float %439, %438
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %441 = fsub float %440, %151
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %442 = fmul float %441, 0x3F33A92A40000000
+; ││└
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; │││┌ @ pointer.jl:126 within `unsafe_store!`
+      store float %442, float* %101, align 1
+; ││└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:42 within `f!`
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %443 = fmul float %151, 0x3F9EB851E0000000
+     %444 = fmul float %443, %413
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %445 = fadd float %151, 5.000000e-01
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %446 = fdiv float %444, %445
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:44 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %447 = fadd float %152, 4.000000e+01
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %448 = fmul float %447, 0x3F689374C0000000
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:46 within `f!`
+; ││┌ @ operators.jl:578 within `+` @ float.jl:408
+     %449 = fadd float %265, %415
+     %450 = fadd float %436, %449
+; │││ @ operators.jl:578 within `+`
+; │││┌ @ operators.jl:535 within `afoldl`
+; ││││┌ @ float.jl:408 within `+`
+       %451 = fadd float %446, %450
+; ││││└
+; ││││ @ operators.jl:536 within `afoldl`
+; ││││┌ @ float.jl:408 within `+`
+       %452 = fadd float %303, %451
+; ││││└
+; ││││ @ operators.jl:537 within `afoldl`
+; ││││┌ @ float.jl:408 within `+`
+       %453 = fadd float %448, %452
+; ││└└└
+; ││┌ @ float.jl:406 within `-`
+     %454 = fneg float %453
+; ││└
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; │││┌ @ pointer.jl:126 within `unsafe_store!`
+      store float %454, float* %103, align 1
+; │└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:5 within `runge_kutta_step!`
+; │┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:164 within `macro expansion`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/SizedArray.jl:93 within `setindex!` @ subarray.jl:345 @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35
+; │││││││┌ @ pointer.jl:126 within `unsafe_store!`
+          store float %129, float* %130, align 1
+          store float %129, float* %131, align 1
+          store float %129, float* %132, align 1
+          store float %129, float* %133, align 1
+          store float %129, float* %134, align 1
+; │└└└└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:6 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ multidimensional.jl:861 within `_getindex`
+     %455 = call fastcc {}* @julia__unsafe_getindex_17620({ i64, i32 } %state, {}* %105, i64 1)
+; │└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `*`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %456 = bitcast {}* %455 to float*
+         %457 = getelementptr inbounds float, float* %456, i64 1
+         %458 = load float, float* %457, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %459 = fmul float %458, 5.000000e-01
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %460 = getelementptr inbounds float, float* %456, i64 4
+         %461 = load float, float* %460, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %462 = fmul float %461, 5.000000e-01
+; │└└└└└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %463 = load float, float* %97, align 1
+; │││││└└
+; │││││┌ @ float.jl:408 within `+`
+        %464 = fadd float %459, %463
+; │││││└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %465 = load float, float* %103, align 1
+; │││││└└
+; │││││┌ @ float.jl:408 within `+`
+        %466 = fadd float %462, %465
+; │└└└└└
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %467 = fmul float %466, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %468 = fadd float %467, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %469 = fdiv float %468, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %470 = fsub float 5.000000e+01, %469
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %471 = fmul float %470, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %472 = fdiv float %470, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %473 = call float @llvm.fma.f32(float %472, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %474 = call float @llvm.nvvm.saturate.f(float %473) #6
+     %475 = call float @llvm.nvvm.fma.rm.f(float %474, float 2.520000e+02, float 0x4168000020000000) #6
+     %476 = fadd float %475, 0xC168000FE0000000
+     %477 = fneg float %476
+     %478 = call float @llvm.fma.f32(float %472, float 0x3FF7154760000000, float %477) #6
+     %479 = call float @llvm.fma.f32(float %472, float 0x3E54AE0C00000000, float %478) #6
+     %480 = bitcast float %475 to i32
+     %481 = shl i32 %480, 23
+     %482 = bitcast i32 %481 to float
+     %483 = call float @llvm.nvvm.ex2.approx.ftz.f(float %479) #6
+     %484 = fmul float %483, %482
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %485 = fadd float %484, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %486 = fdiv float %471, %485
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %487 = fsub float 2.500000e+01, %469
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %488 = fdiv float %487, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %489 = call float @llvm.fma.f32(float %488, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %490 = call float @llvm.nvvm.saturate.f(float %489) #6
+     %491 = call float @llvm.nvvm.fma.rm.f(float %490, float 2.520000e+02, float 0x4168000020000000) #6
+     %492 = fadd float %491, 0xC168000FE0000000
+     %493 = fneg float %492
+     %494 = call float @llvm.fma.f32(float %488, float 0x3FF7154760000000, float %493) #6
+     %495 = call float @llvm.fma.f32(float %488, float 0x3E54AE0C00000000, float %494) #6
+     %496 = bitcast float %491 to i32
+     %497 = shl i32 %496, 23
+     %498 = bitcast i32 %497 to float
+     %499 = call float @llvm.nvvm.ex2.approx.ftz.f(float %495) #6
+     %500 = fmul float %499, %498
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %501 = fmul float %500, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %502 = fadd float %486, %501
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %503 = fdiv float %486, %502
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %504 = call float @llvm.fabs.f32(float %503) #6
+     %505 = fcmp olt float %504, 0x3810000000000000
+     %506 = fmul float %504, 0x4170000000000000
+     %.114.i420 = select i1 %505, float %506, float %504
+     %507 = bitcast float %.114.i420 to i32
+     %508 = add i32 %507, -1060439283
+     %509 = and i32 %508, -8388608
+     %510 = sub i32 %507, %509
+     %511 = bitcast i32 %510 to float
+     %512 = fadd float %511, 1.000000e+00
+     %513 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %512) #8
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %514 = call float @llvm.fabs.f32(float %464) #6
+     %515 = fcmp olt float %514, 0x3810000000000000
+     %516 = fmul float %514, 0x4170000000000000
+     %.114.i545 = select i1 %515, float %516, float %514
+     %517 = bitcast float %.114.i545 to i32
+     %518 = add i32 %517, -1060439283
+     %519 = and i32 %518, -8388608
+     %520 = sub i32 %517, %519
+     %521 = bitcast i32 %520 to float
+     %522 = fadd float %521, 1.000000e+00
+     %523 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %522) #8
+; │└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:7 within `runge_kutta_step!`
+; │┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:164 within `macro expansion`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/SizedArray.jl:93 within `setindex!` @ subarray.jl:345 @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35
+; │││││││┌ @ pointer.jl:126 within `unsafe_store!`
+          store float %129, float* %135, align 1
+          store float %129, float* %136, align 1
+          store float %129, float* %137, align 1
+          store float %129, float* %138, align 1
+          store float %129, float* %139, align 1
+; │└└└└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:8 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ multidimensional.jl:861 within `_getindex`
+     %524 = call fastcc {}* @julia__unsafe_getindex_17620({ i64, i32 } %state, {}* %105, i64 2)
+; │└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `*`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %525 = bitcast {}* %524 to float*
+         %526 = getelementptr inbounds float, float* %525, i64 1
+         %527 = load float, float* %526, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %528 = fmul float %527, 5.000000e-01
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %529 = getelementptr inbounds float, float* %525, i64 4
+         %530 = load float, float* %529, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %531 = fmul float %530, 5.000000e-01
+; │└└└└└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %532 = load float, float* %97, align 1
+; │││││└└
+; │││││┌ @ float.jl:408 within `+`
+        %533 = fadd float %528, %532
+; │││││└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %534 = load float, float* %103, align 1
+; │││││└└
+; │││││┌ @ float.jl:408 within `+`
+        %535 = fadd float %531, %534
+; │└└└└└
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %536 = fmul float %535, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %537 = fadd float %536, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %538 = fdiv float %537, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %539 = fsub float 5.000000e+01, %538
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %540 = fmul float %539, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %541 = fdiv float %539, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %542 = call float @llvm.fma.f32(float %541, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %543 = call float @llvm.nvvm.saturate.f(float %542) #6
+     %544 = call float @llvm.nvvm.fma.rm.f(float %543, float 2.520000e+02, float 0x4168000020000000) #6
+     %545 = fadd float %544, 0xC168000FE0000000
+     %546 = fneg float %545
+     %547 = call float @llvm.fma.f32(float %541, float 0x3FF7154760000000, float %546) #6
+     %548 = call float @llvm.fma.f32(float %541, float 0x3E54AE0C00000000, float %547) #6
+     %549 = bitcast float %544 to i32
+     %550 = shl i32 %549, 23
+     %551 = bitcast i32 %550 to float
+     %552 = call float @llvm.nvvm.ex2.approx.ftz.f(float %548) #6
+     %553 = fmul float %552, %551
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %554 = fadd float %553, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %555 = fdiv float %540, %554
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %556 = fsub float 2.500000e+01, %538
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %557 = fdiv float %556, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %558 = call float @llvm.fma.f32(float %557, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %559 = call float @llvm.nvvm.saturate.f(float %558) #6
+     %560 = call float @llvm.nvvm.fma.rm.f(float %559, float 2.520000e+02, float 0x4168000020000000) #6
+     %561 = fadd float %560, 0xC168000FE0000000
+     %562 = fneg float %561
+     %563 = call float @llvm.fma.f32(float %557, float 0x3FF7154760000000, float %562) #6
+     %564 = call float @llvm.fma.f32(float %557, float 0x3E54AE0C00000000, float %563) #6
+     %565 = bitcast float %560 to i32
+     %566 = shl i32 %565, 23
+     %567 = bitcast i32 %566 to float
+     %568 = call float @llvm.nvvm.ex2.approx.ftz.f(float %564) #6
+     %569 = fmul float %568, %567
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %570 = fmul float %569, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %571 = fadd float %555, %570
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %572 = fdiv float %555, %571
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %573 = call float @llvm.fabs.f32(float %572) #6
+     %574 = fcmp olt float %573, 0x3810000000000000
+     %575 = fmul float %573, 0x4170000000000000
+     %.114.i660 = select i1 %574, float %575, float %573
+     %576 = bitcast float %.114.i660 to i32
+     %577 = add i32 %576, -1060439283
+     %578 = and i32 %577, -8388608
+     %579 = sub i32 %576, %578
+     %580 = bitcast i32 %579 to float
+     %581 = fadd float %580, 1.000000e+00
+     %582 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %581) #8
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %583 = call float @llvm.fabs.f32(float %533) #6
+     %584 = fcmp olt float %583, 0x3810000000000000
+     %585 = fmul float %583, 0x4170000000000000
+     %.114.i785 = select i1 %584, float %585, float %583
+     %586 = bitcast float %.114.i785 to i32
+     %587 = add i32 %586, -1060439283
+     %588 = and i32 %587, -8388608
+     %589 = sub i32 %586, %588
+     %590 = bitcast i32 %589 to float
+     %591 = fadd float %590, 1.000000e+00
+     %592 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %591) #8
+; │└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:9 within `runge_kutta_step!`
+; │┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:164 within `macro expansion`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/SizedArray.jl:93 within `setindex!` @ subarray.jl:345 @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35
+; │││││││┌ @ pointer.jl:126 within `unsafe_store!`
+          store float %129, float* %140, align 1
+          store float %129, float* %141, align 1
+          store float %129, float* %142, align 1
+          store float %129, float* %143, align 1
+          store float %129, float* %144, align 1
+; │└└└└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:10 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ multidimensional.jl:861 within `_getindex`
+     %593 = call fastcc {}* @julia__unsafe_getindex_17620({ i64, i32 } %state, {}* %105, i64 3)
+; │└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `*`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %594 = bitcast {}* %593 to float*
+         %595 = getelementptr inbounds float, float* %594, i64 1
+         %596 = load float, float* %595, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %597 = fmul float %596, 5.000000e-01
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %598 = getelementptr inbounds float, float* %594, i64 4
+         %599 = load float, float* %598, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %600 = fmul float %599, 5.000000e-01
+; │└└└└└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %601 = load float, float* %97, align 1
+; │││││└└
+; │││││┌ @ float.jl:408 within `+`
+        %602 = fadd float %597, %601
+; │││││└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %603 = load float, float* %103, align 1
+; │││││└└
+; │││││┌ @ float.jl:408 within `+`
+        %604 = fadd float %600, %603
+; │└└└└└
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %605 = fmul float %604, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %606 = fadd float %605, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %607 = fdiv float %606, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %608 = fsub float 5.000000e+01, %607
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %609 = fmul float %608, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %610 = fdiv float %608, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %611 = call float @llvm.fma.f32(float %610, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %612 = call float @llvm.nvvm.saturate.f(float %611) #6
+     %613 = call float @llvm.nvvm.fma.rm.f(float %612, float 2.520000e+02, float 0x4168000020000000) #6
+     %614 = fadd float %613, 0xC168000FE0000000
+     %615 = fneg float %614
+     %616 = call float @llvm.fma.f32(float %610, float 0x3FF7154760000000, float %615) #6
+     %617 = call float @llvm.fma.f32(float %610, float 0x3E54AE0C00000000, float %616) #6
+     %618 = bitcast float %613 to i32
+     %619 = shl i32 %618, 23
+     %620 = bitcast i32 %619 to float
+     %621 = call float @llvm.nvvm.ex2.approx.ftz.f(float %617) #6
+     %622 = fmul float %621, %620
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %623 = fadd float %622, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %624 = fdiv float %609, %623
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %625 = fsub float 2.500000e+01, %607
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %626 = fdiv float %625, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %627 = call float @llvm.fma.f32(float %626, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %628 = call float @llvm.nvvm.saturate.f(float %627) #6
+     %629 = call float @llvm.nvvm.fma.rm.f(float %628, float 2.520000e+02, float 0x4168000020000000) #6
+     %630 = fadd float %629, 0xC168000FE0000000
+     %631 = fneg float %630
+     %632 = call float @llvm.fma.f32(float %626, float 0x3FF7154760000000, float %631) #6
+     %633 = call float @llvm.fma.f32(float %626, float 0x3E54AE0C00000000, float %632) #6
+     %634 = bitcast float %629 to i32
+     %635 = shl i32 %634, 23
+     %636 = bitcast i32 %635 to float
+     %637 = call float @llvm.nvvm.ex2.approx.ftz.f(float %633) #6
+     %638 = fmul float %637, %636
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %639 = fmul float %638, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %640 = fadd float %624, %639
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %641 = fdiv float %624, %640
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %642 = call float @llvm.fabs.f32(float %641) #6
+     %643 = fcmp olt float %642, 0x3810000000000000
+     %644 = fmul float %642, 0x4170000000000000
+     %.114.i900 = select i1 %643, float %644, float %642
+     %645 = bitcast float %.114.i900 to i32
+     %646 = add i32 %645, -1060439283
+     %647 = and i32 %646, -8388608
+     %648 = sub i32 %645, %647
+     %649 = bitcast i32 %648 to float
+     %650 = fadd float %649, 1.000000e+00
+     %651 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %650) #8
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %652 = call float @llvm.fabs.f32(float %602) #6
+     %653 = fcmp olt float %652, 0x3810000000000000
+     %654 = fmul float %652, 0x4170000000000000
+     %.114.i1025 = select i1 %653, float %654, float %652
+     %655 = bitcast float %.114.i1025 to i32
+     %656 = add i32 %655, -1060439283
+     %657 = and i32 %656, -8388608
+     %658 = sub i32 %655, %657
+     %659 = bitcast i32 %658 to float
+     %660 = fadd float %659, 1.000000e+00
+     %661 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %660) #8
+; │└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:13 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1324 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %662 = load float, float* %95, align 1
+; │││└└
+; │││ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %663 = load float, float* %130, align 1
+       %664 = load float, float* %135, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %665 = fmul float %664, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %666 = load float, float* %140, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %667 = fmul float %666, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %668 = fadd float %663, %665
+    %669 = fadd float %668, %667
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %670 = fadd float %669, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %671 = fdiv float %670, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %672 = fadd float %662, %671
+; │└
+; │┌ @ abstractarray.jl:1399 within `setindex!`
+; ││┌ @ abstractarray.jl:1418 within `_setindex!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; ││││┌ @ pointer.jl:126 within `unsafe_store!`
+       store float %672, float* %95, align 1
+; │└└└└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %673 = load float, float* %131, align 1
+       %674 = load float, float* %136, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %675 = fmul float %674, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %676 = load float, float* %141, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %677 = fmul float %676, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %678 = fadd float %673, %675
+    %679 = fadd float %678, %677
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %680 = fadd float %679, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %681 = fdiv float %680, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %682 = fadd float %601, %681
+; │└
+; │┌ @ abstractarray.jl:1399 within `setindex!`
+; ││┌ @ abstractarray.jl:1418 within `_setindex!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; ││││┌ @ pointer.jl:126 within `unsafe_store!`
+       store float %682, float* %97, align 1
+; │└└└└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1324 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %683 = load float, float* %99, align 1
+; │││└└
+; │││ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %684 = load float, float* %132, align 1
+       %685 = load float, float* %137, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %686 = fmul float %685, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %687 = load float, float* %142, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %688 = fmul float %687, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %689 = fadd float %684, %686
+    %690 = fadd float %689, %688
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %691 = fadd float %690, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %692 = fdiv float %691, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %693 = fadd float %683, %692
+; │└
+; │┌ @ abstractarray.jl:1399 within `setindex!`
+; ││┌ @ abstractarray.jl:1418 within `_setindex!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; ││││┌ @ pointer.jl:126 within `unsafe_store!`
+       store float %693, float* %99, align 1
+; │└└└└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1324 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %694 = load float, float* %101, align 1
+; │││└└
+; │││ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %695 = load float, float* %133, align 1
+       %696 = load float, float* %138, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %697 = fmul float %696, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %698 = load float, float* %143, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %699 = fmul float %698, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %700 = fadd float %695, %697
+    %701 = fadd float %700, %699
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %702 = fadd float %701, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %703 = fdiv float %702, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %704 = fadd float %694, %703
+; │└
+; │┌ @ abstractarray.jl:1399 within `setindex!`
+; ││┌ @ abstractarray.jl:1418 within `_setindex!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; ││││┌ @ pointer.jl:126 within `unsafe_store!`
+       store float %704, float* %101, align 1
+; │└└└└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %705 = load float, float* %134, align 1
+       %706 = load float, float* %139, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %707 = fmul float %706, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %708 = load float, float* %144, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %709 = fmul float %708, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %710 = fadd float %705, %707
+    %711 = fadd float %710, %709
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %712 = fadd float %711, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %713 = fdiv float %712, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %714 = fadd float %603, %713
+; │└
+; │┌ @ abstractarray.jl:1399 within `setindex!`
+; ││┌ @ abstractarray.jl:1418 within `_setindex!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35 within `setindex!`
+; ││││┌ @ pointer.jl:126 within `unsafe_store!`
+       store float %714, float* %103, align 1
+; └└└└└
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:49 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:164 within `getindex`
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:85 within `#arrayref`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:91 within `arrayref_bits`
+; │││┌ @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/pointer.jl:85 within `unsafe_load`
+; ││││┌ @ none within `pointerref`
+; │││││┌ @ none within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+        %715 = load float, float addrspace(1)* %125, align 4
+        %716 = load float, float addrspace(1)* %128, align 4
+; └└└└└└
+; ┌ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:4 within `runge_kutta_step!`
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %717 = fmul float %.sroa.38.1, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %718 = fadd float %717, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %719 = fdiv float %718, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %720 = fsub float 5.000000e+01, %719
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %721 = fmul float %720, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %722 = fdiv float %720, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %723 = call float @llvm.fma.f32(float %722, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %724 = call float @llvm.nvvm.saturate.f(float %723) #6
+     %725 = call float @llvm.nvvm.fma.rm.f(float %724, float 2.520000e+02, float 0x4168000020000000) #6
+     %726 = fadd float %725, 0xC168000FE0000000
+     %727 = fneg float %726
+     %728 = call float @llvm.fma.f32(float %722, float 0x3FF7154760000000, float %727) #6
+     %729 = call float @llvm.fma.f32(float %722, float 0x3E54AE0C00000000, float %728) #6
+     %730 = bitcast float %725 to i32
+     %731 = shl i32 %730, 23
+     %732 = bitcast i32 %731 to float
+     %733 = call float @llvm.nvvm.ex2.approx.ftz.f(float %729) #6
+     %734 = fmul float %733, %732
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %735 = fadd float %734, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %736 = fdiv float %721, %735
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %737 = fsub float 2.500000e+01, %719
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %738 = fdiv float %737, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %739 = call float @llvm.fma.f32(float %738, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %740 = call float @llvm.nvvm.saturate.f(float %739) #6
+     %741 = call float @llvm.nvvm.fma.rm.f(float %740, float 2.520000e+02, float 0x4168000020000000) #6
+     %742 = fadd float %741, 0xC168000FE0000000
+     %743 = fneg float %742
+     %744 = call float @llvm.fma.f32(float %738, float 0x3FF7154760000000, float %743) #6
+     %745 = call float @llvm.fma.f32(float %738, float 0x3E54AE0C00000000, float %744) #6
+     %746 = bitcast float %741 to i32
+     %747 = shl i32 %746, 23
+     %748 = bitcast i32 %747 to float
+     %749 = call float @llvm.nvvm.ex2.approx.ftz.f(float %745) #6
+     %750 = fmul float %749, %748
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %751 = fmul float %750, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %752 = fadd float %736, %751
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %753 = fdiv float %736, %752
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %754 = call float @llvm.fabs.f32(float %753) #6
+     %755 = fcmp olt float %754, 0x3810000000000000
+     %756 = fmul float %754, 0x4170000000000000
+     %.114.i1140 = select i1 %755, float %756, float %754
+     %expo.i.i.1.i1141 = select i1 %755, float -2.400000e+01, float 0.000000e+00
+     %757 = bitcast float %.114.i1140 to i32
+     %758 = add i32 %757, -1060439283
+     %759 = and i32 %758, -8388608
+     %760 = sub i32 %757, %759
+     %761 = bitcast i32 %760 to float
+     %762 = sitofp i32 %759 to float
+     %763 = call float @llvm.fma.f32(float %762, float 0x3E80000000000000, float %expo.i.i.1.i1141) #6
+     %764 = fadd float %761, -1.000000e+00
+     %765 = fadd float %761, 1.000000e+00
+     %766 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %765) #8
+     %767 = fmul float %764, 2.000000e+00
+     %768 = fmul float %766, %767
+     %769 = fmul float %768, %768
+     %770 = fsub float %764, %768
+     %771 = fmul float %770, 2.000000e+00
+     %772 = fneg float %768
+     %773 = call float @llvm.fma.f32(float %772, float %764, float %771) #6
+     %774 = fmul float %766, %773
+     %775 = call float @llvm.fma.f32(float %769, float 0x3F45865C80000000, float 0x3F6A5CFB60000000) #6
+     %776 = call float @llvm.fma.f32(float %775, float %769, float 0x3F92776E60000000) #6
+     %777 = call float @llvm.fma.f32(float %776, float %769, float 0x3FBEC709E0000000) #6
+     %778 = fmul float %769, %777
+     %779 = call float @llvm.fma.f32(float %768, float 0x3FF7154760000000, float %763) #6
+     %780 = fsub float %763, %779
+     %781 = call float @llvm.fma.f32(float %768, float 0x3FF7154760000000, float %780) #6
+     %782 = call float @llvm.fma.f32(float %774, float 0x3FF7154760000000, float %781) #6
+     %783 = call float @llvm.fma.f32(float %768, float 0x3E54ABC680000000, float %782) #6
+     %784 = fmul float %778, 3.000000e+00
+     %785 = call float @llvm.fma.f32(float %784, float %774, float %783) #6
+     %786 = call float @llvm.fma.f32(float %778, float %768, float %785) #6
+     %787 = fadd float %779, %786
+     %788 = fsub float %787, %779
+     %789 = fsub float %786, %788
+     %790 = fmul float %787, 3.000000e+00
+     %791 = fneg float %790
+     %792 = call float @llvm.fma.f32(float %787, float 3.000000e+00, float %791) #6
+     %793 = call float @llvm.fma.f32(float %789, float 3.000000e+00, float %792) #6
+     %794 = call float @llvm.round.f32(float %790) #6
+     %795 = fsub float %790, %794
+     %796 = fadd float %795, %793
+     %797 = call float @llvm.fma.f32(float %796, float 0x3F23F971C0000000, float 0x3F55F0BDA0000000) #6
+     %798 = call float @llvm.fma.f32(float %797, float %796, float 0x3F83B30AC0000000) #6
+     %799 = call float @llvm.fma.f32(float %798, float %796, float 0x3FAC6AF760000000) #6
+     %800 = call float @llvm.fma.f32(float %799, float %796, float 0x3FCEBFBD80000000) #6
+     %801 = call float @llvm.fma.f32(float %800, float %796, float 0x3FE62E4300000000) #6
+     %802 = call float @llvm.fma.f32(float %801, float %796, float 1.000000e+00) #6
+     %803 = fptosi float %794 to i32
+     %804 = fcmp ogt float %794, 0.000000e+00
+     %805 = select i1 %804, i32 0, i32 -2097152000
+     %806 = add nsw i32 %805, 2130706432
+     %807 = bitcast i32 %806 to float
+     %808 = fmul float %802, %807
+     %809 = shl i32 %803, 23
+     %810 = sub i32 %809, %805
+     %811 = bitcast i32 %810 to float
+     %812 = fmul float %808, %811
+     %813 = call float @llvm.fabs.f32(float %790) #6
+     %814 = fcmp ogt float %813, 1.520000e+02
+     %815 = fcmp olt float %790, 0.000000e+00
+     %816 = select i1 %815, float 0.000000e+00, float 0x7FF0000000000000
+     %t.i.0.i1194 = select i1 %814, float %816, float %812
+     %817 = fcmp oeq float %753, 1.000000e+00
+     br i1 %817, label %__nv_powf.exit1217, label %__nv_isnanf.exit.i.i1197
+
+__nv_isnanf.exit.i.i1197:                         ; preds = %__nv_powf.exit382
+     %818 = fcmp ugt float %754, 0x7FF0000000000000
+     br i1 %818, label %__nv_fadd_rn.exit.i.i1203, label %__nv_isnanf.exit2.i.i1200
+
+__nv_fadd_rn.exit.i.i1203:                        ; preds = %__nv_isnanf.exit.i.i1197
+     %819 = fadd float %753, 3.000000e+00
+     br label %__nv_powf.exit1217
+
+__nv_isnanf.exit2.i.i1200:                        ; preds = %__nv_isnanf.exit.i.i1197
+     %820 = fcmp oeq float %753, 0.000000e+00
+     %821 = fcmp oeq float %754, 0x7FF0000000000000
+     %or.cond33 = select i1 %820, i1 true, i1 %821
+     br i1 %or.cond33, label %822, label %__nv_isinff.exit7.i.i1210
+
+822:                                              ; preds = %__nv_isnanf.exit2.i.i1200
+     %823 = fadd float %753, %753
+     br label %__nv_powf.exit1217
+
+__nv_isinff.exit7.i.i1210:                        ; preds = %__nv_isnanf.exit2.i.i1200
+     %824 = fcmp olt float %753, 0.000000e+00
+     br i1 %824, label %__nv_floorf.exit.i.i1215, label %__nv_powf.exit1217
+
+__nv_floorf.exit.i.i1215:                         ; preds = %__nv_isinff.exit7.i.i1210
+     %825 = fneg float %t.i.0.i1194
+     br label %__nv_powf.exit1217
+
+__nv_powf.exit1217:                               ; preds = %__nv_floorf.exit.i.i1215, %__nv_isinff.exit7.i.i1210, %822, %__nv_fadd_rn.exit.i.i1203, %__nv_powf.exit382
+     %.6.i1216 = phi float [ 1.000000e+00, %__nv_powf.exit382 ], [ %819, %__nv_fadd_rn.exit.i.i1203 ], [ %823, %822 ], [ %825, %__nv_floorf.exit.i.i1215 ], [ %t.i.0.i1194, %__nv_isinff.exit7.i.i1210 ]
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %826 = fadd float %.sroa.38.1, -3.000000e+01
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %827 = fmul float %.sroa.22.1, 4.000000e+00
+     %828 = fmul float %827, %.6.i1216
+; │││ @ operators.jl:578 within `*`
+; │││┌ @ operators.jl:535 within `afoldl`
+; ││││┌ @ float.jl:410 within `*`
+       %829 = fmul float %826, %828
+; ││└└└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:23 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %830 = fdiv float %737, 2.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %831 = call float @llvm.fma.f32(float %830, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %832 = call float @llvm.nvvm.saturate.f(float %831) #6
+     %833 = call float @llvm.nvvm.fma.rm.f(float %832, float 2.520000e+02, float 0x4168000020000000) #6
+     %834 = fadd float %833, 0xC168000FE0000000
+     %835 = fneg float %834
+     %836 = call float @llvm.fma.f32(float %830, float 0x3FF7154760000000, float %835) #6
+     %837 = call float @llvm.fma.f32(float %830, float 0x3E54AE0C00000000, float %836) #6
+     %838 = bitcast float %833 to i32
+     %839 = shl i32 %838, 23
+     %840 = bitcast i32 %839 to float
+     %841 = call float @llvm.nvvm.ex2.approx.ftz.f(float %837) #6
+     %842 = fmul float %841, %840
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %843 = fmul float %842, 0x3FB1EB8520000000
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:24 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %844 = fsub float 4.500000e+01, %719
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %845 = fdiv float %844, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %846 = call float @llvm.fma.f32(float %845, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %847 = call float @llvm.nvvm.saturate.f(float %846) #6
+     %848 = call float @llvm.nvvm.fma.rm.f(float %847, float 2.520000e+02, float 0x4168000020000000) #6
+     %849 = fadd float %848, 0xC168000FE0000000
+     %850 = fneg float %849
+     %851 = call float @llvm.fma.f32(float %845, float 0x3FF7154760000000, float %850) #6
+     %852 = call float @llvm.fma.f32(float %845, float 0x3E54AE0C00000000, float %851) #6
+     %853 = bitcast float %848 to i32
+     %854 = shl i32 %853, 23
+     %855 = bitcast i32 %854 to float
+     %856 = call float @llvm.nvvm.ex2.approx.ftz.f(float %852) #6
+     %857 = fmul float %856, %855
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %858 = fadd float %857, 1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %859 = fdiv float 1.000000e+00, %858
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:25 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %860 = fadd float %843, %859
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %861 = fdiv float %843, %860
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:26 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %862 = fdiv float 1.250000e+01, %860
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:27 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %863 = fsub float %861, %.sroa.22.1
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %864 = fdiv float %863, %862
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:28 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %865 = fadd float %.sroa.38.1, -7.000000e+01
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %866 = fmul float %.sroa.22.1, 0x3F689374C0000000
+     %867 = fmul float %866, %865
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:30 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %868 = fsub float 5.500000e+01, %719
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %869 = fmul float %868, 0x3F847AE140000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %870 = fdiv float %868, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %871 = call float @llvm.fma.f32(float %870, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %872 = call float @llvm.nvvm.saturate.f(float %871) #6
+     %873 = call float @llvm.nvvm.fma.rm.f(float %872, float 2.520000e+02, float 0x4168000020000000) #6
+     %874 = fadd float %873, 0xC168000FE0000000
+     %875 = fneg float %874
+     %876 = call float @llvm.fma.f32(float %870, float 0x3FF7154760000000, float %875) #6
+     %877 = call float @llvm.fma.f32(float %870, float 0x3E54AE0C00000000, float %876) #6
+     %878 = bitcast float %873 to i32
+     %879 = shl i32 %878, 23
+     %880 = bitcast i32 %879 to float
+     %881 = call float @llvm.nvvm.ex2.approx.ftz.f(float %877) #6
+     %882 = fmul float %881, %880
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %883 = fadd float %882, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %884 = fdiv float %869, %883
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:31 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %885 = fdiv float %844, 8.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %886 = call float @llvm.fma.f32(float %885, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %887 = call float @llvm.nvvm.saturate.f(float %886) #6
+     %888 = call float @llvm.nvvm.fma.rm.f(float %887, float 2.520000e+02, float 0x4168000020000000) #6
+     %889 = fadd float %888, 0xC168000FE0000000
+     %890 = fneg float %889
+     %891 = call float @llvm.fma.f32(float %885, float 0x3FF7154760000000, float %890) #6
+     %892 = call float @llvm.fma.f32(float %885, float 0x3E54AE0C00000000, float %891) #6
+     %893 = bitcast float %888 to i32
+     %894 = shl i32 %893, 23
+     %895 = bitcast i32 %894 to float
+     %896 = call float @llvm.nvvm.ex2.approx.ftz.f(float %892) #6
+     %897 = fmul float %896, %895
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %898 = fmul float %897, 1.250000e-01
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:32 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %899 = fadd float %884, %898
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %900 = fdiv float %884, %899
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:33 within `f!`
+; ││┌ @ float.jl:411 within `/`
+     %901 = fdiv float 1.250000e+01, %899
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:34 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %902 = fsub float %900, %.sroa.11.1
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %903 = fdiv float %902, %901
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %904 = call float @llvm.fabs.f32(float %.sroa.11.1) #6
+     %905 = fcmp olt float %904, 0x3810000000000000
+     %906 = fmul float %904, 0x4170000000000000
+     %.114.i1265 = select i1 %905, float %906, float %904
+     %expo.i.i.1.i1266 = select i1 %905, float -2.400000e+01, float 0.000000e+00
+     %907 = bitcast float %.114.i1265 to i32
+     %908 = add i32 %907, -1060439283
+     %909 = and i32 %908, -8388608
+     %910 = sub i32 %907, %909
+     %911 = bitcast i32 %910 to float
+     %912 = sitofp i32 %909 to float
+     %913 = call float @llvm.fma.f32(float %912, float 0x3E80000000000000, float %expo.i.i.1.i1266) #6
+     %914 = fadd float %911, -1.000000e+00
+     %915 = fadd float %911, 1.000000e+00
+     %916 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %915) #8
+     %917 = fmul float %914, 2.000000e+00
+     %918 = fmul float %916, %917
+     %919 = fmul float %918, %918
+     %920 = fsub float %914, %918
+     %921 = fmul float %920, 2.000000e+00
+     %922 = fneg float %918
+     %923 = call float @llvm.fma.f32(float %922, float %914, float %921) #6
+     %924 = fmul float %916, %923
+     %925 = call float @llvm.fma.f32(float %919, float 0x3F45865C80000000, float 0x3F6A5CFB60000000) #6
+     %926 = call float @llvm.fma.f32(float %925, float %919, float 0x3F92776E60000000) #6
+     %927 = call float @llvm.fma.f32(float %926, float %919, float 0x3FBEC709E0000000) #6
+     %928 = fmul float %919, %927
+     %929 = call float @llvm.fma.f32(float %918, float 0x3FF7154760000000, float %913) #6
+     %930 = fsub float %913, %929
+     %931 = call float @llvm.fma.f32(float %918, float 0x3FF7154760000000, float %930) #6
+     %932 = call float @llvm.fma.f32(float %924, float 0x3FF7154760000000, float %931) #6
+     %933 = call float @llvm.fma.f32(float %918, float 0x3E54ABC680000000, float %932) #6
+     %934 = fmul float %928, 3.000000e+00
+     %935 = call float @llvm.fma.f32(float %934, float %924, float %933) #6
+     %936 = call float @llvm.fma.f32(float %928, float %918, float %935) #6
+     %937 = fadd float %929, %936
+     %938 = fsub float %937, %929
+     %939 = fsub float %936, %938
+     %940 = fmul float %937, 4.000000e+00
+     %941 = fneg float %940
+     %942 = call float @llvm.fma.f32(float %937, float 4.000000e+00, float %941) #6
+     %943 = call float @llvm.fma.f32(float %939, float 4.000000e+00, float %942) #6
+     %944 = call float @llvm.round.f32(float %940) #6
+     %945 = fsub float %940, %944
+     %946 = fadd float %945, %943
+     %947 = call float @llvm.fma.f32(float %946, float 0x3F23F971C0000000, float 0x3F55F0BDA0000000) #6
+     %948 = call float @llvm.fma.f32(float %947, float %946, float 0x3F83B30AC0000000) #6
+     %949 = call float @llvm.fma.f32(float %948, float %946, float 0x3FAC6AF760000000) #6
+     %950 = call float @llvm.fma.f32(float %949, float %946, float 0x3FCEBFBD80000000) #6
+     %951 = call float @llvm.fma.f32(float %950, float %946, float 0x3FE62E4300000000) #6
+     %952 = call float @llvm.fma.f32(float %951, float %946, float 1.000000e+00) #6
+     %953 = fptosi float %944 to i32
+     %954 = fcmp ogt float %944, 0.000000e+00
+     %955 = select i1 %954, i32 0, i32 -2097152000
+     %956 = add nsw i32 %955, 2130706432
+     %957 = bitcast i32 %956 to float
+     %958 = fmul float %952, %957
+     %959 = shl i32 %953, 23
+     %960 = sub i32 %959, %955
+     %961 = bitcast i32 %960 to float
+     %962 = fmul float %958, %961
+     %963 = call float @llvm.fabs.f32(float %940) #6
+     %964 = fcmp ogt float %963, 1.520000e+02
+     %965 = fcmp olt float %940, 0.000000e+00
+     %966 = select i1 %965, float 0.000000e+00, float 0x7FF0000000000000
+     %t.i.0.i1319 = select i1 %964, float %966, float %962
+     %967 = fcmp oeq float %.sroa.11.1, 1.000000e+00
+     br i1 %967, label %__nv_powf.exit1342, label %__nv_isnanf.exit.i.i1322
+
+__nv_isnanf.exit.i.i1322:                         ; preds = %__nv_powf.exit1217
+     %968 = fcmp ugt float %904, 0x7FF0000000000000
+     br i1 %968, label %__nv_fadd_rn.exit.i.i1328, label %__nv_isnanf.exit2.i.i1325
+
+__nv_fadd_rn.exit.i.i1328:                        ; preds = %__nv_isnanf.exit.i.i1322
+     %969 = fadd float %.sroa.11.1, 4.000000e+00
+     br label %__nv_powf.exit1342
+
+__nv_isnanf.exit2.i.i1325:                        ; preds = %__nv_isnanf.exit.i.i1322
+     %970 = fcmp oeq float %.sroa.11.1, 0.000000e+00
+     %971 = fcmp oeq float %904, 0x7FF0000000000000
+     %or.cond35 = select i1 %970, i1 true, i1 %971
+     br i1 %or.cond35, label %972, label %__nv_isinff.exit7.i.i1335
+
+972:                                              ; preds = %__nv_isnanf.exit2.i.i1325
+     %973 = fadd float %.sroa.11.1, %.sroa.11.1
+     %974 = bitcast float %973 to i32
+     %975 = and i32 %974, 2147483647
+     %976 = bitcast i32 %975 to float
+     br label %__nv_powf.exit1342
+
+__nv_isinff.exit7.i.i1335:                        ; preds = %__nv_isnanf.exit2.i.i1325
+     br label %__nv_powf.exit1342
+
+__nv_powf.exit1342:                               ; preds = %__nv_isinff.exit7.i.i1335, %972, %__nv_fadd_rn.exit.i.i1328, %__nv_powf.exit1217
+     %.6.i1341 = phi float [ 1.000000e+00, %__nv_powf.exit1217 ], [ %969, %__nv_fadd_rn.exit.i.i1328 ], [ %976, %972 ], [ %t.i.0.i1319, %__nv_isinff.exit7.i.i1335 ]
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %977 = fadd float %.sroa.38.1, 7.500000e+01
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %978 = fmul float %.6.i1341, 0x3FD3333340000000
+     %979 = fmul float %977, %978
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:37 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %980 = fsub float %715, %.sroa.38.1
+     %981 = fadd float %980, -5.000000e+01
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %982 = fmul float %981, 0x3FC3333340000000
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %983 = call float @llvm.fma.f32(float %982, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %984 = call float @llvm.nvvm.saturate.f(float %983) #6
+     %985 = call float @llvm.nvvm.fma.rm.f(float %984, float 2.520000e+02, float 0x4168000020000000) #6
+     %986 = fadd float %985, 0xC168000FE0000000
+     %987 = fneg float %986
+     %988 = call float @llvm.fma.f32(float %982, float 0x3FF7154760000000, float %987) #6
+     %989 = call float @llvm.fma.f32(float %982, float 0x3E54AE0C00000000, float %988) #6
+     %990 = bitcast float %985 to i32
+     %991 = shl i32 %990, 23
+     %992 = bitcast i32 %991 to float
+     %993 = call float @llvm.nvvm.ex2.approx.ftz.f(float %989) #6
+     %994 = fmul float %993, %992
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %995 = fadd float %994, 1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %996 = fdiv float 1.000000e+00, %995
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:38 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %997 = fsub float %996, %.sroa.0.1
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %998 = fdiv float %997, 1.000000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:39 within `f!`
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %999 = fmul float %.sroa.0.1, 0x3F847AE140000000
+     %1000 = fmul float %999, %826
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:41 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1001 = fsub float 1.400000e+02, %.sroa.38.1
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %1002 = fadd float %716, %1001
+; ││└
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %1003 = fmul float %.sroa.0.1, 0x3F816872C0000000
+     %1004 = fmul float %1003, %1002
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %1005 = fsub float %1004, %.sroa.30.1
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1006 = fmul float %1005, 0x3F33A92A40000000
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:42 within `f!`
+; ││┌ @ operators.jl:578 within `*` @ float.jl:410
+     %1007 = fmul float %.sroa.30.1, 0x3F9EB851E0000000
+     %1008 = fmul float %1007, %977
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %1009 = fadd float %.sroa.30.1, 5.000000e-01
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1010 = fdiv float %1008, %1009
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:44 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1011 = fadd float %.sroa.38.1, 4.000000e+01
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1012 = fmul float %1011, 0x3F689374C0000000
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:46 within `f!`
+; ││┌ @ operators.jl:578 within `+` @ float.jl:408
+     %1013 = fadd float %829, %979
+     %1014 = fadd float %1000, %1013
+; │││ @ operators.jl:578 within `+`
+; │││┌ @ operators.jl:535 within `afoldl`
+; ││││┌ @ float.jl:408 within `+`
+       %1015 = fadd float %1010, %1014
+; ││││└
+; ││││ @ operators.jl:536 within `afoldl`
+; ││││┌ @ float.jl:408 within `+`
+       %1016 = fadd float %867, %1015
+; ││││└
+; ││││ @ operators.jl:537 within `afoldl`
+; ││││┌ @ float.jl:408 within `+`
+       %1017 = fadd float %1012, %1016
+; │└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:5 within `runge_kutta_step!`
+; │┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:164 within `macro expansion`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/SizedArray.jl:93 within `setindex!` @ subarray.jl:345 @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35
+; │││││││┌ @ pointer.jl:126 within `unsafe_store!`
+          store float %129, float* %130, align 1
+          store float %129, float* %131, align 1
+          store float %129, float* %132, align 1
+          store float %129, float* %133, align 1
+          store float %129, float* %134, align 1
+; │└└└└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:6 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ multidimensional.jl:861 within `_getindex`
+     %1018 = call fastcc {}* @julia__unsafe_getindex_17620({ i64, i32 } %state, {}* %105, i64 1)
+; │└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `*`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %1019 = bitcast {}* %1018 to float*
+         %1020 = getelementptr inbounds float, float* %1019, i64 1
+         %1021 = load float, float* %1020, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %1022 = fmul float %1021, 5.000000e-01
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %1023 = getelementptr inbounds float, float* %1019, i64 4
+         %1024 = load float, float* %1023, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %1025 = fmul float %1024, 5.000000e-01
+; │└└└└└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ float.jl:408 within `+`
+        %1026 = fadd float %1022, %903
+        %1027 = fsub float %1025, %1017
+; │└└└└└
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %1028 = fmul float %1027, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %1029 = fadd float %1028, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1030 = fdiv float %1029, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1031 = fsub float 5.000000e+01, %1030
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1032 = fmul float %1031, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1033 = fdiv float %1031, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %1034 = call float @llvm.fma.f32(float %1033, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %1035 = call float @llvm.nvvm.saturate.f(float %1034) #6
+     %1036 = call float @llvm.nvvm.fma.rm.f(float %1035, float 2.520000e+02, float 0x4168000020000000) #6
+     %1037 = fadd float %1036, 0xC168000FE0000000
+     %1038 = fneg float %1037
+     %1039 = call float @llvm.fma.f32(float %1033, float 0x3FF7154760000000, float %1038) #6
+     %1040 = call float @llvm.fma.f32(float %1033, float 0x3E54AE0C00000000, float %1039) #6
+     %1041 = bitcast float %1036 to i32
+     %1042 = shl i32 %1041, 23
+     %1043 = bitcast i32 %1042 to float
+     %1044 = call float @llvm.nvvm.ex2.approx.ftz.f(float %1040) #6
+     %1045 = fmul float %1044, %1043
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %1046 = fadd float %1045, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1047 = fdiv float %1032, %1046
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1048 = fsub float 2.500000e+01, %1030
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1049 = fdiv float %1048, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %1050 = call float @llvm.fma.f32(float %1049, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %1051 = call float @llvm.nvvm.saturate.f(float %1050) #6
+     %1052 = call float @llvm.nvvm.fma.rm.f(float %1051, float 2.520000e+02, float 0x4168000020000000) #6
+     %1053 = fadd float %1052, 0xC168000FE0000000
+     %1054 = fneg float %1053
+     %1055 = call float @llvm.fma.f32(float %1049, float 0x3FF7154760000000, float %1054) #6
+     %1056 = call float @llvm.fma.f32(float %1049, float 0x3E54AE0C00000000, float %1055) #6
+     %1057 = bitcast float %1052 to i32
+     %1058 = shl i32 %1057, 23
+     %1059 = bitcast i32 %1058 to float
+     %1060 = call float @llvm.nvvm.ex2.approx.ftz.f(float %1056) #6
+     %1061 = fmul float %1060, %1059
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1062 = fmul float %1061, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %1063 = fadd float %1047, %1062
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1064 = fdiv float %1047, %1063
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %1065 = call float @llvm.fabs.f32(float %1064) #6
+     %1066 = fcmp olt float %1065, 0x3810000000000000
+     %1067 = fmul float %1065, 0x4170000000000000
+     %.114.i1380 = select i1 %1066, float %1067, float %1065
+     %1068 = bitcast float %.114.i1380 to i32
+     %1069 = add i32 %1068, -1060439283
+     %1070 = and i32 %1069, -8388608
+     %1071 = sub i32 %1068, %1070
+     %1072 = bitcast i32 %1071 to float
+     %1073 = fadd float %1072, 1.000000e+00
+     %1074 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %1073) #8
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %1075 = call float @llvm.fabs.f32(float %1026) #6
+     %1076 = fcmp olt float %1075, 0x3810000000000000
+     %1077 = fmul float %1075, 0x4170000000000000
+     %.114.i1505 = select i1 %1076, float %1077, float %1075
+     %1078 = bitcast float %.114.i1505 to i32
+     %1079 = add i32 %1078, -1060439283
+     %1080 = and i32 %1079, -8388608
+     %1081 = sub i32 %1078, %1080
+     %1082 = bitcast i32 %1081 to float
+     %1083 = fadd float %1082, 1.000000e+00
+     %1084 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %1083) #8
+; │└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:7 within `runge_kutta_step!`
+; │┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:164 within `macro expansion`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/SizedArray.jl:93 within `setindex!` @ subarray.jl:345 @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35
+; │││││││┌ @ pointer.jl:126 within `unsafe_store!`
+          store float %129, float* %135, align 1
+          store float %129, float* %136, align 1
+          store float %129, float* %137, align 1
+          store float %129, float* %138, align 1
+          store float %129, float* %139, align 1
+; │└└└└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:8 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ multidimensional.jl:861 within `_getindex`
+     %1085 = call fastcc {}* @julia__unsafe_getindex_17620({ i64, i32 } %state, {}* %105, i64 2)
+; │└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `*`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %1086 = bitcast {}* %1085 to float*
+         %1087 = getelementptr inbounds float, float* %1086, i64 1
+         %1088 = load float, float* %1087, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %1089 = fmul float %1088, 5.000000e-01
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %1090 = getelementptr inbounds float, float* %1086, i64 4
+         %1091 = load float, float* %1090, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %1092 = fmul float %1091, 5.000000e-01
+; │└└└└└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ float.jl:408 within `+`
+        %1093 = fadd float %1089, %903
+        %1094 = fsub float %1092, %1017
+; │└└└└└
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %1095 = fmul float %1094, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %1096 = fadd float %1095, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1097 = fdiv float %1096, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1098 = fsub float 5.000000e+01, %1097
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1099 = fmul float %1098, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1100 = fdiv float %1098, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %1101 = call float @llvm.fma.f32(float %1100, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %1102 = call float @llvm.nvvm.saturate.f(float %1101) #6
+     %1103 = call float @llvm.nvvm.fma.rm.f(float %1102, float 2.520000e+02, float 0x4168000020000000) #6
+     %1104 = fadd float %1103, 0xC168000FE0000000
+     %1105 = fneg float %1104
+     %1106 = call float @llvm.fma.f32(float %1100, float 0x3FF7154760000000, float %1105) #6
+     %1107 = call float @llvm.fma.f32(float %1100, float 0x3E54AE0C00000000, float %1106) #6
+     %1108 = bitcast float %1103 to i32
+     %1109 = shl i32 %1108, 23
+     %1110 = bitcast i32 %1109 to float
+     %1111 = call float @llvm.nvvm.ex2.approx.ftz.f(float %1107) #6
+     %1112 = fmul float %1111, %1110
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %1113 = fadd float %1112, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1114 = fdiv float %1099, %1113
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1115 = fsub float 2.500000e+01, %1097
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1116 = fdiv float %1115, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %1117 = call float @llvm.fma.f32(float %1116, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %1118 = call float @llvm.nvvm.saturate.f(float %1117) #6
+     %1119 = call float @llvm.nvvm.fma.rm.f(float %1118, float 2.520000e+02, float 0x4168000020000000) #6
+     %1120 = fadd float %1119, 0xC168000FE0000000
+     %1121 = fneg float %1120
+     %1122 = call float @llvm.fma.f32(float %1116, float 0x3FF7154760000000, float %1121) #6
+     %1123 = call float @llvm.fma.f32(float %1116, float 0x3E54AE0C00000000, float %1122) #6
+     %1124 = bitcast float %1119 to i32
+     %1125 = shl i32 %1124, 23
+     %1126 = bitcast i32 %1125 to float
+     %1127 = call float @llvm.nvvm.ex2.approx.ftz.f(float %1123) #6
+     %1128 = fmul float %1127, %1126
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1129 = fmul float %1128, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %1130 = fadd float %1114, %1129
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1131 = fdiv float %1114, %1130
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %1132 = call float @llvm.fabs.f32(float %1131) #6
+     %1133 = fcmp olt float %1132, 0x3810000000000000
+     %1134 = fmul float %1132, 0x4170000000000000
+     %.114.i1620 = select i1 %1133, float %1134, float %1132
+     %1135 = bitcast float %.114.i1620 to i32
+     %1136 = add i32 %1135, -1060439283
+     %1137 = and i32 %1136, -8388608
+     %1138 = sub i32 %1135, %1137
+     %1139 = bitcast i32 %1138 to float
+     %1140 = fadd float %1139, 1.000000e+00
+     %1141 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %1140) #8
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %1142 = call float @llvm.fabs.f32(float %1093) #6
+     %1143 = fcmp olt float %1142, 0x3810000000000000
+     %1144 = fmul float %1142, 0x4170000000000000
+     %.114.i1745 = select i1 %1143, float %1144, float %1142
+     %1145 = bitcast float %.114.i1745 to i32
+     %1146 = add i32 %1145, -1060439283
+     %1147 = and i32 %1146, -8388608
+     %1148 = sub i32 %1145, %1147
+     %1149 = bitcast i32 %1148 to float
+     %1150 = fadd float %1149, 1.000000e+00
+     %1151 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %1150) #8
+; │└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:9 within `runge_kutta_step!`
+; │┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:164 within `macro expansion`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/SizedArray.jl:93 within `setindex!` @ subarray.jl:345 @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:35
+; │││││││┌ @ pointer.jl:126 within `unsafe_store!`
+          store float %129, float* %140, align 1
+          store float %129, float* %141, align 1
+          store float %129, float* %142, align 1
+          store float %129, float* %143, align 1
+          store float %129, float* %144, align 1
+; │└└└└└└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:10 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ multidimensional.jl:861 within `_getindex`
+     %1152 = call fastcc {}* @julia__unsafe_getindex_17620({ i64, i32 } %state, {}* %105, i64 3)
+; │└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `*`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:31 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %1153 = bitcast {}* %1152 to float*
+         %1154 = getelementptr inbounds float, float* %1153, i64 1
+         %1155 = load float, float* %1154, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %1156 = fmul float %1155, 5.000000e-01
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││││┌ @ pointer.jl:111 within `unsafe_load`
+         %1157 = getelementptr inbounds float, float* %1153, i64 4
+         %1158 = load float, float* %1157, align 1
+; │││││└└
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:21 within `#263`
+; ││││││┌ @ float.jl:410 within `*`
+         %1159 = fmul float %1158, 5.000000e-01
+; │└└└└└└
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:12 within `+`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; │││││┌ @ float.jl:408 within `+`
+        %1160 = fadd float %1156, %903
+        %1161 = fsub float %1159, %1017
+; │└└└└└
+; │┌ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:17 within `f!`
+; ││┌ @ float.jl:410 within `*`
+     %1162 = fmul float %1161, 1.270000e+02
+; ││└
+; ││┌ @ float.jl:408 within `+`
+     %1163 = fadd float %1162, 8.265000e+03
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1164 = fdiv float %1163, 1.050000e+02
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:18 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1165 = fsub float 5.000000e+01, %1164
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1166 = fmul float %1165, 0x3FB99999A0000000
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1167 = fdiv float %1165, 1.000000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %1168 = call float @llvm.fma.f32(float %1167, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %1169 = call float @llvm.nvvm.saturate.f(float %1168) #6
+     %1170 = call float @llvm.nvvm.fma.rm.f(float %1169, float 2.520000e+02, float 0x4168000020000000) #6
+     %1171 = fadd float %1170, 0xC168000FE0000000
+     %1172 = fneg float %1171
+     %1173 = call float @llvm.fma.f32(float %1167, float 0x3FF7154760000000, float %1172) #6
+     %1174 = call float @llvm.fma.f32(float %1167, float 0x3E54AE0C00000000, float %1173) #6
+     %1175 = bitcast float %1170 to i32
+     %1176 = shl i32 %1175, 23
+     %1177 = bitcast i32 %1176 to float
+     %1178 = call float @llvm.nvvm.ex2.approx.ftz.f(float %1174) #6
+     %1179 = fmul float %1178, %1177
+; ││└
+; ││┌ @ float.jl:409 within `-`
+     %1180 = fadd float %1179, -1.000000e+00
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1181 = fdiv float %1166, %1180
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:19 within `f!`
+; ││┌ @ float.jl:409 within `-`
+     %1182 = fsub float 2.500000e+01, %1164
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1183 = fdiv float %1182, 1.800000e+01
+; ││└
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:129 within `#exp`
+     %1184 = call float @llvm.fma.f32(float %1183, float 0x3F777313A0000000, float 5.000000e-01) #6
+     %1185 = call float @llvm.nvvm.saturate.f(float %1184) #6
+     %1186 = call float @llvm.nvvm.fma.rm.f(float %1185, float 2.520000e+02, float 0x4168000020000000) #6
+     %1187 = fadd float %1186, 0xC168000FE0000000
+     %1188 = fneg float %1187
+     %1189 = call float @llvm.fma.f32(float %1183, float 0x3FF7154760000000, float %1188) #6
+     %1190 = call float @llvm.fma.f32(float %1183, float 0x3E54AE0C00000000, float %1189) #6
+     %1191 = bitcast float %1186 to i32
+     %1192 = shl i32 %1191, 23
+     %1193 = bitcast i32 %1192 to float
+     %1194 = call float @llvm.nvvm.ex2.approx.ftz.f(float %1190) #6
+     %1195 = fmul float %1194, %1193
+; ││└
+; ││┌ @ float.jl:410 within `*`
+     %1196 = fmul float %1195, 4.000000e+00
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:20 within `f!`
+; ││┌ @ float.jl:408 within `+`
+     %1197 = fadd float %1181, %1196
+; ││└
+; ││┌ @ float.jl:411 within `/`
+     %1198 = fdiv float %1181, %1197
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:21 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %1199 = call float @llvm.fabs.f32(float %1198) #6
+     %1200 = fcmp olt float %1199, 0x3810000000000000
+     %1201 = fmul float %1199, 0x4170000000000000
+     %.114.i1860 = select i1 %1200, float %1201, float %1199
+     %1202 = bitcast float %.114.i1860 to i32
+     %1203 = add i32 %1202, -1060439283
+     %1204 = and i32 %1203, -8388608
+     %1205 = sub i32 %1202, %1204
+     %1206 = bitcast i32 %1205 to float
+     %1207 = fadd float %1206, 1.000000e+00
+     %1208 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %1207) #8
+; ││└
+; ││ @ /home/jack/code/PlantChaos/lyapunov_2/model.jl:35 within `f!`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:247 within `#^`
+     %1209 = call float @llvm.fabs.f32(float %1160) #6
+     %1210 = fcmp olt float %1209, 0x3810000000000000
+     %1211 = fmul float %1209, 0x4170000000000000
+     %.114.i1985 = select i1 %1210, float %1211, float %1209
+     %1212 = bitcast float %.114.i1985 to i32
+     %1213 = add i32 %1212, -1060439283
+     %1214 = and i32 %1213, -8388608
+     %1215 = sub i32 %1212, %1214
+     %1216 = bitcast i32 %1215 to float
+     %1217 = fadd float %1216, 1.000000e+00
+     %1218 = call float asm "rcp.approx.ftz.f32 $0,$1;", "=f,f"(float %1217) #8
+; │└└
+; │ @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:13 within `runge_kutta_step!`
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1219 = load float, float* %130, align 1
+       %1220 = load float, float* %135, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1221 = fmul float %1220, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1222 = load float, float* %140, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1223 = fmul float %1222, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %1224 = fadd float %1219, %1221
+    %1225 = fadd float %1224, %1223
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %1226 = fadd float %1225, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %1227 = fdiv float %1226, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %1228 = fadd float %998, %1227
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1229 = load float, float* %131, align 1
+       %1230 = load float, float* %136, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1231 = fmul float %1230, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1232 = load float, float* %141, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1233 = fmul float %1232, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %1234 = fadd float %1229, %1231
+    %1235 = fadd float %1234, %1233
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %1236 = fadd float %1235, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %1237 = fdiv float %1236, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %1238 = fadd float %903, %1237
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1239 = load float, float* %132, align 1
+       %1240 = load float, float* %137, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1241 = fmul float %1240, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1242 = load float, float* %142, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1243 = fmul float %1242, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %1244 = fadd float %1239, %1241
+    %1245 = fadd float %1244, %1243
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %1246 = fadd float %1245, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %1247 = fdiv float %1246, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %1248 = fadd float %864, %1247
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1249 = load float, float* %133, align 1
+       %1250 = load float, float* %138, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1251 = fmul float %1250, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1252 = load float, float* %143, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1253 = fmul float %1252, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %1254 = fadd float %1249, %1251
+    %1255 = fadd float %1254, %1253
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %1256 = fadd float %1255, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %1257 = fdiv float %1256, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %1258 = fadd float %1006, %1257
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1259 = load float, float* %134, align 1
+       %1260 = load float, float* %139, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1261 = fmul float %1260, 2.000000e+00
+; │└
+; │┌ @ abstractarray.jl:1296 within `getindex`
+; ││┌ @ abstractarray.jl:1329 within `_getindex`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; ││││┌ @ pointer.jl:111 within `unsafe_load`
+       %1262 = load float, float* %144, align 1
+; │└└└└
+; │┌ @ float.jl:410 within `*`
+    %1263 = fmul float %1262, 2.000000e+00
+; │└
+; │┌ @ operators.jl:578 within `+` @ float.jl:408
+    %1264 = fadd float %1259, %1261
+    %1265 = fadd float %1264, %1263
+; ││ @ operators.jl:578 within `+`
+; ││┌ @ operators.jl:535 within `afoldl`
+; │││┌ @ float.jl:408 within `+`
+      %1266 = fadd float %1265, %129
+; │└└└
+; │┌ @ float.jl:411 within `/`
+    %1267 = fdiv float %1266, 6.000000e+00
+; │└
+; │┌ @ float.jl:408 within `+`
+    %1268 = fsub float %1267, %1017
+; └└
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:51 within `lyapunov_kernel!`
+; ┌ @ float.jl:408 within `+`
+   %1269 = fadd float %value_phi8, %5
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:52 within `lyapunov_kernel!`
+; ┌ @ float.jl:409 within `-`
+   %1270 = fsub float %1269, %5
+; └
+; ┌ @ float.jl:410 within `*`
+   %1271 = fmul float %1269, %1270
+; └
+; ┌ @ float.jl:536 within `<=`
+   %1272 = fcmp ugt float %1271, 0.000000e+00
+   %1273 = fadd float %value_phi9, %5
+   %1274 = fcmp ule float %1269, %3
+; └
+  %or.cond2217 = select i1 %1272, i1 %1274, i1 false
+  br i1 %or.cond2217, label %L735, label %L6237
+
+L6237:                                            ; preds = %__nv_powf.exit1342, %L735
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl within `lyapunov_kernel!`
+  %.sroa.38.2 = phi float [ %.sroa.38.1, %L735 ], [ %1268, %__nv_powf.exit1342 ]
+  %.sroa.30.2 = phi float [ %.sroa.30.1, %L735 ], [ %1258, %__nv_powf.exit1342 ]
+  %.sroa.22.2 = phi float [ %.sroa.22.1, %L735 ], [ %1248, %__nv_powf.exit1342 ]
+  %.sroa.11.2 = phi float [ %.sroa.11.1, %L735 ], [ %1238, %__nv_powf.exit1342 ]
+  %.sroa.0.2 = phi float [ %.sroa.0.1, %L735 ], [ %1228, %__nv_powf.exit1342 ]
+  %value_phi41 = phi float [ %value_phi8, %L735 ], [ %1269, %__nv_powf.exit1342 ]
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:56 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:16 within `-`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:37 within `map`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:40 within `_map`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/mapreduce.jl:75 within `macro expansion`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %1275 = load float, float* %95, align 1
+; ││││└└
+; ││││┌ @ float.jl:409 within `-`
+       %1276 = fsub float %1275, %.sroa.0.2
+; ││││└
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %1277 = load float, float* %97, align 1
+; ││││└└
+; ││││┌ @ float.jl:409 within `-`
+       %1278 = fsub float %1277, %.sroa.11.2
+; ││││└
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %1279 = load float, float* %99, align 1
+; ││││└└
+; ││││┌ @ float.jl:409 within `-`
+       %1280 = fsub float %1279, %.sroa.22.2
+; ││││└
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %1281 = load float, float* %101, align 1
+; ││││└└
+; ││││┌ @ float.jl:409 within `-`
+       %1282 = fsub float %1281, %.sroa.30.2
+; ││││└
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/MArray.jl:25 within `getindex`
+; │││││┌ @ pointer.jl:111 within `unsafe_load`
+        %1283 = load float, float* %103, align 1
+; ││││└└
+; ││││┌ @ float.jl:409 within `-`
+       %1284 = fsub float %1283, %.sroa.38.2
+; └└└└└
+; ┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:265 within `norm`
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:266 within `_norm`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:276 within `macro expansion`
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %1285 = fmul float %1276, %1276
+        %1286 = fmul float %1278, %1278
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %1287 = fadd float %1285, %1286
+; │││└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %1288 = fmul float %1280, %1280
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %1289 = fadd float %1287, %1288
+; │││└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %1290 = fmul float %1282, %1282
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %1291 = fadd float %1289, %1290
+; │││└
+; │││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││┌ @ number.jl:189 within `abs2`
+; │││││┌ @ float.jl:410 within `*`
+        %1292 = fmul float %1284, %1284
+; │││└└└
+; │││┌ @ float.jl:408 within `+`
+      %1293 = fadd float %1291, %1292
+; │││└
+; │││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:233 within `#sqrt`
+      %1294 = call float @llvm.sqrt.f32(float %1293) #6
+; │││└
+; │││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:278 within `macro expansion`
+; │││┌ @ float.jl:535 within `<`
+      %1295 = fcmp ule float %1294, 0.000000e+00
+      %1296 = call float @llvm.fabs.f32(float %1294) #6
+      %1297 = fcmp uge float %1296, 0x7FF0000000000000
+; │││└
+     %or.cond62 = select i1 %1295, i1 true, i1 %1297
+     br i1 %or.cond62, label %L6497, label %L6715
+
+L6497:                                            ; preds = %L6237
+; │││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:279 within `macro expansion`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:249 within `_norm_scaled`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:257 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:241 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %1298 = call float @llvm.fabs.f32(float %1276) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %1299 = call float @llvm.fabs.f32(float %1278) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %1300 = fcmp ole float %1298, 0x7FF0000000000000
+          %1301 = fcmp ole float %1299, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %1302 = call float @llvm.maxnum.f32(float %1298, float %1299) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %1303 = and i1 %1300, %1301
+          %1304 = select i1 %1303, float %1302, float 0x7FF8000000000000
+; ││││││└└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %1305 = call float @llvm.fabs.f32(float %1280) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %1306 = call float @llvm.fabs.f32(float %1304) #6
+          %1307 = fcmp ole float %1306, 0x7FF0000000000000
+          %1308 = fcmp ole float %1305, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %1309 = call float @llvm.maxnum.f32(float %1304, float %1305) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %1310 = and i1 %1307, %1308
+          %1311 = select i1 %1310, float %1309, float 0x7FF8000000000000
+; ││││││└└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %1312 = call float @llvm.fabs.f32(float %1282) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %1313 = call float @llvm.fabs.f32(float %1311) #6
+          %1314 = fcmp ole float %1313, 0x7FF0000000000000
+          %1315 = fcmp ole float %1312, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %1316 = call float @llvm.maxnum.f32(float %1311, float %1312) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %1317 = and i1 %1314, %1315
+          %1318 = select i1 %1317, float %1316, float 0x7FF8000000000000
+; ││││││└└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:237
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:225 within `#abs`
+         %1319 = call float @llvm.fabs.f32(float %1284) #6
+; ││││││└
+; ││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:243 within `maxabs_nested`
+; ││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:331 within `#max`
+; │││││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:206 within `#isnan`
+          %1320 = call float @llvm.fabs.f32(float %1318) #6
+          %1321 = fcmp ole float %1320, 0x7FF0000000000000
+          %1322 = fcmp ole float %1319, 0x7FF0000000000000
+; │││││││└
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:332 within `#max`
+         %1323 = call float @llvm.maxnum.f32(float %1318, float %1319) #6
+; │││││││ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:333 within `#max`
+; │││││││┌ @ essentials.jl:575 within `ifelse`
+          %1324 = and i1 %1321, %1322
+          %1325 = select i1 %1324, float %1323, float 0x7FF8000000000000
+; │││││└└└
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:258 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:199 within `#isfinite`
+        %1326 = call float @llvm.fabs.f32(float %1325) #6
+        %1327 = fcmp olt float %1326, 0x7FF0000000000000
+; │││││└
+       br i1 %1327, label %L6593, label %L6715
+
+L6593:                                            ; preds = %L6497
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:260 within `macro expansion`
+; │││││┌ @ number.jl:42 within `iszero`
+; ││││││┌ @ float.jl:533 within `==`
+         %1328 = fcmp une float %1325, 0.000000e+00
+; │││││└└
+       br i1 %1328, label %L6624, label %L6596
+
+L6596:                                            ; preds = %L6593
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:257 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:244 within `maxabs_nested`
+; ││││││┌ @ range.jl:891 within `iterate`
+         br label %L6715
+
+L6624:                                            ; preds = %L6593
+; │││││└└
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:261 within `macro expansion`
+; │││││┌ @ float.jl:411 within `/`
+        %1329 = fdiv float %1276, %1325
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %1330 = fmul float %1329, %1329
+; │││││└└└
+; │││││┌ @ float.jl:411 within `/`
+        %1331 = fdiv float %1278, %1325
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %1332 = fmul float %1331, %1331
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %1333 = fadd float %1330, %1332
+; │││││└
+; │││││┌ @ float.jl:411 within `/`
+        %1334 = fdiv float %1280, %1325
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %1335 = fmul float %1334, %1334
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %1336 = fadd float %1333, %1335
+; │││││└
+; │││││┌ @ float.jl:411 within `/`
+        %1337 = fdiv float %1282, %1325
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %1338 = fmul float %1337, %1337
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %1339 = fadd float %1336, %1338
+; │││││└
+; │││││┌ @ float.jl:411 within `/`
+        %1340 = fdiv float %1284, %1325
+; │││││└
+; │││││┌ @ /cache/build/builder-amdci4-4/julialang/julia-release-1-dot-9/usr/share/julia/stdlib/v1.9/LinearAlgebra/src/generic.jl:459 within `norm_sqr`
+; ││││││┌ @ number.jl:189 within `abs2`
+; │││││││┌ @ float.jl:410 within `*`
+          %1341 = fmul float %1340, %1340
+; │││││└└└
+; │││││┌ @ float.jl:408 within `+`
+        %1342 = fadd float %1339, %1341
+; │││││└
+; │││││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:233 within `#sqrt`
+        %1343 = call float @llvm.sqrt.f32(float %1342) #6
+; │││││└
+; │││││┌ @ float.jl:410 within `*`
+        %1344 = fmul float %1325, %1343
+; │││││└
+; │││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:257 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/linalg.jl:244 within `maxabs_nested`
+; ││││││┌ @ range.jl:891 within `iterate`
+         br label %L6715
+
+L6715:                                            ; preds = %L6624, %L6596, %L6497, %L6237
+         %value_phi43 = phi float [ 0.000000e+00, %L6596 ], [ %1344, %L6624 ], [ %1325, %L6497 ], [ %1294, %L6237 ]
+; └└└└└└└
+; ┌ @ float.jl:411 within `/`
+   %1345 = fdiv float %value_phi43, %6
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:57 within `lyapunov_kernel!`
+; ┌ @ operators.jl:369 within `>`
+; │┌ @ float.jl:535 within `<`
+    %1346 = fcmp ule float %value_phi41, 0.000000e+00
+; └└
+  br i1 %1346, label %L6724, label %L6718
+
+L6718:                                            ; preds = %L6715
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:58 within `lyapunov_kernel!`
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/intrinsics/math.jl:105 within `#log`
+   %1347 = fcmp olt float %1345, 0x3810000000000000
+   %1348 = fmul float %1345, 0x4160000000000000
+   %.02.i2097 = select i1 %1347, float %1348, float %1345
+   %i.i.0.i = select i1 %1347, float -2.300000e+01, float 0.000000e+00
+   %1349 = bitcast float %.02.i2097 to i32
+   %1350 = add i32 %1349, -1059760811
+   %1351 = and i32 %1350, -8388608
+   %1352 = sub i32 %1349, %1351
+   %1353 = bitcast i32 %1352 to float
+   %1354 = sitofp i32 %1351 to float
+   %1355 = call float @llvm.fma.f32(float %1354, float 0x3E80000000000000, float %i.i.0.i) #6
+   %1356 = fadd float %1353, -1.000000e+00
+   %1357 = call float @llvm.fma.f32(float %1356, float 0xBFC0AA04E0000000, float 0x3FC2073EC0000000) #6
+   %1358 = call float @llvm.fma.f32(float %1357, float %1356, float 0xBFBF19B980000000) #6
+   %1359 = call float @llvm.fma.f32(float %1358, float %1356, float 0x3FC1E52AA0000000) #6
+   %1360 = call float @llvm.fma.f32(float %1359, float %1356, float 0xBFC55B1720000000) #6
+   %1361 = call float @llvm.fma.f32(float %1360, float %1356, float 0x3FC99DA160000000) #6
+   %1362 = call float @llvm.fma.f32(float %1361, float %1356, float 0xBFCFFFE440000000) #6
+   %1363 = call float @llvm.fma.f32(float %1362, float %1356, float 0x3FD5554F00000000) #6
+   %1364 = call float @llvm.fma.f32(float %1363, float %1356, float -5.000000e-01) #6
+   %1365 = fmul float %1356, %1364
+   %1366 = call float @llvm.fma.f32(float %1365, float %1356, float %1356) #6
+   %1367 = call float @llvm.fma.f32(float %1355, float 0x3FE62E4300000000, float %1366) #6
+   %1368 = icmp ugt i32 %1349, 2139095039
+   %1369 = call float @llvm.fma.f32(float %.02.i2097, float 0x7FF0000000000000, float 0x7FF0000000000000) #6
+   %spec.select = select i1 %1368, float %1369, float %1367
+   %1370 = fcmp oeq float %.02.i2097, 0.000000e+00
+   %r.i.1.i = select i1 %1370, float 0xFFF0000000000000, float %spec.select
+; └
+; ┌ @ float.jl:408 within `+`
+   %1371 = fadd float %value_phi72358, %r.i.1.i
+   br label %L6724
+
+L6724:                                            ; preds = %L6718, %L6715
+   %value_phi44 = phi float [ %1371, %L6718 ], [ %value_phi72358, %L6715 ]
+; └
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:60 within `lyapunov_kernel!`
+; ┌ @ broadcast.jl:881 within `materialize!` @ broadcast.jl:884
+; │┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:65 within `copyto!`
+; ││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:72 within `_copyto!`
+; │││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:148 within `_broadcast!`
+; ││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:163 within `macro expansion`
+; │││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:189 within `newf`
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230
+; │││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args`
+; │││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││││┌ @ float.jl:409 within `-`
+             %1372 = fsub float %.sroa.0.2, %1275
+; │││││││││└└
+; │││││││││ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230
+; │││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││││┌ @ float.jl:408 within `+`
+             %1373 = fadd float %1345, 0x3E80000000000000
+; ││││││││└└└
+; ││││││││┌ @ float.jl:411 within `/`
+           %1374 = fdiv float %1372, %1373
+; ││││││└└└
+; ││││││┌ @ float.jl:408 within `+`
+         %1375 = fadd float %1275, %1374
+; ││││││└
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230
+; │││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args`
+; │││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││││┌ @ float.jl:409 within `-`
+             %1376 = fsub float %.sroa.11.2, %1277
+; ││││││││└└└
+; ││││││││┌ @ float.jl:411 within `/`
+           %1377 = fdiv float %1376, %1373
+; ││││││└└└
+; ││││││┌ @ float.jl:408 within `+`
+         %1378 = fadd float %1277, %1377
+; ││││││└
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230
+; │││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args`
+; │││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││││┌ @ float.jl:409 within `-`
+             %1379 = fsub float %.sroa.22.2, %1279
+; ││││││││└└└
+; ││││││││┌ @ float.jl:411 within `/`
+           %1380 = fdiv float %1379, %1373
+; ││││││└└└
+; ││││││┌ @ float.jl:408 within `+`
+         %1381 = fadd float %1279, %1380
+; ││││││└
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230
+; │││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args`
+; │││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││││┌ @ float.jl:409 within `-`
+             %1382 = fsub float %.sroa.30.2, %1281
+; ││││││││└└└
+; ││││││││┌ @ float.jl:411 within `/`
+           %1383 = fdiv float %1382, %1373
+; ││││││└└└
+; ││││││┌ @ float.jl:408 within `+`
+         %1384 = fadd float %1281, %1383
+; ││││││└
+; ││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args` @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230
+; │││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:230 within `prepare_args`
+; │││││││││┌ @ /home/jack/.julia/packages/StaticArrays/cZ1ET/src/broadcast.jl:225 within `makeargs1`
+; ││││││││││┌ @ float.jl:409 within `-`
+             %1385 = fsub float %.sroa.38.2, %1283
+; ││││││││└└└
+; ││││││││┌ @ float.jl:411 within `/`
+           %1386 = fdiv float %1385, %1373
+; ││││││└└└
+; ││││││┌ @ float.jl:408 within `+`
+         %1387 = fadd float %1283, %1386
+; └└└└└└└
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:45 within `lyapunov_kernel!`
+; ┌ @ float.jl:535 within `<`
+   %1388 = fcmp uge float %value_phi41, %3
+; └
+  br i1 %1388, label %L7069, label %L735.preheader
+
+L7069:                                            ; preds = %L6724, %L388
+  %value_phi7.lcssa = phi float [ 0.000000e+00, %L388 ], [ %value_phi44, %L6724 ]
+;  @ /home/jack/code/PlantChaos/lyapunov_2/lyapunov.jl:62 within `lyapunov_kernel!`
+; ┌ @ float.jl:411 within `/`
+   %1389 = fdiv float %value_phi7.lcssa, %3
+; └
+; ┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:179 within `setindex!`
+; │┌ @ abstractarray.jl:1335 within `_to_linear_index`
+; ││┌ @ abstractarray.jl:2935 within `_sub2ind`
+; │││┌ @ abstractarray.jl:98 within `axes`
+; ││││┌ @ tuple.jl:274 within `map`
+; │││││┌ @ range.jl:459 within `oneto`
+; ││││││┌ @ range.jl:457 within `OneTo` @ range.jl:444
+; │││││││┌ @ promotion.jl:510 within `max`
+; ││││││││┌ @ essentials.jl:575 within `ifelse`
+           %1390 = icmp sgt i64 %.fca.2.0.extract, 0
+           %1391 = select i1 %1390, i64 %.fca.2.0.extract, i64 0
+; │││└└└└└└
+; │││ @ abstractarray.jl:2935 within `_sub2ind` @ abstractarray.jl:2951
+; │││┌ @ abstractarray.jl:2967 within `_sub2ind_recurse` @ abstractarray.jl:2967
+; ││││┌ @ abstractarray.jl:2974 within `offsetin`
+; │││││┌ @ int.jl:1042 within `-` @ int.jl:86
+        %1392 = add nsw i64 %22, -1
+; ││││└└
+; ││││┌ @ int.jl:88 within `*`
+       %1393 = mul i64 %1391, %1392
+; ││││└
+; ││││┌ @ int.jl:87 within `+`
+       %1394 = add nsw i64 %21, -1
+; │└└└└
+; │ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:179 within `setindex!` @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:166
+; │┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:127 within `#arrayset`
+; ││┌ @ /home/jack/.julia/packages/CUDA/nIZkq/src/device/array.jl:134 within `arrayset_bits`
+; │││┌ @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/pointer.jl:88 within `unsafe_store!`
+; ││││┌ @ none within `pointerset`
+; │││││┌ @ none within `macro expansion` @ /home/jack/.julia/packages/LLVM/vIbji/src/interop/base.jl:38
+; ││││││┌ @ int.jl:86 within `-`
+         %1395 = add i64 %1394, %1393
+; ││││││└
+        %1396 = bitcast i8 addrspace(1)* %.fca.0.extract to float addrspace(1)*
+        %1397 = getelementptr inbounds float, float addrspace(1)* %1396, i64 %1395
+        store float %1389, float addrspace(1)* %1397, align 4
+        br label %common.ret
+; └└└└└└
+}

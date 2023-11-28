@@ -1,15 +1,25 @@
 
-function runge_kutta_step!(f, du, u, k, x_shift, Ca_shift, dt)
+@inline function runge_kutta_step!(f, du, u, k, x_shift, Ca_shift, dt)
     @inbounds begin
     f(du, u, x_shift, Ca_shift)
-    @. k[1,:] = dt * du
-    f(du, u + 0.5f0 * k[1,:], x_shift, Ca_shift)
-    @. k[2,:] = dt * du
-    f(du, u + 0.5f0 * k[2,:], x_shift, Ca_shift)
-    @. k[3,:] = dt * du
-    f(du, u + 0.5f0 * k[3,:], x_shift, Ca_shift)
-    u = u + (k[1,:] + 2f0 * k[2,:] + 2f0 * k[3,:] + dt * du) / 6f0
+    @. k[Int32(1),:] = dt * du
+    f(du, u + 0.5f0 * k[Int32(1),:], x_shift, Ca_shift)
+    @. k[Int32(2),:] = dt * du
+    f(du, u + 0.5f0 * k[Int32(2),:], x_shift, Ca_shift)
+    @. k[Int32(3),:] = dt * du
+    f(du, u + 0.5f0 * k[Int32(3),:], x_shift, Ca_shift)
+    i = Int32(1)
+    while i <= Int32(5)
+        u[i] = u[i] + (
+            k[Int32(1),i] + 
+            2f0 * k[Int32(2),i] + 
+            2f0 * k[Int32(3),i] + 
+            dt * du[i]
+        ) / 6f0
+        i += Int32(1)
     end
+    end
+    return nothing
 end
 
 #TTr = 0f0, dt = 1f0, d0 = 1f-9, rescale_dt::Int32 = Int32(10)
@@ -22,17 +32,16 @@ function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
     if caix > length(cas) return end
 
     #initial conditions
-    u = @MVector rand(5)
-    du = @MVector zeros(5)
-    pert = @MVector randn(5)
+    u = @MVector rand(Float32, 5)
+    du = @MVector zeros(Float32, 5)
+    pert = @MVector randn(Float32, 5)
     u1 = u + pert / norm(pert) * d0
-    k = @MMatrix zeros(3,5)
+    k = MMatrix{3, 5, Float32, 15}(undef)
     
-    #integration
-    d = norm(u-u1)
-    @cuprintln("d $d")
+    #@cuprintln("d $d")
     λ_total = 0f0
     t = -TTr
+    a = 0f0
     while t < T
         rescale_count = 0f0
         while rescale_count < rescale_dt
@@ -44,16 +53,14 @@ function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
             t > T && break
         end
         #rescale
-        a = norm(u-u1)
-        @cuprintln("dnew $dnew")
+        a = norm(u-u1)/d0
         if t>0f0
-            λ_total += log(dnew/(d + eps(Float32)))
+            λ_total += log(a)
         end
-        u1 = u1 + (u1 - u) / (dnew  / d0)
-        d = norm(u-u1) # calculated explicitly for numerical precision.
+        @. u1 = u + (u1 - u) / (a+ eps(Float32))
     end
     @inbounds lyapunov_exponents[xix, caix] = λ_total / T
-    return
+    return nothing
 end
 
 function lyapunov(f, xs, cas, T, TTr, dt, d0, rescale_dt)

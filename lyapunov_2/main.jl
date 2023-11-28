@@ -15,11 +15,11 @@ caspace = LinRange(-45, -20, resolution) |> collect |> cu
 #initialize scan data
 lyapunov_exponents = CUDA.zeros(resolution, resolution)
 
-T = 100f0
-TTr = 100f0
+T = 2f0
+TTr = 0f0
 dt = 1f0
-d0 = 1f-3
-rescale_dt = Int32(10)
+d0 = 1f-6
+rescale_dt = 10f0
 
 tr = @cuda lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
         TTr, dt, d0, rescale_dt)
@@ -30,8 +30,10 @@ CUDA.memory(tr)
 #CUDA.@profile lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
 #        TTr, dt, d0, rescale_dt)
 
-data = @cuda threads=1 blocks=1 lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
-        TTr, .01, d0, rescale_dt)
+open("llvm_ir.txt", "w") do file
+    @device_code_llvm(io = file, @cuda(lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
+        TTr, dt, d0, rescale_dt)))
+end
 
         
         

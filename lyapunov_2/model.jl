@@ -1,6 +1,6 @@
 
 
-function f!(du, u, x_shift, Ca_shift)
+@inline function f!(du, u, x_shift, Ca_shift)
     @inbounds begin
         x = u[Int32(1)]
         n = u[Int32(2)]
@@ -24,24 +24,24 @@ function f!(du, u, x_shift, Ca_shift)
     bh = 1.0f0 / (exp((45.0f0 - Vs) / 10.0f0) + 1.0f0)
     hinf = ah / (ah + bh)
     th = 12.5f0 / (ah + bh)
-    u[Int32(3)] = (hinf - h) / th
+    @inbounds u[Int32(3)] = (hinf - h) / th
     Ih = gl * h * (V - Eh)
 
     an = 0.01f0 * (55.0f0 - Vs) / (exp((55.0f0 - Vs) / 10.0f0) - 1.0f0)
     bn = 0.125f0 * exp((45.0f0 - Vs) / 80.0f0)
     ninf = an / (an + bn)
     tn = 12.5f0 / (an + bn)
-    u[2] = (ninf - n) / tn
+    @inbounds u[2] = (ninf - n) / tn
     IK = gK * n^4.0f0 * (V - EK)
 
     xinf = 1.0f0 / (1.0f0 + exp(0.15f0 * (x_shift - V - 50.0f0)))
-    u[1] = (xinf - x) / tau_x
+    @inbounds u[1] = (xinf - x) / tau_x
     Ix = gx * x * (V - EI)
 
-    u[4] = rho * (Kc * x * (ECa - V + Ca_shift) - Ca)
+    @inbounds u[4] = rho * (Kc * x * (ECa - V + Ca_shift) - Ca)
     ICa = gKCa * Ca * (V - EK) / (0.5f0 + Ca)
 
     IL = gl * (V - El)
     
-    u[5] = -(INa + IK + Ix + ICa + Ih + IL) / Cm
+    @inbounds u[5] = -(INa + IK + Ix + ICa + Ih + IL) / Cm
 end
