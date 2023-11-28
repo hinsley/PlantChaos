@@ -164,6 +164,7 @@ while critical_value > saddle_po_preimage # Move up until passing the Shilnikov-
     opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), critical_point-critical_point_recompute_radius, critical_point+critical_point_recompute_radius)
     critical_point = Optim.minimizer(opt)
     critical_value = -Optim.minimum(opt)
+    println(critical_value)
     ##### End recomputation of the map.
 end
 
@@ -212,6 +213,7 @@ while critical_value != saddle_po_preimage && x_shift != old_x_shift
     opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), critical_point-critical_point_recompute_radius, critical_point+critical_point_recompute_radius)
     critical_point = Optim.minimizer(opt)
     critical_value = -Optim.minimum(opt)
+    println(critical_value)
     ##### End recomputation of the map.
 end
 

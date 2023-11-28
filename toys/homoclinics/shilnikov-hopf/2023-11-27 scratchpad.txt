@@ -1,0 +1,52 @@
+Number beforehand: 0.6876342451840901
+Number afterhand: 0.6838388147366754
+x_shift beforehand: -1.33
+Roughly the x_shift afterhand: -1.30933333333
+
+The difference between the calculated critical_value and the saddle_po_preimage becomes quite small in the parabola search. But does this really mean anything? Shouldn't I be recomputing the lerp each step?
+The lerp calculation is done in return_map_utils.jl in the calculate_return_map() function, returned as the 8th component of the return tuple.
+
+So can I reimplement this? How should it be done?
+Already, what works is the initial location of the critical points. So let's go to the subsequent logic.
+I should encapsulate each chunk of the logic in its own function so I can call back to the plotting code for intermediate visualizations. Maybe later though.
+Logic for locating parabola:
+1. Compute initial critical point.
+2. Loop.
+    a. Move up in x_shift by 1 step_size -- no problem here.
+    b. Reconstruct parameters in the natural way -- no problem here.
+    c. Compute the new saddle_po_preimage.
+        i. We are using the old `lerp` here still, so this is inevitably a
+           little weird. However, we are running the trajectory with truly new
+           parameter values, so one should not expect too much wackiness from
+           this. What could it mess up?
+        ii. A linear interpolation is done using calculate_hom_box() to get the
+            estimated location of the saddle periodic orbit in x_min. This only
+            uses the computed map, so surely it is not quite what one would call            wrong. If there is an issue here, it is due to the obsoleted `lerp`.
+        iii. The estimated point of the saddle periodic orbit is inserted into
+             the computed map -- no problem here.
+        iv. Repeat until convergence -- no problem here.
+    d. Compute the new critical value.
+        i. Specify a small search region around where the critical point was
+           originally. I think this is fine, but I would like to make one
+           small adjustment for in the case where the true critical value is
+           just beside the fake pointy peak. That is, I should take the smallest
+           detected peak, rather than the largest. So this will require some
+           extra snooping around the documentation of the Optim.jl library to
+           figure out.
+        ii. Note -- we are still using the old lerp object to get the initial
+            values. I think this is the wrong way to go about it. How should I
+            do it instead? We already know the values for x_min we would like to
+            use as initial conditions, so x is determined. Ca is, despite one's
+            possible intuition, not determined, as the equilibrium may move
+            left or right slightly as x_shift is varied. So we need to recompute
+            the Ca value of the equilibrium given the new parameter values and
+            just use that. Luckily equilibria.jl handles this for us. On the
+            other hand, the fast subsystem should need to be solved for semi-
+            analytically, so some hand calculations will need to be done here.
+            Maybe Jack has written some example logic for this already.
+
+So basically, there are just 2 changes to make.
+1. Don't use lerp, use custom initial conditions updated based on the new
+   parameter values.
+2. When getting the new critical point, discard all but the smallest local
+   extremum.
