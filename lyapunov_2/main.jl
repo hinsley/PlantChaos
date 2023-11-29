@@ -9,18 +9,20 @@ include("./model.jl")
 resolution = 100 # How many points to sample.
 
 # generate parameter space
-xspace = LinRange(-4, 4, resolution) |> collect |> cu
+xspace = LinRange(-10, 0, resolution) |> collect |> cu
 caspace = LinRange(-45, 100, resolution) |> collect |> cu
 
 #initialize scan data
 lyapunov_exponents = CUDA.fill(NaN32, (resolution, resolution))
 
+#define scan parameters
 T = 500000f0
 TTr = 500000f0
 dt = 1f0
 d0 = 1f-3
 rescale_dt = 10f0
 
+#run kernel
 block_size = (16, 16)
 grid_size = (Int(ceil(resolution/block_size[1])), Int(ceil(resolution/block_size[2])))
 @cuda threads=block_size blocks=grid_size lyapunov_kernel!(f!, xspace, caspace, lyapunov_exponents, T,
@@ -28,6 +30,7 @@ grid_size = (Int(ceil(resolution/block_size[1])), Int(ceil(resolution/block_size
 
 CUDA.synchronize()
 
+#plot results
 let 
     f = Figure(resolution = (800, 600))
     ax = Axis(f[1,1], xlabel = "Ca", ylabel = "x")

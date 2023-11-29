@@ -1,16 +1,18 @@
-using CUDA, StaticArrays
+# test f
+begin
+    u = @MVector rand(Float32, 5)
+    du = @MVector zeros(Float32, 5)
+    x_shift = 0f0
+    Ca_shift = 0f0
+    f!(du, u, x_shift, Ca_shift)
 
+    trajectory = zeros(Float32, 100000)
+    q = @MVector zeros(Float32, 5)
 
-function kernel(a,b,c)
-    xix = threadIdx().x + (blockIdx().x - Int32(1)) * blockDim().x
-    yix = threadIdx().y + (blockIdx().y - Int32(1)) * blockDim().y
-    if xix > length(a) return end
-    if yix > length(b) return end
-    c[xix,yix] = a[xix] + b[yix]
-    return
+    dt = 1f0
+    for i in 1:100000
+        runge_kutta_step!(f!, du, u, q, x_shift, Ca_shift, dt)
+        trajectory[i] = u[5]
+    end
+    lines(trajectory)
 end
-a = cu(collect(1:10))
-b = cu(collect(10:10:100))
-c = CUDA.zeros(10,10) 
-
-@cuda threads=(10,10) blocks=(1,1) kernel(a,b,c)
