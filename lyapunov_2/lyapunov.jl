@@ -1,23 +1,14 @@
-
-@inline function runge_kutta_step!(f, du, u, k, x_shift, Ca_shift, dt)
+@inline function runge_kutta_step!(f, du, u, q, x_shift, Ca_shift, dt)
     @inbounds begin
+    @. q = u
     f(du, u, x_shift, Ca_shift)
-    @. k[Int32(1),:] = dt * du
-    f(du, u + 0.5f0 * k[Int32(1),:], x_shift, Ca_shift)
-    @. k[Int32(2),:] = dt * du
-    f(du, u + 0.5f0 * k[Int32(2),:], x_shift, Ca_shift)
-    @. k[Int32(3),:] = dt * du
-    f(du, u + 0.5f0 * k[Int32(3),:], x_shift, Ca_shift)
-    i = Int32(1)
-    while i <= Int32(5)
-        u[i] = u[i] + (
-            k[Int32(1),i] + 
-            2f0 * k[Int32(2),i] + 
-            2f0 * k[Int32(3),i] + 
-            dt * du[i]
-        ) / 6f0
-        i += Int32(1)
-    end
+    @. q = q + dt*du/6f0
+    f(du, u + 0.5f0/dt * du, x_shift, Ca_shift)
+    @. q = q + dt*du/3f0
+    f(du, u + 0.5f0/dt * du, x_shift, Ca_shift)
+    @. q = q + dt*du/3f0
+    f(du, u + dt*du, x_shift, Ca_shift)
+    @. u = q + dt*du/6f0
     end
     return nothing
 end
@@ -32,47 +23,52 @@ function lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
     if caix > length(cas) return end
 
     #initial conditions
-    u = @MVector rand(Float32, 5)
-    du = @MVector zeros(Float32, 5)
-    pert = @MVector randn(Float32, 5)
+    u = MVector{5, Float32}(undef)
+    i = Int32(1)
+    while i <= Int32(5)
+        @inbounds u[i] = rand(Float32)
+        i += Int32(1)
+    end
+    du = MVector{5, Float32}(undef)
+    pert = MVector{5, Float32}(undef)
+    i = Int32(1)
+    while i <= Int32(5)
+        @inbounds pert[i] = randn(Float32)
+        i += Int32(1)
+    end
     u1 = u + pert / norm(pert) * d0
-    k = MMatrix{3, 5, Float32, 15}(undef)
-    
-    #@cuprintln("d $d")
+    #keeps track of actual distance, approximately d0
+    d = norm(u1-u)
+    # preallocated container for rk4
+    q = MVector{5, Float32}(undef)
+
     λ_total = 0f0
     t = -TTr
     a = 0f0
+
     while t < T
         rescale_count = 0f0
         while rescale_count < rescale_dt
-            @inbounds runge_kutta_step!(f!, du, u, k, xs[xix], cas[caix], dt)
-            @inbounds runge_kutta_step!(f!, du, u1, k, xs[xix], cas[caix], dt)
+            @inbounds runge_kutta_step!(f!, du, u, q, xs[xix], cas[caix], dt)
+            @inbounds runge_kutta_step!(f!, du, u1, q, xs[xix], cas[caix], dt)
             rescale_count += dt
             t += dt
             t*(t-dt) <= 0f0 && break
             t > T && break
         end
         #rescale
-        a = norm(u-u1)/d0
+        dnew = norm(u1-u)
         if t>0f0
-            λ_total += log(a)
+            λ_total += log(d/dnew)
         end
-        @. u1 = u + (u1 - u) / (a+ eps(Float32))
+        @. u1 = u + (u1 - u) / (dnew/d0 + 1f-12)
+        d = dnew
     end
-    @inbounds lyapunov_exponents[xix, caix] = λ_total / T
+    @inbounds lyapunov_exponents[caix, xix] = λ_total / T
     return nothing
 end
 
-function lyapunov(f, xs, cas, T, TTr, dt, d0, rescale_dt)
-    # calculate batch size()
-
-    lyapunov_exponents = CUDA.zeros(length(xs), length(cas))
-    @cuda threads=(32,32) blocks=(1,1) lyapunov_kernel!(f, xs, cas, lyapunov_exponents, T,
-        TTr, dt, d0, rescale_dt)
-    return lyapunov_exponents
-end
-
-function optimal_launch_configuration(kernel)
+"""function optimal_launch_configuration(kernel)
     device = CUDA.device()
     warp_size = CUDA.attribute(device,
         CUDA.DEVICE_ATTRIBUTE_WARP_SIZE)
@@ -101,4 +97,4 @@ function optimal_launch_configuration(kernel)
 
     
     return blocks, threads_per_block
-end
+end"""
