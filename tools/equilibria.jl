@@ -1,4 +1,4 @@
-module Equilibria export Ca_x_eq
+module Equilibria export Ca_x_eq, dune
 
 using Roots
 
@@ -42,6 +42,23 @@ function eq(p; which_root=Nothing)
     return [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]#, Plant.default_state[7]]
 end
 
-
+function dune(p, x, Ca, which_root=1)
+    # Returns the location of the dune in the full system at a given x and Ca.
+    # This is the equilibrium of the fast subsystem at the specified x and Ca.
+    dV = V -> Plant.dV(p, x, 0, Plant.ninf(V), Plant.hinf(V), Ca, V)
+    # Solve for the zero of dV.
+    V = find_zeros(dV, Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))[which_root]
+    n = Plant.ninf(V)
+    h = Plant.hinf(V)
+    u = [
+        x,
+        0,
+        n,
+        h,
+        Ca,
+        V
+        # No Isyn value.
+    ]
+end    
 
 end
