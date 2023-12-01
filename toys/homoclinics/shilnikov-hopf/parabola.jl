@@ -186,7 +186,7 @@ function recompute_map_locally(Ca_shift, x_shift, critical_point, critical_point
     return critical_point, critical_value, saddle_po_preimage
 end
 
-function refine_x_shift(Ca_shift, x_shift, preimage, xmap, critical_point_index, saddle_po_preimage)
+function refine_x_shift(Ca_shift, x_shift, flatmaxes, preimage, xmap, critical_point_index, saddle_po_preimage)
     # critical_point_index is which critical point to use for finding the parabola.
     # Selected by index, starting with 1 at the far right.
 
@@ -232,11 +232,11 @@ function refine_x_shift(Ca_shift, x_shift, preimage, xmap, critical_point_index,
     
     return x_shift
 end
-x_shift = refine_x_shift(Ca_shift, x_shift, preimage, xmap, 1, saddle_po_preimage)
+x_shift = refine_x_shift(Ca_shift, x_shift, flatmaxes, preimage, xmap, 1, saddle_po_preimage)
 
 for Ca_shift in -40.0:0.01:-30.0
     preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq, flatmaxes, flat_maxima_values, saddle_po_preimage, map_prob = compute_full_map(Ca_shift, -1.33)
-    x_shift = refine_x_shift(Ca_shift, x_shift, preimage, xmap, 1, saddle_po_preimage)
+    x_shift = refine_x_shift(Ca_shift, x_shift, flatmaxes, preimage, xmap, 1, saddle_po_preimage)
     #println("Shilnikov-Hopf parabola contains ($(Ca_shift), $(x_shift)).")
     println("$(Ca_shift), $(x_shift)")
 end
