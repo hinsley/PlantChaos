@@ -147,11 +147,12 @@ function condition(u, t, integrator)
     ((t < 50) || (u[1] > p.eq[1])) ? 1.0 : -u[5] + p.eq[5]
 end
 affect!(integrator) = terminate!(integrator) # Stop the solver
+cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 
-function calculate_return_map(monteprob,ics_probs, p, slider1, slider2; resolution = 100)
+function calculate_return_map(monteprob, ics_probs, p, slider1, slider2; resolution = 100)
     eq = SVector{6}(Equilibria.eq(p))
 
-    println(p[17], ",", p[16])
+    #println(p[17], ",", p[16])
 
     # find equilibria of fast subsystem along the ca = ca_eq line
     preimage = collect(range(eq[1] - slider2, eq[1] - slider1, length = resolution))
