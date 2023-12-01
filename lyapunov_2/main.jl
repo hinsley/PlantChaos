@@ -34,7 +34,7 @@ CUDA.synchronize()
 let 
     f = Figure(resolution = (800, 600))
     ax = Axis(f[1,1], xlabel = "Ca", ylabel = "x")
-    hm = heatmap!(ax, caspace, xspace, lyapunov_exponents)
+    hm = heatmap!(ax, caspace, xspace, Array(lyapunov_exponents))
     Colorbar(f[1,2], hm, label = "Lyapunov exponent")
     f
 end
