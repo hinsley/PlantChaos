@@ -10,8 +10,24 @@ min_y, max_y = -5, 1
 
 image!(bifax, [min_x, max_x], [min_y, max_y], beimg, interpolate=false)
 
+hilimg = map(rotr90(load("./map_vis/bifurcation_diagram.jpeg"))) do x
+    if norm(x) > .8
+        RGBAf(1,1,1,0)
+    else
+        RGBAf(x.r, x.g, x.b, 1)
+    end
+end
+hilimg2 = hilimg[100:end-50, 100:end-100]
+min_x, max_x = -72, 72
+min_y, max_y = -4, 1.8
+image!(bifax, [min_x, max_x], [min_y, max_y], hilimg2, interpolate=false)
+
+
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf", linewidth = 3)
+limits!(bifax, -75, 70, -4, 2)
+
+
 lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinic", linewidth = 3)
 lines!(bifax, readdlm("./explorer/snic.csv", ',', Float64), label="snic", linewidth = 3)
 snpo = readdlm("./explorer/snpo.csv", ',', Float64)
@@ -22,13 +38,15 @@ scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:purple, marker='■', label="
 # scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="BP", markersize=16)
 # scatter!(bifax, snpo[1,827], snpo[2,827], color=:orange, marker=:star5, label="CPC", markersize=16)
 
+
+
 bifaxpoint = @lift Point2f( $p[17],$p[16])
 
 scatter!(bifax, bifaxpoint)
 
 axislegend(bifax, position=:rb)
 
-limits!(bifax, -50, 100, -5, 1)
+limits!(bifax, -75, 70, -4, 2)
 
 bifpoint = select_point(bifax.scene, marker = :circle)
 
