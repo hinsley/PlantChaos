@@ -138,7 +138,7 @@ plot_map(preimage, xmap, ln1, ln2)
 
 # Initial parameters p must be beneath the Shilnikov-Hopf parabola (in the quiescent region).
 
-function recompute_map_locally(Ca_shift, x_shift, eq, critical_point, critical_point_recompute_radius, saddle_po_preimage, saddle_po_recompute_radius)
+function recompute_map_locally(Ca_shift, x_shift, map_prob, eq, critical_point, critical_point_recompute_radius, saddle_po_preimage, saddle_po_recompute_radius)
     p = SVector{17}(vcat(Plant.default_params[1:15], [x_shift, Ca_shift]))
     ##### Recompute the map around the saddle PO and the critical point without computing the entire map.
     # Generate a new preimage collection for the saddle PO in the map -- this is needed for the refinement algorithm to work with.
@@ -186,7 +186,7 @@ function recompute_map_locally(Ca_shift, x_shift, eq, critical_point, critical_p
     return critical_point, critical_value, saddle_po_preimage
 end
 
-function refine_x_shift(Ca_shift, x_shift, eq, flatmaxes, preimage, xmap, critical_point_index, saddle_po_preimage)
+function refine_x_shift(Ca_shift, x_shift, map_prob, eq, flatmaxes, preimage, xmap, critical_point_index, saddle_po_preimage)
     # critical_point_index is which critical point to use for finding the parabola.
     # Selected by index, starting with 1 at the far right.
 
@@ -202,6 +202,7 @@ function refine_x_shift(Ca_shift, x_shift, eq, flatmaxes, preimage, xmap, critic
         critical_point, critical_value, saddle_po_preimage = recompute_map_locally(
             Ca_shift,
             x_shift,
+            map_prob,
             eq,
             critical_point,
             critical_point_recompute_radius,
@@ -237,7 +238,7 @@ x_shift = refine_x_shift(Ca_shift, x_shift, eq, flatmaxes, preimage, xmap, 1, sa
 
 for Ca_shift in -40.0:0.01:-30.0
     preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq, flatmaxes, flat_maxima_values, saddle_po_preimage, map_prob = compute_full_map(Ca_shift, -1.33)
-    x_shift = refine_x_shift(Ca_shift, x_shift, eq, flatmaxes, preimage, xmap, 1, saddle_po_preimage)
+    x_shift = refine_x_shift(Ca_shift, x_shift, map_prob, eq, flatmaxes, preimage, xmap, 1, saddle_po_preimage)
     #println("Shilnikov-Hopf parabola contains ($(Ca_shift), $(x_shift)).")
     println("$(Ca_shift), $(x_shift)")
 end
