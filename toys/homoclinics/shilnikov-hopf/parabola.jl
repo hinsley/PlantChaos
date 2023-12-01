@@ -72,6 +72,17 @@ function xreturn(lerp, prob, x)
     # return the final value
     return sol[1,end]
 end
+
+# Revised xreturn function. Computes initial conditions analytically instead of using a lerp object.
+function xreturn(prob, x)
+    # get initial conditions by linear interpolation
+    ics = SVector{6}(dune(p, x, prob.p.eq[5]))
+    # solve the map
+    prob = remake(prob, u0 = ics)
+    sol = solve(prob, RK4(), abstol = 1e-8, reltol = 1e-8, callback = cb)
+    # return the final value
+    return sol[1,end]
+end
 # Sharpen the flat maxima.
 for (flatmax_i, xmap_i) in enumerate(flatmaxes) # Maybe get rid of enumerate when doing continuation for speed?
     opt = optimize(x -> -xreturn(lerp, remake(map_prob, p=(p=p, eq=eq)), x), preimage[xmap_i+1], preimage[xmap_i-1])
