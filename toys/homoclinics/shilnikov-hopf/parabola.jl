@@ -225,6 +225,8 @@ function refine_x_shift(Ca_shift, x_shift, map_prob, eq, flatmaxes, preimage, xm
         critical_point, critical_value, saddle_po_preimage = recompute_map_locally(
             Ca_shift,
             x_shift,
+            map_prob,
+            eq,
             critical_point,
             critical_point_recompute_radius,
             saddle_po_preimage,
