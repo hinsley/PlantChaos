@@ -59,6 +59,7 @@ function dune(p, x, Ca, which_root=1)
         V
         # No Isyn value.
     ]
+    return u
 end    
 
 end
