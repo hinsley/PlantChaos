@@ -234,8 +234,9 @@ function refine_x_shift(Ca_shift, x_shift, preimage, xmap, critical_point_index,
 end
 x_shift = refine_x_shift(Ca_shift, x_shift, preimage, xmap, 1, saddle_po_preimage)
 
-for Ca_shift in -40.0:0.1:-30.0
+for Ca_shift in -40.0:0.01:-30.0
     preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq, flatmaxes, flat_maxima_values, saddle_po_preimage, map_prob = compute_full_map(Ca_shift, -1.33)
     x_shift = refine_x_shift(Ca_shift, x_shift, preimage, xmap, 1, saddle_po_preimage)
-    println("Shilnikov-Hopf parabola contains ($(Ca_shift), $(x_shift)).")
+    #println("Shilnikov-Hopf parabola contains ($(Ca_shift), $(x_shift)).")
+    println("$(Ca_shift), $(x_shift)")
 end
