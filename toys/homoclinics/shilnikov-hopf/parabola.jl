@@ -236,7 +236,7 @@ function refine_x_shift(Ca_shift, x_shift, map_prob, eq, flatmaxes, preimage, xm
     
     return x_shift
 end
-x_shift = refine_x_shift(Ca_shift, x_shift, eq, flatmaxes, preimage, xmap, 1, saddle_po_preimage)
+x_shift = refine_x_shift(Ca_shift, x_shift, map_prob, eq, flatmaxes, preimage, xmap, 1, saddle_po_preimage)
 
 for Ca_shift in -40.0:0.01:-30.0
     preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq, flatmaxes, flat_maxima_values, saddle_po_preimage, map_prob = compute_full_map(Ca_shift, -1.33)
