@@ -10,10 +10,7 @@ include("./utils.jl")
 resolution = 100
 xspace = range(-2.29, -2.27, length = resolution)
 caspace = range(-38.622, -38.616, length = resolution)
-_space = collect(Iterators.product(xspace, caspace))
-
-space = makespace(_space);
-u0s = make_eqs(space);
+space, u0s = makespace(collect(Iterators.product(xspace, caspace)));
 
 spike_cb = ContinuousCallback(spike_condition, spike_affect!, affect_neg! = nothing)
 
