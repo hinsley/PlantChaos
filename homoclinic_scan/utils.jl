@@ -20,6 +20,7 @@ function makespace(space)
             local v_eq
             if length(v_eqs) < 4
                 u0 = fill(NaN, 6)
+                v_eq = NaN
             else
                 v_eq = v_eqs[3]
                 Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
