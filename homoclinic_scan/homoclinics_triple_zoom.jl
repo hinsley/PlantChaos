@@ -45,9 +45,9 @@ results = map(transpose(reshape(sol.u, resolution, resolution))) do x;
 end;
 
 # second panel
-xspace = range(-2.29, -2.27, length = resolution)
-caspace = range(-38.628, -38.616, length = resolution)
-(space, u0s) = makespace(collect(Iterators.product(xspace, caspace)));
+xspace2 = range(-2.29, -2.27, length = resolution)
+caspace2 = range(-38.628, -38.616, length = resolution)
+(space, u0s) = makespace(collect(Iterators.product(xspace2, caspace2)));
 
 sol = solve(scanprob, RK4(), EnsembleThreads(), trajectories = resolution^2, callback = spike_cb, save_everystep = false);
 
@@ -57,9 +57,9 @@ results2 = map(transpose(reshape(sol.u, resolution, resolution))) do x;
 end;
 
 # third panel
-xspace = range(-2.2861, -2.2855, length = resolution)
-caspace = range(-38.6278, -38.6272, length = resolution)
-(space, u0s) = makespace(collect(Iterators.product(xspace, caspace)));
+xspace3 = range(-2.2861, -2.2855, length = resolution)
+caspace3 = range(-38.6278, -38.6272, length = resolution)
+(space, u0s) = makespace(collect(Iterators.product(xspace3, caspace3)));
 
 sol = solve(scanprob, RK4(), EnsembleThreads(), trajectories = resolution^2, callback = spike_cb, save_everystep = false);
 
@@ -71,7 +71,7 @@ end;
 cmap = :darktest #GLMakie.to_colormap([RGBf(rand(3)...) for _ in 1:50])
 
 begin
-    fig = Figure(size = (2000, 2000))
+    fig = Figure()
     ax = Axis(fig[1,1], xlabel = "ΔCa", ylabel = "Δx")
     pl = heatmap!(ax, caspace, xspace, results, colormap = cmap)
     Colorbar(fig[1,2], limits = (minimum(results), maximum(results)), label = "spike count", colormap = cmap)
@@ -81,12 +81,12 @@ begin
         halign=0.2,
         valign=0.65)
     hidedecorations!(ax2)
-    pl = heatmap!(ax2, caspace, xspace, results2, colormap = cmap)
+    pl = heatmap!(ax2, caspace2, xspace2, results2, colormap = cmap)
     ax3 = Axis(fig[1,1],
-        width=Relative(0.25),
-        height=Relative(0.25),
-        halign=0.6,
-        valign=0.8)
+        width=Relative(0.35),
+        height=Relative(0.45),
+        halign=0.75,
+        valign=0.85)
     hidedecorations!(ax3)
     pl = heatmap!(ax3, caspace, xspace, results3, colormap = cmap)
     fig
