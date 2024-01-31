@@ -7,7 +7,7 @@ include("./utils.jl")
 
 
 # generate the parameter space
-resolution = 400
+resolution = 1000
 xspace = range(-4, 1, length = resolution)
 caspace = range(-60, 100, length = resolution)
 #xspace = range(-2.2865, -2.2858, length = resolution)
@@ -18,7 +18,7 @@ caspace = range(-60, 100, length = resolution)
 spike_cb = ContinuousCallback(spike_condition, spike_affect!, affect_neg! = nothing)
 
 # define the function for ensemble problem
-prob = ODEProblem{false}(f, SVector{6}(zeros(6)), (0e0, 100000e0), space[1,1])
+prob = ODEProblem{false}(f, SVector{6}(zeros(6)), (0e0, 220000e0), space[1,1])
 
 function prob_func(prob,i,repeat)
     j = ((i-1) % resolution) + 1
@@ -36,27 +36,13 @@ function prob_func(prob,i,repeat)
 end
 
 # define the ensemble problem
-scanprob = EnsembleProblem(prob, prob_func = prob_func, output_func = output_func, safetycopy = false)
+scanprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false, output_func=output_func);
 sol = solve(scanprob, RK4(), EnsembleThreads(), trajectories = resolution^2, callback = spike_cb, save_everystep = false);
 
-# combine the two solutions
+
 results = map(transpose(reshape(sol.u, resolution, resolution))) do x;
     x > 30 ? 30 : x
 end;
-
-#saved_results = deepcopy(results)
-# plot the results
-#results = saved_results
-
-cmap = :darktest #GLMakie.to_colormap([RGBf(rand(3)...) for _ in 1:50])
-
-begin
-    fig = Figure(size = (2000, 2000))
-    ax = Axis(fig[1,1], xlabel = "ΔCa", ylabel = "Δx")
-    pl = heatmap!(ax, caspace, xspace, results, colormap = cmap)
-    Colorbar(fig[1,2], limits = (minimum(results), maximum(results)), label = "spike count", colormap = cmap)
-    fig
-end
 
 # second panel
 xspace = range(-2.29, -2.27, length = resolution)
@@ -67,19 +53,8 @@ sol = solve(scanprob, RK4(), EnsembleThreads(), trajectories = resolution^2, cal
 
 # combine the two solutions
 results2 = map(transpose(reshape(sol.u, resolution, resolution))) do x;
-    x > 8 ? 8 : x
+    x > 30 ? 30 : x
 end;
-
-begin
-    ax2 = Axis(fig[1,1],
-        width=Relative(0.25),
-        height=Relative(0.25),
-        halign=0.3,
-        valign=0.45)
-    hidedecorations!(ax2)
-    pl = heatmap!(ax2, caspace, xspace, results2, colormap = cmap)
-    fig
-end
 
 # third panel
 xspace = range(-2.2861, -2.2855, length = resolution)
@@ -90,16 +65,40 @@ sol = solve(scanprob, RK4(), EnsembleThreads(), trajectories = resolution^2, cal
 
 # combine the two solutions
 results3 = map(transpose(reshape(sol.u, resolution, resolution))) do x;
-    x > 8 ? 8 : x
+    x > 30 ? 30 : x
 end;
 
+cmap = :darktest #GLMakie.to_colormap([RGBf(rand(3)...) for _ in 1:50])
+
 begin
+    fig = Figure(size = (2000, 2000))
+    ax = Axis(fig[1,1], xlabel = "ΔCa", ylabel = "Δx")
+    pl = heatmap!(ax, caspace, xspace, results, colormap = cmap)
+    Colorbar(fig[1,2], limits = (minimum(results), maximum(results)), label = "spike count", colormap = cmap)
+    ax2 = Axis(fig[1,1],
+        width=Relative(0.25),
+        height=Relative(0.25),
+        halign=0.2,
+        valign=0.65)
+    hidedecorations!(ax2)
+    pl = heatmap!(ax2, caspace, xspace, results2, colormap = cmap)
     ax3 = Axis(fig[1,1],
         width=Relative(0.25),
         height=Relative(0.25),
-        halign=0.75,
-        valign=0.55)
+        halign=0.6,
+        valign=0.8)
     hidedecorations!(ax3)
     pl = heatmap!(ax3, caspace, xspace, results3, colormap = cmap)
     fig
 end
+
+
+"""begin
+    a = GLMakie.Screen()
+    fig2 = Figure()
+    ax = Axis(fig2[1,1])
+    heatmap!(ax, caspace, xspace, results3, colormap = cmap)
+    Colorbar(fig2[1,2], colormap = cmap, limits = (minimum(results3), maximum(results3)))
+    display(a,fig2)
+end
+"""
