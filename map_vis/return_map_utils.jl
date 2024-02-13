@@ -235,7 +235,7 @@ function calculate_return_map(monteprob, ics_probs, p, slider1, slider2, menu_i,
     if menu_i == 1
         lerp = linear_interpolation(reverse(preimage), reverse(mapics))
     elseif menu_i == 2
-        lerp = linear_interpolation(preimage , mapics)
+        lerp = linear_interpolation(collect(preimage) , mapics)
     end
     return (preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq)
 end 

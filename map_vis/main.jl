@@ -55,7 +55,7 @@ begin
              startvalue = 0., snap = false),
         (label = "map iterates", range=1:1:500, format = "{:.0}",
              startvalue = 1, snap = false),
-        (label = "circle map radius", range=.001:.001:.01, format = "{:.0}",
+        (label = "circle map radius", range=.001:.001:.1, format = "{:.0}",
              startvalue = 1, snap = false);
         width = 900,
         tellwidth = false
