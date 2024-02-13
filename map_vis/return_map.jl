@@ -1,5 +1,5 @@
 
-map_resolution = 100
+map_resolution = 200
 max_minima = 15
 
 include("./return_map_utils.jl")
@@ -11,7 +11,7 @@ monteprob = EnsembleProblem(map_prob, output_func= output_func, safetycopy=false
 
 # calculate and unpack all data needed for plotting
 _ans = @lift calculate_return_map(monteprob,ics_probs, $p, $(mapslider.sliders[1].value),
-    $(mapslider.sliders[2].value), resolution = map_resolution)
+    $(mapslider.sliders[2].value), $(map_switch_menu.i_selected), $(mapslider.sliders[4].value), resolution = map_resolution)
 preimage = @lift $_ans[1]
 xmap = @lift $_ans[2]
 cass = @lift $_ans[3]
@@ -39,13 +39,16 @@ refine_prob = ODEProblem{false}(mapf, @SVector(zeros(BigFloat,6)), (BigFloat(0),
 
 # events for buttons
 on(refinemin_button.clicks) do b
-    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
+    refine_map!(remake(map_prob, p = (p = p[], eq = eq[], menu_i = map_switch_menu.i_selected[],
+        ratio = mapslider.sliders[4].value)), lerp[], xmap, preimage)
     reset_limits!(mapax)
 end
 on(refinemax_button.clicks) do b
-    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage, true)
+    refine_map!(remake(map_prob, p = (p = p[], eq = eq[], menu_i = map_switch_menu.i_selected[],
+    ratio = mapslider.sliders[4].value)), lerp[], xmap, preimage, true)
     reset_limits!(mapax)
 end
+
 # reset limits on changing section length
 on(xss) do _
     reset_limits!(mapax)
@@ -69,8 +72,22 @@ on(show_unstable_button.clicks) do b
     reset_limits!(trajax)
 end
 
+function printfig()
+    set_theme!()
+    fig = Figure()
+    mapax = Axis(fig[1,1], xlabel = L"x_n", ylabel = L"x_{n+1}")
+    lines!(mapax, preimage, xmap, color = :black, linewidth = 2)
+    lines!(mapax, preimage, preimage, color = :grey, linestyle = :dash, linewidth = 2,)
+    lines!(mapax, ln1, color = :red, linewidth = 1.0, linestyle = :dash)
+    lines!(mapax, ln2, color = :blue, linestyle = :dash, linewidth = 1)
 
+    set_theme!(theme_black())
+    display(GLMakie.Screen(), fig)
+end
 
+on(print_button.clicks) do 
+    printfig()
+end
 
 ## TODO
 # important!! record last voltage max above threshold and last section crossing. 

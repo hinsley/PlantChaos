@@ -29,6 +29,24 @@ function generate_ics!(ics_probs, p, eq, xs, Ca, res)
     end
     return ics
 end
+function generate_ics_circle!(ics_probs, p, eq, radius, res)
+    ics = Vector{SVector{6,Float64}}(undef, res)
+    Threads.@threads for i=1:res
+        theta = 2*pi*i/res
+        Ca = radius*sin(theta) + eq[5]
+        x = radius*cos(theta) + eq[1]
+        fastu = solve(
+            remake(ics_probs[Threads.threadid()], 
+                p = vcat(p[1:15], x, Ca),
+                u0 = eq[[3,4,6]]
+            ),
+            NewtonRaphson()
+        ).u
+        ics[i] = @SVector [x, 0.0, fastu[1], fastu[2], Ca, fastu[3]]
+    end
+    return ics
+end
+
 # this wraps melibenew 
 # so that p can also contain the equilibrium for event handling
 function mapf(u,p,t) # unpacks the parameter tuple
@@ -144,28 +162,54 @@ end
 function condition(u, t, integrator)
     p = integrator.p
     # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
-    ((t < 50) || (u[1] > p.eq[1])) ? 1.0 : -u[5] + p.eq[5]
+    if p.menu_i == 1
+        ((t < 50) || (u[1] > p.eq[1])) ? 1.0 : -u[5] + p.eq[5]
+    elseif p.menu_i == 2
+        (t < 50) ? 1 : sum(abs2.(u-p.eq)) - p.radius
+    else
+        throw(ArgumentError("map type not implemented"))
+    end
 end
 affect!(integrator) = terminate!(integrator) # Stop the solver
 cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 
-function calculate_return_map(monteprob, ics_probs, p, slider1, slider2; resolution = 100)
+function calculate_return_map(monteprob, ics_probs, p, slider1, slider2, menu_i, radius; resolution = 100)
     eq = SVector{6}(Equilibria.eq(p))
-
-    #println(p[17], ",", p[16])
-
-    # find equilibria of fast subsystem along the ca = ca_eq line
-    preimage = collect(range(eq[1] - slider2, eq[1] - slider1, length = resolution))
-    mapics = generate_ics!(ics_probs, p, eq, preimage, eq[5], resolution)
+    local preimage
+    local mapics
+    if menu_i == 1
+        preimage = collect(range(eq[1] - slider2, eq[1] - slider1, length = resolution))
+        mapics = generate_ics!(ics_probs, p, eq, preimage, eq[5], resolution)
+    elseif menu_i == 2
+        mapics = generate_ics_circle!(ics_probs, p, eq, radius, resolution)
+        preimage = range(0, 2pi, length = resolution)
+    else
+        throw(ArgumentError("map type not implemented"))
+    end
 
     # calculate the trajectory for every value along the ca = ca_eq line
     prob_func(prob, i, repeat) = remake(prob, u0=mapics[i])
     monteprob = remake(monteprob, prob_func = prob_func,
-        output_func = output_func, p = (p = p, eq = eq))
+        output_func = output_func, p = (p = p, eq = eq, radius = radius, menu_i = menu_i))
     mapsol = solve(monteprob, RK4(), EnsembleThreads(), trajectories=resolution,
         callback=cb, merge_callbacks = true, verbose=false, abstol = 1e-8, reltol = 1e-8)
     # generate data to plot the map
-    xmap = [e[2,end] for e in mapsol]
+    if menu_i == 1
+        xmap = [e[2,end] for e in mapsol]
+    elseif menu_i == 2
+        xmap = map(mapsol) do e
+            Ca = e[1,end]
+            x = e[2,end]
+            arg = (Ca-eq[5])/radius
+            a = abs(arg) > 1 ? NaN : asin(arg)
+            if x > eq[1]
+                a
+            else
+                pi-a
+            end
+        end
+    end
+
     glue_trajs(mapsol)
     cass, xss, vss = glue_trajs(mapsol)
 
@@ -188,6 +232,10 @@ function calculate_return_map(monteprob, ics_probs, p, slider1, slider2; resolut
         ]
     end
     # get the horizontal lines coming from the local mins and maxes
-    lerp = linear_interpolation(reverse(preimage), reverse(mapics))
+    if menu_i == 1
+        lerp = linear_interpolation(reverse(preimage), reverse(mapics))
+    elseif menu_i == 2
+        lerp = linear_interpolation(preimage , mapics)
+    end
     return (preimage, xmap, cass, xss, vss, ln1, ln2, lerp, eq)
 end 

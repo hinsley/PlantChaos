@@ -71,27 +71,28 @@ end;
 cmap = :darktest #GLMakie.to_colormap([RGBf(rand(3)...) for _ in 1:50])
 
 begin
-    fig = Figure()
+    fig = Figure(size = (2000,2000))
     ax = Axis(fig[1,1], xlabel = "ΔCa", ylabel = "Δx")
     pl = heatmap!(ax, caspace, xspace, results, colormap = cmap)
     Colorbar(fig[1,2], limits = (minimum(results), maximum(results)), label = "spike count", colormap = cmap)
+    scale = 1.2
     ax2 = Axis(fig[1,1],
-        width=Relative(0.25),
-        height=Relative(0.25),
-        halign=0.2,
-        valign=0.65)
+        width=Relative(0.15*scale),
+        height=Relative(0.25*scale),
+        halign=0.15,
+        valign=0.75)
     hidedecorations!(ax2)
     pl = heatmap!(ax2, caspace2, xspace2, results2, colormap = cmap)
     ax3 = Axis(fig[1,1],
-        width=Relative(0.35),
-        height=Relative(0.45),
-        halign=0.75,
+        width=Relative(0.15*scale),
+        height=Relative(0.25*scale),
+        halign=0.4,
         valign=0.85)
     hidedecorations!(ax3)
     pl = heatmap!(ax3, caspace, xspace, results3, colormap = cmap)
     fig
 end
-
+save("./hom_scan_double_zoom.png", fig)
 
 """begin
     a = GLMakie.Screen()
