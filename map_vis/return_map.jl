@@ -3,15 +3,11 @@ map_resolution = 200
 max_minima = 15
 
 include("./return_map_utils.jl")
-
-cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
-ics_probs = [NonlinearProblem(fastplant, zeros(3), zeros(17)) for i=1:Threads.nthreads()]
-map_prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 1e5), zeros(17))
-monteprob = EnsembleProblem(map_prob, output_func= output_func, safetycopy=false)
+include("./map_prob.jl")
 
 # calculate and unpack all data needed for plotting
 _ans = @lift calculate_return_map(monteprob,ics_probs, $p, $(mapslider.sliders[1].value),
-    $(mapslider.sliders[2].value), $(map_switch_menu.i_selected), $(mapslider.sliders[4].value), resolution = map_resolution)
+    $(mapslider.sliders[2].value), resolution = map_resolution)
 preimage = @lift $_ans[1]
 xmap = @lift $_ans[2]
 cass = @lift $_ans[3]

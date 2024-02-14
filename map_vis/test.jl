@@ -27,3 +27,8 @@ xmap = map(mapsol) do e
 end
 
 mapsol.u[1].t
+
+caends = [cass[][i-1] for i in cais[1:end]]
+xends = [xss[][i-1] for i in xis[1:end]]
+
+distances = [sqrt(a[1]]

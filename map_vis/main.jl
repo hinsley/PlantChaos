@@ -40,13 +40,17 @@ begin
     mapax.xlabel = rich("x", subscript("n"))
     mapax.ylabel = rich("x", subscript("n+1"))
 
+    cmapax = Axis(mapwidgetax[1,2], aspect=1)
+    cmapax.title = "1D circle Map"
+    cmapax.xlabel = rich("Θ", subscript("n"))
+    cmapax.ylabel = rich("Θ", subscript("n+1"))
+
     widgetax = GridLayout(fig[4,1], tellwidth = false)
     refinemin_button = Button(widgetax[1,1], label = "refine min", labelcolor = :black)
     refinemax_button = Button(widgetax[1,2], label = "refine max", labelcolor = :black)
     show_unstable_button = Button(widgetax[1,3], label = "show unstable", labelcolor = :black)
-    map_switch_menu = Menu(widgetax[2,:], options = ["x_eq", "circle"], default = "x_eq")
-    Label(widgetax[2,5], "map calc method")
-    print_button = Button(widgetax[1,4], label = "generate fig", labelcolor = :black)
+    switch_traj_button = Button(widgetax[1,4], label = "toggle trajectory sample", labelcolor = :black)
+    print_button = Button(widgetax[1,5], label = "generate fig", labelcolor = :black)
 
     mapslider = SliderGrid(widgetax[4,:],
         (label = "map end", range=.00001:.00001:0.6, format = "{:.0}",
@@ -56,7 +60,11 @@ begin
         (label = "map iterates", range=1:1:500, format = "{:.0}",
              startvalue = 1, snap = false),
         (label = "circle map radius", range=.001:.001:.1, format = "{:.0}",
-             startvalue = 1, snap = false);
+             startvalue = 1, snap = false),
+        (label = "circle map begin", range=0.0:.001:2pi, format = "{:.0}",
+             startvalue = 0, snap = false),
+        (label = "circle map end", range=0.0:.001:2pi, format = "{:.0}",
+             startvalue = 2pi, snap = false);
         width = 900,
         tellwidth = false
         )
