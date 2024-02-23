@@ -11,6 +11,7 @@ using .Plant
 using Peaks, Interpolations
 
 p = Observable(convert.(Float64,(Plant.default_params)));
+p[] = vcat(p[][1:15], [-1.09, -36.78]);
 u0 = Observable(convert.(Float64,Plant.default_state));
 
 set_theme!(theme_black())
@@ -53,14 +54,14 @@ begin
     print_button = Button(widgetax[1,5], label = "generate fig", labelcolor = :black)
 
     mapslider = SliderGrid(widgetax[4,:],
-        (label = "map end", range=.00001:.00001:0.6, format = "{:.0}",
-             startvalue = .2, snap = false),
-        (label = "map begin", range=.00001:.00001:0.6, format = "{:.0}",
+        (label = "map end", range=.001:.001:8, format = "{:.0}",
+             startvalue = 20, snap = false),
+        (label = "map begin", range=.001:.001:8, format = "{:.0}",
              startvalue = 0., snap = false),
         (label = "map iterates", range=1:1:500, format = "{:.0}",
              startvalue = 1, snap = false),
-        (label = "circle map radius", range=.001:.001:.1, format = "{:.0}",
-             startvalue = 1, snap = false),
+        (label = "circle map radius", range=.0001:.0001:.001, format = "{:.0}",
+             startvalue = .001, snap = false),
         (label = "circle map begin", range=0.0:.001:2pi, format = "{:.0}",
              startvalue = 0, snap = false),
         (label = "circle map end", range=0.0:.001:2pi, format = "{:.0}",
@@ -73,5 +74,6 @@ end
 #include("./trajectory.jl")
 include("./bifurcation.jl")
 include("./return_map.jl")
+#include("./hom_map.jl")
 
 display(fig)

@@ -30,6 +30,35 @@ function generate_ics!(ics_probs, p, eq, xs, Ca, res)
     end
     return ics
 end
+const x_offset = 1e-8 # Offset from xinf to avoid numerical issues.
+
+xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
+IKCa(p, V) = p[2]*hinf(V)*minf(V)^3.0f0*(p[8]-V) + p[3]*ninf(V)^4.0f0*(p[9]-V) + p[6]*xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
+
+function x_null_Ca(p, v)
+    return 0.5f0*IKCa(p, v)/(p[7]*(v-p[9]) - IKCa(p, v))
+end
+function Ca_x_eq(p)
+    v_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
+    Ca_eq = Ca_null_Ca(p, v_eq)
+    x_eq = xinf(p, v_eq)
+    return v_eq, Ca_eq, x_eq
+end
+
+function Ca_null_Ca(p, v)
+    return p[13]*xinf(p, v)*(p[12]-v+p[17])
+end
+
+function generate_ics_Ca(p, eq, Vs, res)
+    ics = [SVector{6,Float64}([
+        xinf(p, V)-x_offset,
+        0.0,
+        Plant.ninf(V),
+        Plant.hinf(V),
+        Ca_null_Ca(p, V),
+        V]) for V in Vs]
+end
+
 
 function generate_ics_circle!(ics_probs, p, eq, θs, radius, res)
     ics = Vector{SVector{6,Float64}}(undef, res)
