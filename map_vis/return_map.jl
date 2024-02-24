@@ -21,8 +21,8 @@ eq = @lift $_ans[9]
 # plot the map
 lines!(mapax, preimage, xmap, color = range(0.,1., length=map_resolution), colormap = :thermal)
 lines!(mapax, preimage, preimage, color = :white, linestyle = :dash, linewidth = 2,)
-#lines!(mapax, ln1, color = :white, linewidth = 1.0, linestyle = :dash)
-#lines!(mapax, ln2, color = :pink, linestyle = :dash, linewidth = 1)
+lines!(mapax, ln1, color = :white, linewidth = 1.0, linestyle = :dash)
+lines!(mapax, ln2, color = :pink, linestyle = :dash, linewidth = 1)
 #lines!(mapax, ln3, color = :red, linestyle = :dash, linewidth = 1)
 
 refine_prob = ODEProblem{false}(mapf, @SVector(zeros(BigFloat,6)), (BigFloat(0), BigFloat(1e5)), zeros(17))
@@ -49,11 +49,11 @@ on(show_unstable_button.clicks) do b
     global sadplot1 =lines!(trajax, sad_upper, color = :white, linewidth = 1.0)
     global sadplot2 =lines!(trajax, sad_lower, color = :white, linewidth = 1.0)
     ln = [
-        (preimage[][end], sad_upper[2,end]),
-        (preimage[][1], sad_upper[2,end]),
+        (preimage[][end], sad_upper[3,end]),
+        (preimage[][1], sad_upper[3,end]),
         (NaN,NaN),
-        (preimage[][end], sad_lower[2,end]),
-        (preimage[][1], sad_lower[2,end])
+        (preimage[][end], sad_lower[3,end]),
+        (preimage[][1], sad_lower[3,end])
     ]
     global sadplot3 = lines!(mapax, ln, color = :white, linewidth = 1.0, linestyle = :dash)
     reset_limits!(mapax)
@@ -67,7 +67,7 @@ lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal,
 function printfig()
     set_theme!()
     fig = Figure()
-    mapax = Axis(fig[1,1], xlabel = L"x_n", ylabel = L"x_{n+1}", aspect = DataAspect())
+    mapax = Axis(fig[1,1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     lines!(mapax, preimage, xmap, color = :black, linewidth = 2)
     lines!(mapax, preimage, preimage, color = :grey, linestyle = :dash, linewidth = 2,)
     #lines!(mapax, ln1, color = :red, linewidth = 1.0, linestyle = :dash)

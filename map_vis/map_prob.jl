@@ -41,19 +41,19 @@ function calculate_return_map(monteprob, ics_probs, p, slider1, slider2; resolut
 
     # get the horizontal lines going to the saddle focus
     ln1 = [
-        (preimage[end], eq[1]),
-        (preimage[1], eq[1]),
+        (preimage[end], eq[6]),
+        (preimage[1], eq[6]),
     ]
     # get the horizontal lines going to the saddle periodic orbit
-    saddle_po = calculate_hom_box(vmap, preimage)
+    saddle_po = calculate_hom_box(reverse(vmap), reverse(preimage))
     if isnan(saddle_po)
         ln2 = [
-            (preimage[1], eq[1]),
-            (preimage[1], eq[1]),
+            (preimage[1], eq[6]),
+            (preimage[1], eq[6]),
         ]
     else
         ln2 = [
-            (preimage[end], saddle_po),
+            (preimage[1], saddle_po),
             (saddle_po, saddle_po),
         ]
     end

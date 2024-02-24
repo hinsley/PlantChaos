@@ -38,8 +38,8 @@ begin
     mapwidgetax = GridLayout(fig[3:4,2], tellwidth = false)
     mapax = Axis(mapwidgetax[1,1], aspect=1)
     mapax.title = "1D Map"
-    mapax.xlabel = rich("x", subscript("n"))
-    mapax.ylabel = rich("x", subscript("n+1"))
+    mapax.xlabel = rich("V", subscript("n"))
+    mapax.ylabel = rich("V", subscript("n+1"))
 
     cmapax = Axis(mapwidgetax[1,2], aspect=1)
     cmapax.title = "1D circle Map"
@@ -54,9 +54,9 @@ begin
     print_button = Button(widgetax[1,5], label = "generate fig", labelcolor = :black)
 
     mapslider = SliderGrid(widgetax[4,:],
-        (label = "map end", range=.001:.001:8, format = "{:.0}",
-             startvalue = 20, snap = false),
-        (label = "map begin", range=.001:.001:8, format = "{:.0}",
+        (label = "map end", range=.001:.001:12, format = "{:.0}",
+             startvalue = 9, snap = false),
+        (label = "map begin", range=.001:.001:12, format = "{:.0}",
              startvalue = 0., snap = false),
         (label = "map iterates", range=1:1:500, format = "{:.0}",
              startvalue = 1, snap = false),

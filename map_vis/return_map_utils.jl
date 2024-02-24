@@ -149,19 +149,19 @@ function xreturn(lerp,prob,x)
     prob = remake(prob, u0 = ics)
     sol = solve(prob, RK4(), abstol = 1e-8, reltol = 1e-8, callback = cb)
     # return the final value
-    return sol[1,end]
+    return sol[6,end]
 end
 
 # for sharpening the maxima and minima
 function refine_map!(prob, lerp, xmap, preimage, mx = false)
-    min_prom = .02
+    min_prom = .1
 
     xpks = mx ? argmaxima(xmap[]) : argminima(xmap[])
     xpks, _ = peakproms(xpks, xmap[]; minprom = min_prom)
     s = mx ? -1 : 1
     println(xpks)
     for i in xpks
-        opt = optimize( x -> s * xreturn(lerp, prob, x), preimage[][i+1], preimage[][i-1])
+        opt = optimize( x -> s * xreturn(lerp, prob, x), preimage[][i-1], preimage[][i+1])
         xmap.val[i] = s * Optim.minimum(opt)
     end
     xmap[] = xmap[]
