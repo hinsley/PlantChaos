@@ -16,49 +16,23 @@ function fastplant(u,p)
         P.IKCa(p, Ca, V) + P.Ileak(p, V)) / p[1]
     ]
 end
-function generate_ics!(ics_probs, p, eq, xs, Ca, res)
+function generate_ics!(ics_probs, p, eq, start, stop, res)
+    xs = range(eq[1]*start, eq[1]*stop, length = res)
+    cas = range(eq[5]*start, eq[5]*stop, length = res)
+
     ics = Vector{SVector{6,Float64}}(undef, res)
     Threads.@threads for i=1:length(xs)
         fastu = solve(
             remake(ics_probs[Threads.threadid()], 
-                p = vcat(p[1:15], xs[i], Ca),
+                p = vcat(p[1:15], xs[i], cas[i]),
                 u0 = eq[[3,4,6]]
             ),
             NewtonRaphson()
         ).u
-        ics[i] = @SVector [xs[i], 0.0, fastu[1], fastu[2], Ca, fastu[3]]
+        ics[i] = @SVector [xs[i], 0.0, fastu[1], fastu[2], cas[i], fastu[3]]
     end
     return ics
 end
-const x_offset = 1e-8 # Offset from xinf to avoid numerical issues.
-
-xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
-IKCa(p, V) = p[2]*hinf(V)*minf(V)^3.0f0*(p[8]-V) + p[3]*ninf(V)^4.0f0*(p[9]-V) + p[6]*xinf(p, V)*(p[8]-V) + p[4]*(p[10]-V)/((1.0f0+exp(10.0f0*(V+50.0f0)))*(1.0f0+exp(-(63.0f0+V)/7.8f0))^3.0f0) + p[5]*(p[11]-V)
-
-function x_null_Ca(p, v)
-    return 0.5f0*IKCa(p, v)/(p[7]*(v-p[9]) - IKCa(p, v))
-end
-function Ca_x_eq(p)
-    v_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
-    Ca_eq = Ca_null_Ca(p, v_eq)
-    x_eq = xinf(p, v_eq)
-    return v_eq, Ca_eq, x_eq
-end
-
-function Ca_null_Ca(p, v)
-    return p[13]*xinf(p, v)*(p[12]-v+p[17])
-end
-
-function generate_ics_Ca(p, eq, Vs, res)
-    ics = [SVector{6,Float64}([
-        xinf(p, V)-x_offset,
-        0.0,
-        Plant.ninf(V),
-        Plant.hinf(V),
-        Ca_null_Ca(p, V),
-        V]) for V in Vs]
-end
-
 
 function generate_ics_circle!(ics_probs, p, eq, θs, radius, res)
     ics = Vector{SVector{6,Float64}}(undef, res)
@@ -119,7 +93,39 @@ function get_saddle_traj(prob,p)
     upper_sol = solve(upper_prob, RK4(), abstol = 1e-8, reltol = 1e-8, callback = cb)
     lower_prob = remake(prob, u0 = lower_u0, p = (p = p, eq = prob.p.eq))
     lower_sol = solve(lower_prob, RK4(), abstol = 1e-8, reltol = 1e-8, callback = cb)
-    return (upper_sol[[5,1,6],:], lower_sol[[5,1,6],:])
+    # converge to fast ss eq
+    # upper_prob
+    x::Float64 = upper_sol[1,end]
+    Ca::Float64  = upper_sol[5,end]
+    n::Float64 = upper_sol[3,end]
+    h::Float64 = upper_sol[4,end]
+    V::Float64 = upper_sol[6,end]
+    fastu = solve(
+        remake(ics_probs[1],
+            p = vcat(p[1:15], x, Ca),
+            u0 = [n,h,V]
+        ),
+        NewtonRaphson()
+    ).u
+    upper = upper_sol[[5,1,6],:]
+    upper[3,end] = fastu[3]
+    # lower_prob
+    x = lower_sol[1,end]
+    Ca  = lower_sol[5,end]
+    n = lower_sol[3,end]
+    h = lower_sol[4,end]
+    V = lower_sol[6,end]
+    fastu = solve(
+        remake(ics_probs[1],
+            p = vcat(p[1:15], x, Ca),
+            u0 = [n,h,V]
+        ),
+        NewtonRaphson()
+    ).u
+    lower = lower_sol[[5,1,6],:]
+    lower[3,end] = fastu[3]
+
+    return upper, lower
 end
 
 # for calculating the horizontal lines coming from local mins and maxes
@@ -148,8 +154,21 @@ function xreturn(lerp,prob,x)
     # solve the map
     prob = remake(prob, u0 = ics)
     sol = solve(prob, RK4(), abstol = 1e-8, reltol = 1e-8, callback = cb)
+    # converge to fast subsystem eq
+    x::Float64 = sol[1,end]
+    Ca::Float64  = sol[5,end]
+    n::Float64 = sol[3,end]
+    h::Float64 = sol[4,end]
+    V::Float64 = sol[6,end]
+    fastu = solve(
+        remake(ics_probs[1],
+            p = vcat(prob.p.p[1:15], x, Ca),
+            u0 = [n,h,V]
+        ),
+        NewtonRaphson()
+    ).u
     # return the final value
-    return sol[6,end]
+    return fastu[3]
 end
 
 # for sharpening the maxima and minima

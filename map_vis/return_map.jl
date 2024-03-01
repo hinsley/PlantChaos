@@ -1,6 +1,5 @@
 
 map_resolution = 300
-max_minima = 15
 
 include("./return_map_utils.jl")
 include("./map_prob.jl")
@@ -64,24 +63,6 @@ colorrng = range(0, 1, length = length(cass[]))
 lines!(trajax, cass, xss, vss, color = colorrng, colormap = :thermal,
     linewidth = .2)
 
-function printfig()
-    set_theme!()
-    fig = Figure()
-    mapax = Axis(fig[1,1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
-    lines!(mapax, preimage, xmap, color = :black, linewidth = 2)
-    lines!(mapax, preimage, preimage, color = :grey, linestyle = :dash, linewidth = 2,)
-    #lines!(mapax, ln1, color = :red, linewidth = 1.0, linestyle = :dash)
-    #lines!(mapax, ln2, color = :blue, linestyle = :dash, linewidth = 1)
-
-    set_theme!(theme_black())
-    display(GLMakie.Screen(), fig)
-end
-
-on(print_button.clicks) do 
-    printfig()
-end
-
-printfig()
 
 ## TODO
 # important!! record last voltage max above threshold and last section crossing. 
