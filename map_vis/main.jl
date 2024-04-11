@@ -42,9 +42,9 @@ begin
     mapax.ylabel = rich("V", subscript("n+1"))
 
     cmapax = Axis(mapwidgetax[1,2], aspect=1)
-    cmapax.title = "1D circle Map"
-    cmapax.xlabel = rich("Θ", subscript("n"))
-    cmapax.ylabel = rich("Θ", subscript("n+1"))
+    cmapax.title = "eigenvalues"
+    cmapax.xlabel = rich("real")
+    cmapax.ylabel = rich("imag")
 
     widgetax = GridLayout(fig[4,1], tellwidth = false)
     refinemin_button = Button(widgetax[1,1], label = "refine min", labelcolor = :black)
@@ -58,13 +58,7 @@ begin
         (label = "map begin", range=.0001:.0001:1, format = "{:.0}",
              startvalue = 1, snap = false),
         (label = "map iterates", range=1:1:500, format = "{:.0}",
-             startvalue = 1, snap = false),
-        (label = "circle map radius", range=.0001:.0001:.001, format = "{:.0}",
-             startvalue = .001, snap = false),
-        (label = "circle map begin", range=0.0:.001:2pi, format = "{:.0}",
-             startvalue = 0, snap = false),
-        (label = "circle map end", range=0.0:.001:2pi, format = "{:.0}",
-             startvalue = 2pi, snap = false);
+             startvalue = 1, snap = false),;
         width = 900,
         tellwidth = false
         )
@@ -76,3 +70,22 @@ include("./return_map.jl")
 #include("./hom_map.jl")
 
 display(fig)
+
+function get_eigs(p)
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v),
+     Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    v_eq = v_eqs[2]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    saddle = [x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+    jac = ForwardDiff.jacobian(u -> melibeNew(u,p,0), saddle)
+    vals,vecs = eigen(jac)
+    arr = [(real(e), imag(e)) for e in vals if real(e) != 0.0][1:5]
+    return arr
+end
+
+eigs = @lift get_eigs($p)
+lines
+scatter!(cmapax, eigs, color = :white, markersize = 25, marker = 'o')
+vlines!(cmapax, 0, color = :white, linewidth = 2)
+hlines!(cmapax, 0, color = :white, linewidth = 2)

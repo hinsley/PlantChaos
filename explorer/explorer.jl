@@ -10,7 +10,7 @@ p = Observable(Plant.default_params);
 ΔCa = @lift($p[end]);
 Δx = @lift($p[end-1]);
 
-u0 = Observable(Plant.default_state);
+u0 = Observable(zeros(6));
 initCa = @lift ($u0[5]);
 initx = @lift ($u0[1]);
 initV = @lift ($u0[6]);
@@ -110,3 +110,4 @@ include("./return_map.jl")
 
 display(fig) # display
 run_traj()
+schedule()

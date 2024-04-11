@@ -1,158 +1,134 @@
-function calc_traj(xmap, preimage, x0)
-    len = 100
-    x = x0
 
-    maptraj = fill(Point2f(NaN32,NaN32), len*2)
-    lerp = linear_interpolation(preimage, xmap)
-    maptraj[1] =  Point2f(x, x)
-    maptraj[2] =  Point2f(x, lerp(x))
-    for i=1:len-1
-        x = lerp(x)
-        p = Point2f(x, x)
-        local p2
-        try
-            p2 = Point2f(x, lerp(x))
-        catch
-            break
-        end
-        maptraj[i*2+1] = p
-        maptraj[i*2+2] = p2
-    end
-    maptraj
-end
-
+points =[
+    (-2.6096227169036865, 28.127906799316406), # homoclinic to saddle
+    (-2.6527276039123535, 28.78907774658203), # snpo 1
+    (-2.627365827560425, 26.775069900512695), # cusp 1
+    (-2.487631320953369, 22.474958419799805), # snpo 2
+    (-2.553318500518799, 27.644296813964844), # cusp 2
+    (-2.4775397777557373, 22.507494888305664), # snpo 3
+]
+vs = [
+    -54, -54, -54, -54, -54.3, -54.1
+]
+dots = [
+    -54.39775, -53.7, -53.35, -53.395, -53.85, -53.4175
+]
+labels = [
+    "homoclinic to saddle",
+    "SNPO 1",
+    "unstable cusp of cycles",
+    "SNPO 2",
+    "stable cusp of cycles",
+    "SNPO 3",
+]
 begin
-    try close(sc3) 
+    mapslider.sliders[2].value[] = .81
+    mapslider.sliders[1].value[] = .6
+    try close(sc4) 
     catch
         nothing
     end
-    global sc3 = GLMakie.Screen(;resize_to = (1500, 800))
+    global sc4 = GLMakie.Screen(;resize_to = (1500, 1500))
     set_theme!(Theme(
         Axis = (
-            xticklabelsize = 30,
-            yticklabelsize = 30,
-            xlabelsize = 40,
-            ylabelsize = 40,
+            xticklabelsize = 18,
+            yticklabelsize = 18,
+            xlabelsize = 22,
+            ylabelsize = 22,
+            yticks = WilkinsonTicks(3),
+            xticks = WilkinsonTicks(3),
         )
     ))
     fig = Figure()
-    p[] = vcat(p[][1:15], [-1.078, -36.3154]);
-    v0 = -48
-    # calculate saddle trajectory
-    sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
-    # set map limit to saddle image
-    mapslider.sliders[1].value[] = sad_lower[1,end]/eq[][5]
-    # refine local minima
-    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax1 = Axis(fig[1,1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
-    maptraj = calc_traj(xmap[], preimage[], v0)
-    lines!(ax1, maptraj, color = :dodgerblue4, linewidth = 2)
-    # plot return map
-    lines!(ax1, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
-    lines!(ax1, preimage[], xmap[], color = :black, linewidth = 2)
-    # sf
-    lines!(ax1, ln1[], color = :red, linewidth = 2.0, linestyle = :dot)
-    # saddle
-    ln_ = [
-        (preimage[][end], sad_upper[3,end]),
-        (preimage[][1], sad_upper[3,end]),
-        (NaN,NaN),
-        (preimage[][end], sad_lower[3,end]),
-        (preimage[][1], sad_lower[3,end])
-    ]
+    for i in eachindex(points)
+        p[] = vcat(p[][1:15], [points[i]...])
+        v0 = vs[i]
+        # calculate saddle trajectory
+        sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
+        # set map limit to saddle image
+        #mapslider.sliders[1].value[] = sad_lower[1,end]/eq[][5]
+        # refine local minima
+        refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
+        ax = Axis(fig[ceil(Int, (i+4)/5) ,((i+3)%5)+1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect(), title = labels[i])
 
-    lines!(ax1, ln_, color = :green, linewidth = 2.0, linestyle = :dot)
+        maptraj = calc_traj(xmap[], preimage[], v0)
+        lines!(ax, maptraj, color = :grey, linewidth = 1)
+        # plot return map
+        lines!(ax, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
+        lines!(ax, preimage[], xmap[], color = :black, linewidth = 2)
+        # saddle
+        sd = min(sad_upper[3,end], sad_lower[3,end])
+        ln_ = [
+            (preimage[][end], sd),
+            (preimage[][1], sd),
+        ]
+        lines!(ax, ln_, color = :green, linewidth = 2.0, linestyle = :dot)
+        # plot fixed points
 
-    # plot fixed points
-    ixs = findall(1:length(preimage[])-1) do i
-        (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
+        vmin = sd - .1
+        vmax = maximum(xmap[]) + .1
+        ylims!(ax, vmin, vmax)
+        xlims!(ax, vmin, vmax)
+        # display homoclinic to saddle line
+        if i == 1
+            j = findall(x -> x > .1, diff(xmap[]))[3]
+            ln = [
+                (preimage[][j], preimage[][j]),
+                (preimage[][j], xmap[][j])
+            ]
+            lines!(ax, ln, color = :red, linewidth = 2.0, linestyle = :dash)
+        end
+        # display bif point
+        scatter!(ax, (dots[i], dots[i]), color = :red, marker = '✶', markersize = 20)
     end
-    scatter!(ax1, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
-    scatter!(ax1, eq[][6], eq[][6], color = :red, markersize = 10)
+    p[] = vcat(p[][1:15], [points[1]...])
+    u0 = @SVector [0.5, 0.0, 0.0, 0.0, 1.0, -53.5]
+    tspan = (0., 1e6)
+    prob = ODEProblem(Plant.melibeNew, u0, tspan, p[])
+    sol = solve(prob, RK4())
+    ax = Axis(fig[1,2], xlabel = L"[Ca]", ylabel = L"x", title = "chaos with homoclinic \n to saddle")
+    lines!(ax, sol[5,:], sol[1,:], color = :dodgerblue4, linewidth = 1)
+    lines!(ax, sol[5,22000:end], sol[1,22000:end], color = :red, linewidth = 1)
 
-    # instide parabola
-    p[] = vcat(p[][1:15], [-2.0403289794921875, -2.745530366897583]);
-    v0 = -52
-    # calculate saddle trajectory
-    sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
-    # set map limit to saddle image
+
+
+    p[] = vcat(p[][1:15], [points[4]...])
+    u0 = @SVector [0.5, 0.0, 0.0, 0.0, 1.0, -53.5]
+    tspan = (0., 1e6)
+    prob = ODEProblem(Plant.melibeNew, u0, tspan, p[])
+    sol = solve(prob, RK4())
+    ax = Axis(fig[1,3], xlabel = L"[Ca]", ylabel = L"x", title = "ghost of SNPO 2")
+    lines!(ax, sol[5,:], sol[1,:], color = :dodgerblue4, linewidth = 1)
+    lines!(ax, sol[5,24000:end], sol[1,24000:end], color = :red, linewidth = 1)
+
+    p[] = vcat(p[][1:15], [points[5]...])
+    u0 = @SVector [0.5, 0.0, 0.0, 0.0, 1.0, -53.5]
+    tspan = (0., 1e6)
+    prob = ODEProblem(Plant.melibeNew, u0, tspan, p[])
+    sol = solve(prob, RK4())
+    ax = Axis(fig[1,4], xlabel = L"[Ca]", ylabel = L"x", title = "multistability near \n SNPO 3")
+    lines!(ax, sol[5,:], sol[1,:], color = :dodgerblue4, linewidth = 1)
+    lines!(ax, sol[5,24000:end], sol[1,24000:end], color = :red, linewidth = 1)
+    ix = findfirst(x -> x> -53.4194, preimage[])
+    x = eq[][1]*ix/map_resolution
+    ca = eq[][5]*ix/map_resolution
+    fastu = solve(
+                remake(ics_probs[1], 
+                    p = vcat(p[][1:15], x, ca),
+                    u0 = eq[][[3,4,6]]
+                ),
+                NewtonRaphson()
+            ).u
+    #u0 = @SVector [xs[1], 0.0, fastu[1], fastu[2], cas[i], fastu[3]]
+    #tspan = (0., 1e6)
+    #prob = ODEProblem(Plant.melibeNew, u0, tspan, p[])
+    #sol = solve(prob, RK4())
+    #lines!(ax, sol[5,1000:end], sol[1,1000:end], color = :green, linewidth = 1)
+    #lines!(ax, sol[5,20000:end], sol[1,20000:end], color = :red, linewidth = 1)
     
-    mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
-    # refine local minima
-    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax2 = Axis(fig[1,2], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
-    maptraj = calc_traj(xmap[], preimage[], v0)
-    lines!(ax2, maptraj, color = :dodgerblue4, linewidth = 2)
-    # plot return map
-    lines!(ax2, preimage[], preimage[], color = :dodgerblue4, linestyle = :dash, linewidth = 2,)
-    lines!(ax2, preimage[], xmap[], color = :black, linewidth = 2)
-    # sf
-    lines!(ax2, ln1[], color = :red, linewidth = 2.0, linestyle = :dot)
-    # saddle
-    ln_ = [
-        (preimage[][end], sad_upper[3,end]),
-        (preimage[][1], sad_upper[3,end])
-    ]
-    lines!(ax2, ln_, color = :green, linewidth = 2.0, linestyle = :dot)
-    # saddle po
-    ix = findlast(1:length(preimage[])) do i
-        preimage[][i] > xmap[][i]
-    end
-    ln_ = [
-        (preimage[][1], preimage[][ix]),
-        (preimage[][ix], preimage[][ix]),
-    ]
-    lines!(ax2, ln_, color = :blue, linewidth = 2.0, linestyle = :dash)
 
-    # plot fixed points
-    ixs = findall(1:length(preimage[])-1) do i
-        (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
-    end
-    scatter!(ax2, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
-    scatter!(ax2, eq[][6], eq[][6], color = :red, markersize = 10)
-
-    # below parabola
-    #p[] = vcat(p[][1:15], [-0.115, -0.115]);
-    p[] = vcat(p[][1:15], [-1.5417746305465698, -23.116209030151367]);
-    v0 = -51
-    # calculate saddle trajectory
-    sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
-    # set map limit to saddle image
-    mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
-    # refine local minima
-    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax3 = Axis(fig[1,3], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
-    maptraj = calc_traj(xmap[], preimage[], v0)
-    lines!(ax3, maptraj, color = :dodgerblue4, linewidth = 2)
-    # plot return map
-    lines!(ax3, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
-    lines!(ax3, preimage[], xmap[], color = :black, linewidth = 2)
-    # sf
-    lines!(ax3, ln1[], color = :red, linewidth = 2.0, linestyle = :dot)
-    # saddle
-    ln_ = [
-        (preimage[][end], sad_upper[3,end]),
-        (preimage[][1], sad_upper[3,end])
-    ]
-    lines!(ax3, ln_, color = :green, linewidth = 2.0, linestyle = :dot)
-    # saddle po
-    ix = findlast(1:length(preimage[])) do i
-        preimage[][i] > xmap[][i]
-    end
-    ln_ = [
-        (preimage[][1], preimage[][ix]),
-        (preimage[][ix], preimage[][ix]),
-    ]
-    lines!(ax3, ln_, color = :blue, linewidth = 2.0, linestyle = :dash)
-
-    # plot fixed points
-    ixs = findall(1:length(preimage[])-1) do i
-        (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
-    end
-    scatter!(ax3, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
-    scatter!(ax3, eq[][6], eq[][6], color = :red, markersize = 10)
-    resize!(fig, round(Int,1000*1.5), round(Int, 860*1.5))
-    resize_to_layout!(fig)
-    display(sc3, fig)
+    resize!(fig, 1500, 600)
+    display(sc4, fig)
 end
 
+save("spike_adding_chaos.png", fig)

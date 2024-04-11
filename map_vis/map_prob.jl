@@ -4,7 +4,8 @@ function condition(u, t, integrator)
 end
 function condition(u, t, integrator)
     p = integrator.p
-    if u[6] > p.eq[6]
+    dx = get_du(integrator)[1]
+    if (u[6] > p.eq[6]) || (u[5] > p.eq[5]) || (u[1] > p.eq[1]) || (dx < 0)
         return 1.0
     end
     # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.

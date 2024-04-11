@@ -76,7 +76,7 @@ end
 # for calculating the trajectory leaving from the unstable manifold of the saddle point
 function get_saddle_traj(prob,p)
     v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
-    if length(v_eqs) < 5
+    if length(v_eqs) < 3
         return fill(NaN, 6)
     end
     v_eq = v_eqs[3]
