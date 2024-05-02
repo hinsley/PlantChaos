@@ -1,4 +1,4 @@
-
+"""
 isiimg = rotr90(load("./explorer/ISI_variance.png"))
 min_x, max_x = -130, 100
 min_y, max_y = -12, 15
@@ -21,11 +21,15 @@ hilimg2 = hilimg[100:end-50, 100:end-100]
 min_x, max_x = -72, 72
 min_y, max_y = -4, 1.8
 image!(bifax, [min_x, max_x], [min_y, max_y], hilimg2, interpolate=false)
-
+"""
+img = rotr90(load("map_vis/lyapunov_3color.png"))
+min_x, max_x = -60, 0
+min_y, max_y = -2, .5
+image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf", linewidth = 3)
-limits!(bifax, -75, 70, -4, 2)
+limits!(bifax, -60, 0, -2, .5)
 
 
 lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinic", linewidth = 3)

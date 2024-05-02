@@ -14,7 +14,7 @@ end
 affect!(integrator) = terminate!(integrator) # Stop the solver
 cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 ics_probs = [NonlinearProblem(fastplant, zeros(3), zeros(17)) for i=1:Threads.nthreads()]
-map_prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 1e5), zeros(17))
+map_prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 2e4), zeros(17))
 monteprob = EnsembleProblem(map_prob, safetycopy=false)
 
 function calculate_return_map(monteprob, ics_probs, p, slider1, slider2; resolution = 100)

@@ -29,7 +29,7 @@ begin
         azimuth = 1.6π, elevation = .1π)
     tax = Axis(ssf_fig[5,1], xlabel = "t", ylabel = "V")
     eigax = Axis(ssf_fig[5,2], xlabel = "Re", ylabel = "Im")
-    thetaslider = Slider(ssf_fig[6,1:2], range = 0:0.0000001:2π, startvalue = 0)
+    thetaslider = Slider(ssf_fig[6,1:2], range = 4.71:0.0000001:4.7136, startvalue = 0)
     #thetaslider = Slider(ssf_fig[6,1:2], range = 4.711157657:0.000000001:4.711157688, startvalue = 0) # for burst of 17 to 16
     Label(ssf_fig[7,1:2], "θ on unstable manifold around saddle", tellwidth = false)
     display(ssf_screen, ssf_fig)
