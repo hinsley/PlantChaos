@@ -54,12 +54,12 @@ begin
     run_map_button = Button(widgetax[1,5], label = "run map", labelcolor = :black)
 
     mapslider = SliderGrid(widgetax[4,:],
-        (label = "map end", range=.0001:.0001:1, format = "{:.0}",
-             startvalue = .5, snap = false),
-        (label = "map begin", range=.0001:.0001:1, format = "{:.0}",
-             startvalue = 1, snap = false),
-        (label = "map iterates", range=1:1:500, format = "{:.0}",
-             startvalue = 1, snap = false),;
+        (label = "map end", range=-.1:.00001:.1, format = "{:.0}",
+             startvalue = .05, snap = false),
+        (label = "map begin", range=-.1:.00001:.1, format = "{:.0}",
+             startvalue = -.05, snap = false),
+        (label = "map iterates", range=1:1:5000, format = "{:.0}",
+             startvalue = 1, snap = false);
         width = 900,
         tellwidth = false
         )

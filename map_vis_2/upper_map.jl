@@ -1,6 +1,6 @@
 function generate_ics!(ics_probs, p, eq, start, stop, res)
     x = eq[1]
-    cas = range(eq[5] + start, eq[5] + (1 - stop)/10, length = res)
+    cas = range(eq[5] + start, eq[5] + stop, length = res)
 
     ics = Vector{SVector{6,Float64}}(undef, res)
     Threads.@threads for i=1:length(cas)
@@ -19,8 +19,20 @@ end
 function condition(u, t, integrator)
     p = integrator.p
     dx = get_du(integrator)[1]
-    if (u[5] < p.eq[5]) || (dx > 0)
-        return 1.0
+    fn = -1*(u[1]-p.eq[1])
+    if (dx > 0) || (u[5] < p.eq[5])
+        return sign(fn)*1.0
     end
-    (t < 5000) ? 1f0 : -1*(u[1]-p.eq[1])
+
+    (t < 50) ? sign(fn)*1f0 : fn
 end
+
+function affect!(integrator)
+    p = integrator.p
+    if p.count < 1
+        p.count += 1
+    else
+        terminate!(integrator)
+    end
+end
+
