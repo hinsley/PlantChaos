@@ -1,7 +1,18 @@
 # test f
+function condition(u, t, integrator)
+    p = integrator.p
+    dca = get_du(integrator)[5]
+    # Return the distance between u and the Ca nullcline in x if to the right of the equilibrium.
+    (u[1] -.78)
+end
+function affect!(integrator)
+    println("affect")
+    terminate!(integrator) # Stop the solver
+end
+cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 let
-    ΔCa = -38.6268
-    Δx = -2.2865
+    ΔCa = 100
+    Δx = -0
     ΔCa = caspace[2]
     Δx = xspace[3]
     p = vcat(Plant.default_params[1:15], Δx, ΔCa)
@@ -17,17 +28,22 @@ let
     eps = .001
     vec = real.(vecs)[:,ix]
     u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
+    u02 = SVector{6}(eq + eps * vec * sign(vec[1]))
 
     prob2 = remake(prob, p = Params(p, 0,v_eq), u0 = u0)
-    sol = solve(prob2, RK4(), callback = spike_cb)
-    println(sol.prob.p.count)
+    prob3 = remake(prob, p = Params(p, 0,v_eq), u0 = u02)
+    sol = solve(prob2, RK4(), callback = cb)
+    sol2 = solve(prob3, RK4(), callback = cb)
 
     f = Figure()
     ax1 = Axis(f[1,1], xlabel = "t", ylabel = "V")
     ax2 = Axis(f[2,1], xlabel = "Ca", ylabel = "x")
 
     lines!(ax1, sol.t, sol[6,:], color = collect(1:length(sol.t)))
-    lines!(ax2, sol[5,:], sol[1,:], color = collect(1:length(sol.t)))
+    lines!(ax1, sol2.t, sol2[6,:], color = collect(1:length(sol2.t)))
+    lines!(ax2, sol[5,:], sol[6,:], color = collect(1:length(sol.t)))
+    lines!(ax2, sol2[5,:], sol2[6,:], color = collect(1:length(sol2.t)))
+    
     f
 end
 
