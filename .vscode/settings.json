@@ -1,2 +1,4 @@
 {
+    "julia.additionalArgs": [],
+    "julia.NumThreads": 12
 }

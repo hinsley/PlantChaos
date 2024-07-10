@@ -3,7 +3,7 @@ map_resolution = 150
 
 include("./return_map_utils.jl")
 include("./map_prob.jl")
-include("./upper_map.jl")
+#include("./upper_map.jl")
 
 # calculate and unpack all data needed for plotting
 _ans = @lift calculate_return_map(monteprob, ics_probs, $p, $(mapslider.sliders[1].value),

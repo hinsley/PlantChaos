@@ -1,3 +1,26 @@
+function calc_traj(xmap, preimage, x0)
+    len = 100
+    x = x0
+
+    maptraj = fill(Point2f(NaN32,NaN32), len*2)
+    lerp = linear_interpolation(preimage, xmap)
+    maptraj[1] =  Point2f(x, x)
+    maptraj[2] =  Point2f(x, lerp(x))
+    for i=1:len-1
+        x = lerp(x)
+        p = Point2f(x, x)
+        local p2
+        try
+            p2 = Point2f(x, lerp(x))
+        catch
+            break
+        end
+        maptraj[i*2+1] = p
+        maptraj[i*2+2] = p2
+    end
+    maptraj
+end
+
 
 points =[
     (-2.6096227169036865, 28.127906799316406), # homoclinic to saddle
@@ -41,6 +64,7 @@ begin
     ))
     fig = Figure()
     for i in eachindex(points)
+        println(i)
         p[] = vcat(p[][1:15], [points[i]...])
         v0 = vs[i]
         # calculate saddle trajectory
