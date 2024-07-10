@@ -36,6 +36,7 @@ begin
     bifax.ylabel = "Δx"
     bifax.title = "bifurcation diagram"
     mapwidgetax = GridLayout(fig[3:4,2], tellwidth = false)
+
     mapax = Axis(mapwidgetax[1,1], aspect=1)
     mapax.title = "1D Map"
     mapax.xlabel = rich("V", subscript("n"))
@@ -54,10 +55,10 @@ begin
     run_map_button = Button(widgetax[1,5], label = "run map", labelcolor = :black)
 
     mapslider = SliderGrid(widgetax[4,:],
-        (label = "map end", range=.0001:.0001:1, format = "{:.0}",
-             startvalue = .5, snap = false),
-        (label = "map begin", range=.0001:.0001:1, format = "{:.0}",
-             startvalue = 1, snap = false),
+        (label = "map end", range=.09:.00001:.12, format = "{:.0}",
+             startvalue = 0.1, snap = false),
+        (label = "map begin", range=.09:.00001:.12, format = "{:.0}",
+             startvalue = 0.0, snap = false),
         (label = "map iterates", range=1:1:500, format = "{:.0}",
              startvalue = 1, snap = false),;
         width = 900,
@@ -71,22 +72,16 @@ include("./return_map.jl")
 #include("./hom_map.jl")
 
 display(fig)
+"""
+refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
+refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage, true)
 
-function get_eigs(p)
-    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v),
-     Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
-    v_eq = v_eqs[2]
-    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
-    x_eq = Plant.xinf(p, v_eq)
-    saddle = [x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
-    jac = ForwardDiff.jacobian(u -> melibeNew(u,p,0), saddle)
-    vals,vecs = eigen(jac)
-    arr = [(real(e), imag(e)) for e in vals if real(e) != 0.0][1:5]
-    return arr
-end
-
-eigs = @lift get_eigs($p)
-lines
-scatter!(cmapax, eigs, color = :white, markersize = 25, marker = 'o')
-vlines!(cmapax, 0, color = :white, linewidth = 2)
-hlines!(cmapax, 0, color = :white, linewidth = 2)
+sortedixs = @lift sortperm($xmap)
+ics2lerp = @lift linear_interpolation($xmap[$sortedixs], $points[$sortedixs])
+mapmin = @lift minimum($xmap)
+mapmax = @lift maximum($xmap)
+resolution2 = 150
+map2ics = @lift $ics2lerp(range($mapmin, $mapmax, length = resolution2))
+map2prob = ODEProblem{false}(mapf, @SVector(zeros(6)), (0e0, 2e4), zeros(17))
+monteprob2 = EnsembleProblem(map2prob, safetycopy=false)
+map2sol ="""

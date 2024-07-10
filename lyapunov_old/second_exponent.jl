@@ -36,13 +36,19 @@ u0 = @SVector Float32[
 include("../tools/equilibria.jl")
 
 start_p = [Plant.default_params...]
-start_p[17] = -40.0 # Cashift
-start_p[16] = -1.3 # xshift
+start_p[17] = -60.0 # Cashift
+start_p[16] = -2 # xshift
 end_p = [Plant.default_params...]
-end_p[17] = -32 # Cashift
-end_p[16] = -.9 # xshift
+end_p[17] = 0.0 # Cashift
+end_p[16] = .5 # xshift
 
-resolution = 500 # How many points to sample.
+start_p[17] = -27.0 # Cashift
+start_p[16] = -1.4 # xshift
+end_p = [Plant.default_params...]
+end_p[17] = -20.0 # Cashift
+end_p[16] = -1 # xshift
+
+resolution = 400 # How many points to sample.
 Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
 x_shifts = LinRange(start_p[16], end_p[16], resolution)
 ps = [[Plant.default_params[1:15]; [x_shifts[i], Ca_shifts[j]]] for i in 1:resolution, j in 1:resolution]
@@ -67,7 +73,7 @@ begin
     Threads.@threads for i in 1:resolution
         for j in 1:resolution
             sys = CoupledODEs(melibe5, u0, ps[i,j])
-            ls = lyapunovspectrum(sys, 500000, 5; Ttr = 100000)
+            ls = lyapunovspectrum(sys, 1000000, 5; Ttr = 500000)
             lyaparray[i,j] = ls[1]
             lyap2array[i,j] = ls[2]
             lyap3array[i,j] = ls[3]
@@ -104,7 +110,7 @@ end
 begin
     f = Figure()
     ax = Axis(f[1,1])
-    hm = heatmap!(ax, Ca_shifts, x_shifts, lyaparray' .+ lyap2array' , colorrange = (-.00,.00025))
+    hm = heatmap!(ax, Ca_shifts, x_shifts, lyaparray', colorrange = (-.015,.0))
     Colorbar(f[1,2], hm)
     f
 end
