@@ -73,7 +73,7 @@ begin
     ixs = findall(1:length(preimage[])-1) do i
         (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
     end
-    scatter!(ax1, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
+    #scatter!(ax1, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
     scatter!(ax1, eq[][6], eq[][6], color = :red, markersize = 10)
 
     # instide parabola
@@ -114,7 +114,7 @@ begin
     ixs = findall(1:length(preimage[])-1) do i
         (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
     end
-    scatter!(ax2, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
+    #scatter!(ax2, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
     scatter!(ax2, eq[][6], eq[][6], color = :red, markersize = 10)
 
     # below parabola
@@ -127,7 +127,7 @@ begin
     mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax3 = Axis(fig[3,2], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
+    ax3 = Axis(fig[2,1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     maptraj = calc_traj(xmap[], preimage[], v0)
     lines!(ax3, maptraj, color = :grey, linewidth = 2)
     # plot return map
@@ -155,7 +155,7 @@ begin
     ixs = findall(1:length(preimage[])-1) do i
         (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
     end
-    scatter!(ax3, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
+    #scatter!(ax3, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
     scatter!(ax3, eq[][6], eq[][6], color = :red, markersize = 10)
 
     # hom to po
@@ -168,7 +168,7 @@ begin
     mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax4 = Axis(fig[2,1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
+    ax4 = Axis(fig[3,2], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     maptraj = calc_traj(xmap[], preimage[], v0, 30)
     lines!(ax4, maptraj, color = :grey, linewidth = 2)
     # plot return map
@@ -194,7 +194,7 @@ begin
     ixs = findall(1:length(preimage[])-1) do i
         (preimage[][i]- xmap[][i])*(preimage[][i+1]- xmap[][i+1]) < 0
     end
-    scatter!(ax4, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
+    #scatter!(ax4, preimage[][ixs], preimage[][ixs], color = :transparent, strokewidth =1, markersize = 10, strokecolor = :blue)
     scatter!(ax4, eq[][6], eq[][6], color = :red, markersize = 10)
 
     resize!(fig, round(Int,1000*1.5), round(Int, 860*1.5))
@@ -222,9 +222,9 @@ begin
     pos = (ax2.xaxis.attributes.limits[][1] , ax2.yaxis.attributes.limits[][2] - .6)
     text!(ax2, pos, text = "B2", color = :black, fontsize = 25)
     pos = (ax3.xaxis.attributes.limits[][1] -.18 , ax3.yaxis.attributes.limits[][2] - .6)
-    text!(ax3, pos, text = "C2", color = :black, fontsize = 25)
+    text!(ax3, pos, text = "D2", color = :black, fontsize = 25)
     pos = (ax4.xaxis.attributes.limits[][1] , ax4.yaxis.attributes.limits[][2] - .6)
-    text!(ax4, pos, text = "D2", color = :black, fontsize = 25)
+    text!(ax4, pos, text = "C2", color = :black, fontsize = 25)
     text!(axmid, (0.0, 0.0), text = L"ShH", color = :blue, fontsize = 20)
     text!(axmid, (-1.0, 0.0), text = L"AH_{sub}", color = :green, fontsize = 20)
     text!(axmid, (0.0, 0.25), text = L"hom_{SF}", color = :red, fontsize = 20)
@@ -255,7 +255,7 @@ ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.037, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a2, sol[5,:], sol[1,:], color = :red, linewidth = 2,)
+lines!(a2, sol[5,:], sol[1,:], color = :red, linewidth = .2,)
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.04, 0.0])
 tspan = (0.0, 500000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
@@ -269,21 +269,21 @@ ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.1, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a3, sol[5,:], sol[1,:], color = :red, linewidth = 2,)
+lines!(a4, sol[5,:], sol[1,:], color = :red, linewidth = 1,)
 lst = 75000
-lines!(a3, sol[5,1:lst], sol[1,1:lst], color = :black, linewidth = 2,)
+lines!(a4, sol[5,1:lst], sol[1,1:lst], color = :black, linewidth = 2,)
 
 p[] = vcat(p[][1:15], _ps[4]);
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.029, 0.0])
 tspan = (0.0, 530000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a4, sol[5,:], sol[1,:], color = :black, linewidth = 2,)
+lines!(a3, sol[5,:], sol[1,:], color = :black, linewidth = 2,)
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.025, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a4, sol[5,:], sol[1,:], color = :red, linewidth = 2,)
+lines!(a3, sol[5,:], sol[1,:], color = :red, linewidth = .4,)
 
 # more labels
     text!(a1, (0.575, 0.85), text = "A1", color = :black, fontsize = 25)

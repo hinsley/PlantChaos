@@ -98,7 +98,7 @@ end
 
 
 ## Closeup
-resolution = 2000
+resolution = 1000
 thsp = range(0.0, 2pi, length = resolution)
 csp = range(-36.025, -36.02, length = resolution)
 xs = -1.1
@@ -127,6 +127,18 @@ heatmap(counts)
 ds2 = map(distances) do x
     x > .00001 ? .00001 : x
 end
+
+thsp2 = range(0.0, 2pi, length = resolution)
+csp2 = range(-40, -30, length = resolution)
+_space2 = Iterators.product(thsp2, csp2)
+global space, u0s = make_space(_space2, xs)
+
+
+distances2, counts2 = compute()
+ds22 = map(distances2) do x
+    x > .05 ? .05 : x
+end
+
 begin
     try close(ssf_screen) 
     catch
@@ -161,23 +173,8 @@ begin
     end
     spks
     lines!(ax4, thsp, spks, color = spks, colormap = :lighttest)
-end
-#save("ssf_scan_closeup.png", ssf_fig)
 
 
-# zoom out
-resolution = 500
-thsp = range(0.0, 2pi, length = resolution)
-csp = range(-40, -30, length = resolution)
-xs = -1.1
-_space = Iterators.product(thsp, csp)
-global space, u0s = make_space(_space, xs)
-
-
-distances, counts = compute()
-ds2 = map(distances) do x
-    x > .05 ? .05 : x
-end
 begin
     try close(ssf_screen) 
     catch
