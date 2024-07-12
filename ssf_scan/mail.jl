@@ -38,14 +38,6 @@ function make_space(space, xs)
             Ca_eq = Equilibria.Ca_null_Ca(p, v_sf)
             x_eq = Plant.xinf(p, v_sf)
             eq = [x_eq, Plant.default_state[2], Plant.ninf(v_sf), Plant.hinf(v_sf), Ca_eq, v_sf]
-            #jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p,0), eq)
-            #vals,vecs = eigen(jac)
-            #eps = .01
-            #k = argmax(real.(vecs)[6,:])
-            #e1 = real.(vecs)[:,1]
-            #e2 = real.(vecs)[:,2]
-            #theta = space[i,j][1]
-            #vec = eps*(cos(theta) * e1 + sin(theta) * e2)
             eps = .002
             e1 = SVector{6}(1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
             e2 = SVector{6}(0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
@@ -84,9 +76,6 @@ function spike_affect!(integrator)
 end
 cb = ContinuousCallback(spike_condition, spike_affect!, nothing)
 
-function prob_func(prob, i, repeat)
-    remake(prob, p = space[i], u0 = u0s[i])
-end
 function output_func(sol, i)
     prb = sol.prob
     count = prb.p.count
@@ -96,16 +85,20 @@ function output_func(sol, i)
     return ((count, dist), false)
 end
 
-
 ## Closeup
-resolution = 1000
+resolution = 200
 thsp = range(0.0, 2pi, length = resolution)
 csp = range(-36.025, -36.02, length = resolution)
 xs = -1.1
 _space = Iterators.product(thsp, csp)
-global space, u0s = make_space(_space, xs)
+space, u0s = make_space(_space, xs)
 
-function compute()
+function compute(space, u0s, resolution)
+
+    function prob_func(prob, i, repeat)
+        remake(prob, p = space[i], u0 = u0s[i])
+    end
+
     for e in space
         e.check1 = false
         e.check2 = false
@@ -122,23 +115,25 @@ function compute()
     return (distances, counts)
 end
 
-distances, counts = compute()
+distances, counts = compute(space, u0s, resolution)
 heatmap(counts)
 ds2 = map(distances) do x
     x > .00001 ? .00001 : x
 end
 
+resolution2 = 200
 thsp2 = range(0.0, 2pi, length = resolution)
 csp2 = range(-40, -30, length = resolution)
 _space2 = Iterators.product(thsp2, csp2)
-global space, u0s = make_space(_space2, xs)
+space2, u0s2 = make_space(_space2, xs)
 
 
-distances2, counts2 = compute()
+distances2, counts2 = compute(space2, u0s2, resolution2)
 ds22 = map(distances2) do x
     x > .05 ? .05 : x
 end
 
+hom = -36.0233
 begin
     try close(ssf_screen) 
     catch
@@ -146,52 +141,66 @@ begin
     end
     global ssf_screen = GLMakie.Screen(;resize_to = (1000, 1000))
     set_theme!()
-    ssf_fig = Figure(size = (1000, 800))
+    ssf_fig = Figure(size = (1000, 1200))
     display(ssf_screen, ssf_fig)
-    ssf_ax = Axis(ssf_fig[1,2], xlabel = "ΔCa", ylabel = "θ",  yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
+    ssf_ax = Axis(ssf_fig[2,2], xlabel = "ΔCa", ylabel = "θ",  yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
     pl = heatmap!(ssf_ax, csp, thsp, counts', colormap = Makie.Categorical(:lighttest))
-    Colorbar(ssf_fig[1,3],pl, label = "spikes")
-    ax2 = Axis3(ssf_fig[1,1], xlabel = "ΔCa", ylabel = "θ", zlabel = "dist * 10e5", aspect = (1,1,1), yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
+    Colorbar(ssf_fig[2,3],pl, label = "spikes")
+    ax2 = Axis3(ssf_fig[2,1], xlabel = "ΔCa", ylabel = "θ", zlabel = "dist * 1e5", aspect = (1,1,1),
+     yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
 
-    surface!(ax2, csp,thsp,10^5 .* ds2', color = log.(counts'), colormap = :lighttest)
-    ax3 = Axis(ssf_fig[2,1], xlabel = "ΔCa", ylabel = "dist * 10e5")
-    mins = reshape(reduce(min, 10^5 .* ds2, dims = 1), resolution)
+    surface!(ax2, csp,thsp,1e5 .* ds2', color = log.(counts'), colormap = :lighttest)
+    ax3 = Axis(ssf_fig[3,1], xlabel = "ΔCa", ylabel = "dist * 1e5")
+    mins = reshape(reduce(min, 1e5 .* ds2, dims = 1), resolution)
     lines!(ax3, csp, mins, color = :black, linewidth = 2)
     lines!(ax2, [Point3f(csp[i], 0, mins[i]) for i in 1:resolution], color = :black, linewidth = 2)
-    ax4 = Axis(ssf_fig[2,2], xlabel = "θ", ylabel = "spikes", yreversed = true, xticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
+    ax4 = Axis(ssf_fig[3,2], xlabel = "θ", ylabel = "dist * 1e5", xticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
     spks = Int[]
+    dsts = Float64[]
     for i in 1:resolution
         count = 0
+        dst = 1e-5
         for j in 1:resolution
             if counts[i,j] > count
                 if distances[i,j] < .00001
                     count = counts[i,j]
+                    dst = distances[i,j]
                 end
             end
         end
         push!(spks, count)
+        push!(dsts, dst)
     end
-    spks
-    lines!(ax4, thsp, spks, color = spks, colormap = :lighttest)
+    lines!(ax4, thsp, dsts .* 1e5, color = spks, colormap = :lighttest)
+    #hom
+    lines!(ssf_ax, [hom, hom], [0, 2pi], color = :red, linewidth = 2)
+    lines!(ax2, [hom, hom], [0, 2pi], [0, 0], color = :red, linewidth = 2)
+    scatter!(ax3, [hom],[0], color = :red, markersize = 10)
 
-
-begin
-    try close(ssf_screen) 
-    catch
-        nothing
-    end
-    global ssf_screen = GLMakie.Screen(;resize_to = (1000, 1000))
-    set_theme!()
-    ssf_fig = Figure(size = (1000, 450))
-    display(ssf_screen, ssf_fig)
-    ssf_ax = Axis(ssf_fig[1,2], xlabel = "ΔCa", ylabel = "θ",  yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
-    pl = heatmap!(ssf_ax, csp, thsp, counts', colormap = Makie.Categorical(:lighttest))
+    #zoom out
+    ssf_ax2 = Axis(ssf_fig[1,2], xlabel = "ΔCa", ylabel = "θ",  yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
+    pl = heatmap!(ssf_ax2, csp2, thsp2, counts2', colormap = Makie.Categorical(:lighttest))
     Colorbar(ssf_fig[1,3],pl, label = "spikes")
-    ax2 = Axis3(ssf_fig[1,1], xlabel = "ΔCa", ylabel = "θ", zlabel = "dist", aspect = (1,1,1), yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
+    ax22 = Axis3(ssf_fig[1,1], xlabel = "ΔCa", ylabel = "θ", zlabel = "dist", aspect = (1,1,1), yticks = ([0, pi, 2pi], ["0",  "π", "2π"]))
 
-    surface!(ax2, csp,thsp, ds2', color = log.(counts'), colormap = :lighttest)
-    mins = reshape(reduce(min, ds2, dims = 1), resolution)
-    lines!(ax2, [Point3f(csp[i], 0, mins[i]) for i in 1:resolution], color = :black, linewidth = 2)
+    surface!(ax22, csp2,thsp2, ds22', color = log.(counts2'), colormap = :lighttest)
+    mins = reshape(reduce(min, ds22, dims = 1), resolution2)
+    lines!(ax22, [Point3f(csp2[i], 0, mins[i]) for i in 1:resolution2], color = :black, linewidth = 2)
+    # hom
+    lines!(ssf_ax2, [hom, hom], [0, 2pi], color = :red, linewidth = 2)
+    lines!(ax22, [hom, hom], [0, 2pi], [0, 0], color = :red, linewidth = 2)
+
+    #panel letters
+    #text!(ssf_fig[1,1], "A", position = (-0.9, .8), fontsize = 20, space = :clip)
+    Label(ssf_fig[1,1, Left()], "A", padding = (0,1,0,0), valign = :top, fontsize = 20)
+    Label(ssf_fig[1,2, Left()], "B", padding = (0,30,0,0), valign = :top, fontsize = 20)
+    Label(ssf_fig[2,1, Left()], "C", padding = (0,1,0,0), valign = :top, fontsize = 20)
+    Label(ssf_fig[2,2, Left()], "D", padding = (0,30,0,0), valign = :top, fontsize = 20)
+    Label(ssf_fig[3,1, Left()], "E", padding = (0,30,0,0), valign = :top, fontsize = 20)
+    Label(ssf_fig[3,2, Left()], "F", padding = (0,30,0,0), valign = :top, fontsize = 20)
+    # resize
+    resize!(ssf_fig, 1000, 1200)
+    display(ssf_screen, ssf_fig)
 end
 
-save("ssf_scan_zoomout.png", ssf_fig)
+save("ssf_scan.png", ssf_fig)
