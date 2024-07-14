@@ -1,3 +1,5 @@
+# Run everything in main.jl first.
+
 # refine
 begin
     mx = maximum(xmap[])
@@ -12,7 +14,7 @@ end
 
 
 function calc_traj(xmap, preimage, x0)
-    len = 100
+    len = 10000
     x = x0
 
     maptraj = fill(Point2f(NaN32,NaN32), len*2)
@@ -34,8 +36,6 @@ function calc_traj(xmap, preimage, x0)
     maptraj
 end
 
-# shilnikov hopf
-
 fig2 = let
     try close(sc2) 
     catch
@@ -52,16 +52,31 @@ fig2 = let
     ))
     fig = Figure()
 
-    # on the homoclinic
-    p[] = vcat(p[][1:15], [-1.078, -36.3154]);
-    v0 = -48 # for map
-    
+    ## on the homoclinic
+    #p[] = vcat(p[][1:15], [-1.078, -36.3154])
+    #v0 = -48 # for map
+
+    ## Stable region
+    p[] = vcat(p[][1:15], [-0.4775, -44.839])
+
+    # ## Chaotic region
+    # p[] = vcat(p[][1:15], [-0.477, -44.7669])
+
     # calculate saddle trajectory
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
     # set map limit to saddle image
     mapslider.sliders[1].value[] = sad_lower[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
+    # refine local maxima
+    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage, true)
+
+    # Set voltage to one-spike flow tangency.
+    # Only the one-spike flow tangency is used because it is the easiest to adhere to
+    # numerically, staying on the spiking manifold for the shortest amount of time.
+    # Claude 3.5 Sonnet produced this...
+    maximum_idxs = findall(i -> i > 1 && i < length(xmap[]) && xmap[][i] > xmap[][i-1] && xmap[][i] > xmap[][i+1], 1:length(xmap[]))
+    v0 = preimage[][maximum_idxs[end]]
 
     # plot return map
     mapax = Axis(fig[1:4,1], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
@@ -100,7 +115,7 @@ fig2 = let
     u0 = lerp[](v0)
     # solve trajectory
     prob = ODEProblem(Plant.melibeNew, u0, (0., 300000.), p[])
-    sol = solve(prob, RK4())
+    sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14)
 
     # plot nullclines
     # ca nullcline
@@ -234,4 +249,4 @@ fig2 = let
     fig
 end
 
-save("homoclinic_map.png", fig2)
+#save("homoclinic_map.png", fig2)
