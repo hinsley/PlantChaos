@@ -10,7 +10,6 @@ begin
 end
 
 
-
 function calc_traj(xmap, preimage, x0)
     len = 100
     x = x0
@@ -66,7 +65,7 @@ fig2 = let
     # plot return map
     mapax = Axis(fig[1:4,1], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
     colorrng = range(0, 1, length = length(xmap[])) |> collect
-    lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 2)
+    lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 3)
     lines!(mapax, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
     # saddle focus
     lines!(mapax, ln1[], color = :red, linewidth = 2.0, linestyle = :dot)
@@ -179,7 +178,7 @@ fig2 = let
 
     crossings = Int[]
     θref = atan(eq[][1]/eq[][5])
-    for i in 1:length(traj)-1
+    for i in 1:length(sol)-1
         x = sol[1,i]
         ca = sol[5,i]
         θ = atan(x/ca)
@@ -220,7 +219,15 @@ fig2 = let
 
     # plot Equilibria
     scatter!(trajax, [(eq[][5], eq[][1])], color = :black, markersize = 38, marker = '♦')
+    scatter!(trajax, [(eq[][5], eq[][1])], color = :red, markersize = 30, marker = '♦')
     scatter!(trajax, [(sad_lower[1,1], sad_lower[2,1])], color = :black, markersize = 38, marker = '★')
+    scatter!(trajax, [(sad_upper[1,end], sad_upper[2,end])], color = :black, markersize = 38, marker = '★')
+    scatter!(trajax, [(sad_upper[1,end], sad_upper[2,end])], color = :green, markersize = 30, marker = '★')
+
+    scatter!(mapax, [(eq[][6], eq[][6])], color = :black, markersize = 38, marker = '♦')
+    scatter!(mapax, [(eq[][6], eq[][6])], color = :red, markersize = 30, marker = '♦')
+    scatter!(mapax, [(sad_lower[3,end], sad_lower[3,end])], color = :black, markersize = 38, marker = '★')
+    scatter!(mapax, [(sad_upper[3,end], sad_upper[3,end])], color = :green, markersize = 30, marker = '★')
 
     hidedecorations!(trajax, ticks = false, label = false, ticklabels = false)
     hidedecorations!(mapax, ticks = false, label = false, ticklabels = false)

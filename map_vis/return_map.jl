@@ -1,5 +1,5 @@
 
-map_resolution = 150
+map_resolution = 500
 
 include("./return_map_utils.jl")
 include("./map_prob.jl")
