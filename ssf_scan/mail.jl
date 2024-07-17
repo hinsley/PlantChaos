@@ -86,7 +86,7 @@ function output_func(sol, i)
 end
 
 ## Closeup
-resolution = 200
+resolution = 2000
 thsp = range(0.0, 2pi, length = resolution)
 csp = range(-36.025, -36.02, length = resolution)
 xs = -1.1
@@ -121,7 +121,7 @@ ds2 = map(distances) do x
     x > .00001 ? .00001 : x
 end
 
-resolution2 = 200
+resolution2 = 500
 thsp2 = range(0.0, 2pi, length = resolution)
 csp2 = range(-40, -30, length = resolution)
 _space2 = Iterators.product(thsp2, csp2)
