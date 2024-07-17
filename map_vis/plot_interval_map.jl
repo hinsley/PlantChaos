@@ -35,6 +35,8 @@ end
 
 # shilnikov hopf
 
+include("./plot_nullclines.jl")
+
 fig2 = let
     try close(sc2) 
     catch
@@ -65,7 +67,7 @@ fig2 = let
     # plot return map
     mapax = Axis(fig[1:4,1], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
     colorrng = range(0, 1, length = length(xmap[])) |> collect
-    lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 3)
+    lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 4)
     lines!(mapax, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
     # saddle focus
     lines!(mapax, ln1[], color = :red, linewidth = 2.0, linestyle = :dot)
@@ -102,66 +104,7 @@ fig2 = let
     sol = solve(prob, RK4())
 
     # plot nullclines
-    # ca nullcline
-    vs = range(-80, -20, length = 500) |> collect
-    xs = Plant.xinf.(Ref(p[]), vs)
-    casca = p[][13].*xs.*(p[][12].-vs.+p[][17])
-    # select range
-    pad = 5
-    camin = sad_lower[1,end]
-    camax = sad_upper[1,1]
-    xmin = minimum(sad_lower[2,:])
-    xmax = maximum(sad_upper[2,:])
-    ixbeg = findfirst(x -> x > xmin, xs)
-    icabeg = findfirst(x -> x > camin, casca)
-    ixend = findlast(x -> x < xmax, xs)
-    icaend = findlast(x -> x < camax, casca)
-    ibeg = max(ixbeg, icabeg) - pad
-    iend = min(ixend, icaend)
-    casca = casca[ibeg:iend]
-    xsca = xs[ibeg:iend]
-    lines!(trajax, casca, xsca, color = :red, linewidth = 2, linestyle = :dash)
-
-    # x nullcline
-    Q = Plant.II.(Ref(p[]), Plant.hinf.(vs), vs) .+
-        Plant.IK.(Ref(p[]), Plant.ninf.(vs), vs) .+
-        Plant.IT.(Ref(p[]), xs, vs) .+
-        Plant.Ileak.(Ref(p[]), vs)
-
-    casx  = @. .5*Q/(p[][7]*(-vs+p[][9]) - Q)
-    # select range
-    icabeg = findfirst(x -> x > camin, casx)
-    icaend = findlast(x -> x < 0, casx)
-    icaend = findlast(x -> x > 0, casx[1:icaend])
-    icaend = findlast(x -> x < camax, casx[1:icaend])
-    ibeg = max(icabeg, ixbeg) - pad*4
-    iend = min(icaend, ixend) + pad
-    casx2 = casx[ibeg:iend]
-    xsx = xs[ibeg:iend]
-    # separate stable from unstable
-    xstable = Float64[]
-    xunstable = Float64[]
-    cstable = Float64[]
-    cunstable = Float64[]
-    for i in 1:length(casx2)-1
-        e = casx2[i]
-        e2 = casx2[i+1]
-        if e<e2
-            push!(xunstable, xsx[i])
-            push!(cunstable, casx2[i])
-        else
-            push!(xstable, xsx[i])
-            push!(cstable, casx2[i])
-        end
-        if e*e2<0
-            push!(xstable,NaN)
-            push!(cstable, NaN)
-            push!(xunstable, NaN)
-            push!(cunstable, NaN)
-        end
-    end
-    lines!(trajax, cstable, xstable, color = :black, linewidth = 2)
-    lines!(trajax, cunstable, xunstable, color = :black, linewidth = 2, linestyle = :dash)
+    plot_nullclines!(trajax, sad_lower, sad_upper, p[])
 
     # plot trajectories that generate map
     colorrng = range(0, 1, length = length(cass[])) |> collect

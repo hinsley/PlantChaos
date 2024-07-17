@@ -20,6 +20,7 @@ function calc_traj(xmap, preimage, x0, len = 100)
     maptraj
 end
 
+include("./plot_nullclines.jl")
 
 _ps = [[-1.078, -36.3154],
     [-2.0403289794921875, -2.745530366897583],
@@ -238,7 +239,10 @@ begin
     a4 = Axis(fig[3,1], xlabel = "Ca", ylabel = "x")
     axs = [a1, a2, a3, a4]
 
+
 p[] = vcat(p[][1:15], _ps[1]);
+plot_nullclines!(a1, sad_lower, sad_upper, p[])
+
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.001, 0.0])
 tspan = (0.0, 70000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
@@ -247,10 +251,13 @@ lines!(a1, sol[5,:], sol[1,:], color = :black, linewidth = 2,)
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.0015, 0.0])
 tspan = (0.0, 70000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
-sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a1, sol[5,:], sol[1,:], color = :grey, linewidth = 2,)
+sol2 = solve(prob, RK4(), saveat = 1.0)
+lines!(a1, sol2[5,:], sol2[1,:], color = :grey, linewidth = 2,)
+xlims!(a1, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
+ylims!(a1, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
 p[] = vcat(p[][1:15], _ps[2]);
+plot_nullclines!(a2, sad_lower, sad_upper, p[])
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.037, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
@@ -263,8 +270,11 @@ sol = solve(prob, RK4(), saveat = 1.0)
 lst = 300000
 lines!(a2, sol[5,:], sol[1,:], color = :grey, linewidth = 2,)
 lines!(a2, sol[5,1:lst], sol[1,1:lst], color = :black, linewidth = 2,)
+xlims!(a2, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
+ylims!(a2, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
 p[] = vcat(p[][1:15], _ps[3]);
+plot_nullclines!(a4, sad_lower, sad_upper, p[])
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.1, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
@@ -272,18 +282,23 @@ sol = solve(prob, RK4(), saveat = 1.0)
 lines!(a4, sol[5,:], sol[1,:], color = :red, linewidth = 1,)
 lst = 75000
 lines!(a4, sol[5,1:lst], sol[1,1:lst], color = :black, linewidth = 2,)
+xlims!(a4, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
+ylims!(a4, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
 p[] = vcat(p[][1:15], _ps[4]);
+plot_nullclines!(a3, sad_lower, sad_upper, p[])
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.029, 0.0])
 tspan = (0.0, 530000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a3, sol[5,:], sol[1,:], color = :black, linewidth = 2,)
+lines!(a3, sol[5,:], sol[1,:], color = :black, linewidth = 1,)
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.025, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
-sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a3, sol[5,:], sol[1,:], color = :red, linewidth = .4,)
+sol2 = solve(prob, RK4(), saveat = 1.0)
+lines!(a3, sol2[5,:], sol2[1,:], color = :red, linewidth = .4,)
+xlims!(a3, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
+ylims!(a3, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
 # more labels
     text!(a1, (0.575, 0.85), text = "A1", color = :black, fontsize = 25)
