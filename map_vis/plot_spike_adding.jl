@@ -1,3 +1,16 @@
+using JLD2
+lcarr = load("lyapunov_3color.jld2")["lcarr"]
+
+start_p[17] = 15 # Cashift
+start_p[16] = -2.8 # xshift
+end_p = [Plant.default_params...]
+end_p[17] = 45 # Cashift
+end_p[16] = -2.2 # xshift
+
+resolution = 700 # How many points to sample.
+Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
+x_shifts = LinRange(start_p[16], end_p[16], resolution)
+
 function calc_traj(xmap, preimage, x0)
     len = 200
     x = x0
@@ -59,6 +72,7 @@ begin
     fig = Figure()
     # bifurcation diagram
     bax = Axis(fig[1:2,1:2], xlabel = "ΔCa", ylabel = "Δx")
+    image!(bax, Ca_shifts, x_shifts, rotr90(lcarr))
 
     for i in eachindex(points)
         println(i)

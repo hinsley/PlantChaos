@@ -121,9 +121,9 @@ ds2 = map(distances) do x
     x > .00001 ? .00001 : x
 end
 
-resolution2 = 500
-thsp2 = range(0.0, 2pi, length = resolution)
-csp2 = range(-40, -30, length = resolution)
+resolution2 = 1000
+thsp2 = range(0.0, 2pi, length = resolution2)
+csp2 = range(-40, -30, length = resolution2)
 _space2 = Iterators.product(thsp2, csp2)
 space2, u0s2 = make_space(_space2, xs)
 

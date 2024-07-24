@@ -90,3 +90,37 @@ lines
 scatter!(cmapax, eigs, color = :white, markersize = 25, marker = 'o')
 vlines!(cmapax, 0, color = :white, linewidth = 2)
 hlines!(cmapax, 0, color = :white, linewidth = 2)
+
+# show Closeup bifurcation diagram
+using JLD2
+lcarr = load("lyapunov_3color.jld2")["lcarr"] # .+ Makie.RGB(.5,.5,.5)
+lcarr
+
+start_p[17] = 15 # Cashift
+start_p[16] = -2.8 # xshift
+end_p = [Plant.default_params...]
+end_p[17] = 45 # Cashift
+end_p[16] = -2.2 # xshift
+
+resolution = 700 # How many points to sample.
+Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
+x_shifts = LinRange(start_p[16], end_p[16], resolution)
+
+image!(bifax, Ca_shifts, x_shifts, rotr90(lcarr))
+
+points =[
+    #(-2.6096227169036865, 28.127906799316406), # homoclinic to saddle
+    (-2.6527276039123535, 28.78907774658203), # snpo 1
+    (-2.627365827560425, 26.775069900512695), # cusp 1
+    (-2.487631320953369, 22.474958419799805), # snpo 2
+    (-2.553318500518799, 27.644296813964844), # cusp 2
+    (-2.4775397777557373, 22.507494888305664), # snpo 3
+]
+
+scatter!(bifax, reverse.(points), color = :white, markersize = 10, marker = 'o')
+
+# hand drawn lines
+# alpha deriv = 1
+curve1 = [
+
+]
