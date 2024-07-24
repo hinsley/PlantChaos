@@ -64,7 +64,7 @@ begin
     catch
         nothing
     end
-    global sc4 = GLMakie.Screen(;resize_to = (1000, 800))
+    global sc4 = GLMakie.Screen(;resize_to = (500, 500))
     set_theme!(Theme(
         Axis = (
             xticklabelsize = 14,
@@ -77,14 +77,42 @@ begin
     ))
     fig = Figure()
     # bifurcation diagram
-    bax = Axis(fig[1:2,1:2], xlabel = "ΔCa", ylabel = "Δx")
+    bax = Axis(fig[1,1], xlabel = "ΔCa", ylabel = "Δx")
     image!(bax, Ca_shifts, x_shifts, lcarr)
     lines!(bax, upper, color = :black, linewidth = 2, linestyle = :dot)
     lines!(bax, lower, color = :black, linewidth = 2)
     scatter!(bax, upper, color = :black, markersize = 25, marker = '⋆')
     scatter!(bax, lower, color = :black, markersize = 35, marker = '▿')
 
-    resize!(fig, 1000, 800)
+    sc = 1.2
+    ax1 = Axis(fig[1,1],
+    width=Relative(0.2*sc),
+    height=Relative(0.2*sc),
+    halign=0.55,
+    valign=0.75,
+    aspect = DataAspect(),
+    xlabel = L"V_{n}",
+    ylabel = L"V_{n+1}")
+    hidedecorations!(ax1, label = false)
+
+    ax2 = Axis(fig[1,1],
+    width=Relative(0.2*sc),
+    height=Relative(0.2*sc),
+    halign=0.35,
+    valign=0.1,
+    aspect = DataAspect(),
+    xlabel = L"V_{n}",
+    ylabel = L"V_{n+1}")
+    hidedecorations!(ax2, label = false)
+
+    ax3 = Axis(fig[1,1],
+    width=Relative(0.2*sc),
+    height=Relative(0.2*sc),
+    halign=0.95,
+    valign=0.55)
+    hidedecorations!(ax3, label = false)
+
+    resize!(fig, 500, 500)
     display(sc4, fig)
 end
 
