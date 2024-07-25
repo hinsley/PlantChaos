@@ -111,6 +111,36 @@ begin
     halign=0.95,
     valign=0.55)
     hidedecorations!(ax3, label = false)
+    x = range(-1, 1.5, length = 500)
+
+
+    img = fill(Makie.RGBA(1,1,1,.5), 10,10)
+    image!(ax3,x,x, img)
+
+    f(x) = -8x^4 + x + 4/3*x^3 + 4x^2
+    y = f.(x)
+    g = (1 + sqrt(65))/16
+    h = (1 - sqrt(65))/16
+    y2 = @. x + f(g) - g
+    y3 = @. x + f(h) - h
+    lines!(ax3, x, y, color = :black)
+    lines!(ax3, x, y2, color = :red, linestyle = :dash)
+    lines!(ax3, x, x, color = :green, linestyle = :dash)
+    lines!(ax3, x, y3, color = :blue, linestyle = :dash)
+    scatter!(ax3, (g,f(g)), color = :black, markersize = 10)
+    scatter!(ax3, (g,f(g)), color = :red, markersize = 8)
+    scatter!(ax3, (h,f(h)), color = :black, markersize = 10)
+    scatter!(ax3, (h,f(h)), color = :blue, markersize = 8)
+    scatter!(ax3, (0,0), color = :black, markersize = 10)
+    scatter!(ax3, (0,0), color = :green, markersize = 8)
+    text!(ax3, -.8,-.3, text = L"α", color = :blue, fontsize = 14)
+    text!(ax3, .1,-.3, text = L"β", color = :green, fontsize = 14)
+    text!(ax3, .2,1.1, text = L"γ", color = :red, fontsize = 14)
+
+
+    text!(ax3, -.9,1, text = "C", color = :black)
+
+    limits!(ax3, -1, 1.5, -1, 1.5)
 
     resize!(fig, 500, 500)
     display(sc4, fig)
