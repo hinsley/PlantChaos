@@ -76,13 +76,14 @@ begin
         )
     ))
     fig = Figure()
+    img = fill(Makie.RGBA(1,1,1,.5), 10,10)
     # bifurcation diagram
     bax = Axis(fig[1,1], xlabel = "ΔCa", ylabel = "Δx")
     image!(bax, Ca_shifts, x_shifts, lcarr)
     lines!(bax, upper, color = :black, linewidth = 2, linestyle = :dot)
     lines!(bax, lower, color = :black, linewidth = 2)
     scatter!(bax, upper, color = :black, markersize = 25, marker = '⋆')
-    scatter!(bax, lower, color = :black, markersize = 35, marker = '▿')
+    scatter!(bax, lower, color = :black, markersize = 25, marker = '+')
 
     sc = 1.2
     ax1 = Axis(fig[1,1],
@@ -95,6 +96,14 @@ begin
     ylabel = L"V_{n+1}")
     hidedecorations!(ax1, label = false)
 
+    mapslider.sliders[2].value[] = .75
+    mapslider.sliders[1].value[] = .55
+    p[] = p1
+    image!(ax1, preimage[], preimage[], img)
+    lines!(ax1, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
+    lines!(ax1, preimage[][2:end], xmap[][2:end], color = :black, linewidth = 2)
+
+
     ax2 = Axis(fig[1,1],
     width=Relative(0.2*sc),
     height=Relative(0.2*sc),
@@ -105,16 +114,20 @@ begin
     ylabel = L"V_{n+1}")
     hidedecorations!(ax2, label = false)
 
+    mapslider.sliders[2].value[] = 1.0
+    p[] = p2
+    image!(ax2, preimage[], preimage[], img)
+    lines!(ax2, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
+    lines!(ax2, preimage[][2:end], xmap[][2:end], color = :black, linewidth = 2)
+
+
     ax3 = Axis(fig[1,1],
     width=Relative(0.2*sc),
     height=Relative(0.2*sc),
     halign=0.95,
-    valign=0.55)
+    valign=0.45)
     hidedecorations!(ax3, label = false)
     x = range(-1, 1.5, length = 500)
-
-
-    img = fill(Makie.RGBA(1,1,1,.5), 10,10)
     image!(ax3,x,x, img)
 
     f(x) = -8x^4 + x + 4/3*x^3 + 4x^2
@@ -133,14 +146,21 @@ begin
     scatter!(ax3, (h,f(h)), color = :blue, markersize = 8)
     scatter!(ax3, (0,0), color = :black, markersize = 10)
     scatter!(ax3, (0,0), color = :green, markersize = 8)
+    scatter!(ax3, (-1/4,f(-1/4)), color = :black, markersize = 20, marker = '+')
+    scatter!(ax3, (1/3,f(1/3)), color = :black, markersize = 20, marker = '⋆')
     text!(ax3, -.8,-.3, text = L"α", color = :blue, fontsize = 14)
     text!(ax3, .1,-.3, text = L"β", color = :green, fontsize = 14)
     text!(ax3, .2,1.1, text = L"γ", color = :red, fontsize = 14)
 
-
-    text!(ax3, -.9,1, text = "C", color = :black)
+    #text!(ax3, -.9,1, text = "C", color = :black)
 
     limits!(ax3, -1, 1.5, -1, 1.5)
+
+    text!(bax, -28,-.35, text = "A", color = :black)
+    text!(bax, -35.5,-1.35, text = "B", color = :black)
+    text!(bax, -14,-.81, text = "C", color = :black)
+
+    limits!(bax, Ca_shifts[1], Ca_shifts[end], x_shifts[1], x_shifts[end])
 
     resize!(fig, 500, 500)
     display(sc4, fig)
