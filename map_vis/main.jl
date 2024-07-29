@@ -96,6 +96,7 @@ using JLD2
 lcarr = load("lyapunov_3color.jld2")["lcarr"] # .+ Makie.RGB(.5,.5,.5)
 lcarr
 
+start_p = [Plant.default_params...]
 start_p[17] = 15 # Cashift
 start_p[16] = -2.8 # xshift
 end_p = [Plant.default_params...]
@@ -118,9 +119,3 @@ points =[
 ]
 
 scatter!(bifax, reverse.(points), color = :white, markersize = 10, marker = 'o')
-
-# hand drawn lines
-# alpha deriv = 1
-curve1 = [
-
-]
