@@ -192,12 +192,12 @@ begin
 
     #panel letters
     #text!(ssf_fig[1,1], "A", position = (-0.9, .8), fontsize = 20, space = :clip)
-    Label(ssf_fig[1,1, Left()], "A", padding = (0,1,0,0), valign = :top, fontsize = 20)
-    Label(ssf_fig[1,2, Left()], "B", padding = (0,30,0,0), valign = :top, fontsize = 20)
-    Label(ssf_fig[2,1, Left()], "C", padding = (0,1,0,0), valign = :top, fontsize = 20)
-    Label(ssf_fig[2,2, Left()], "D", padding = (0,30,0,0), valign = :top, fontsize = 20)
-    Label(ssf_fig[3,1, Left()], "E", padding = (0,30,0,0), valign = :top, fontsize = 20)
-    Label(ssf_fig[3,2, Left()], "F", padding = (0,30,0,0), valign = :top, fontsize = 20)
+    Label(ssf_fig[1,1, Left()], "A", padding = (0,1,0,0), valign = :top, fontsize = 25)
+    Label(ssf_fig[1,2, Left()], "B", padding = (0,30,0,0), valign = :top, fontsize = 25)
+    Label(ssf_fig[2,1, Left()], "C", padding = (0,1,0,0), valign = :top, fontsize = 25)
+    Label(ssf_fig[2,2, Left()], "D", padding = (0,30,0,0), valign = :top, fontsize = 25)
+    Label(ssf_fig[3,1, Left()], "E", padding = (0,30,0,0), valign = :top, fontsize = 25)
+    Label(ssf_fig[3,2, Left()], "F", padding = (0,30,0,0), valign = :top, fontsize = 25)
     # resize
     resize!(ssf_fig, 1000, 1200)
     display(ssf_screen, ssf_fig)

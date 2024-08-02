@@ -303,8 +303,8 @@ ylims!(a3, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 # more labels
     text!(a1, (0.575, 0.85), text = "A1", color = :black, fontsize = 25)
     text!(a2, (0.655, 0.86), text = "B1", color = :black, fontsize = 25)
-    text!(a3, (0.685, 0.86), text = "C1", color = :black, fontsize = 25)
-    text!(a4, (0.7, 0.875), text = "D1", color = :black, fontsize = 25)
+    text!(a3, (0.822, 0.88), text = "C1", color = :black, fontsize = 25)
+    text!(a4, (0.682, 0.86), text = "D1", color = :black, fontsize = 25)
 end
 
 save("shilnikov_hopf.png", fig)

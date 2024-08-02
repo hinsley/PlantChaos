@@ -275,12 +275,12 @@ begin
     text!(bax, (15.2, -2.225), text = L"\textbf{A}", color = :black, fontsize = 20)
     text!(ax8, (-1.9, 4.3), text = L"\textbf{B}", color = :black, fontsize = 20)
     text!(ax7, (-54.65, -53.33), text = L"\textbf{C}", color = :black, fontsize = 20)
-    text!(ax1, (-54.15, -52.73), text = L"\textbf{D}", color = :black, fontsize = 20)
-    text!(ax2, (0.65, 0.885), text = L"\textbf{E}", color = :black, fontsize = 20),
-    text!(ax3, (-54.6, -53.9), text = L"\textbf{F}", color = :black, fontsize = 20)
-    text!(ax4, (0.68, 0.885), text = L"\textbf{G}", color = :black, fontsize = 20)
-    text!(ax5, (-54.29, -53.31), text = L"\textbf{H}", color = :black, fontsize = 20)
-    text!(ax6, (0.67, 0.885), text = L"\textbf{I}", color = :black, fontsize = 20)
+    text!(ax1, (-54.13, -52.7), text = L"\textbf{D}", color = :black, fontsize = 20)
+    text!(ax2, (0.65, 0.888), text = L"\textbf{E}", color = :black, fontsize = 20),
+    text!(ax3, (-54.59, -53.9), text = L"\textbf{F}", color = :black, fontsize = 20)
+    text!(ax4, (0.685, 0.887), text = L"\textbf{G}", color = :black, fontsize = 20)
+    text!(ax5, (-54.27, -53.29), text = L"\textbf{H}", color = :black, fontsize = 20)
+    text!(ax6, (0.665, 0.89), text = L"\textbf{I}", color = :black, fontsize = 20)
     
     resize!(fig, 1350, 1000)
     display(sc4, fig)
