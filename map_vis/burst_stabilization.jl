@@ -11,10 +11,8 @@ begin
     end
 end
 
-
-
 function calc_traj(xmap, preimage, x0)
-    len = 10000
+    len = 1#0000
     x = x0
 
     maptraj = fill(Point2f(NaN32,NaN32), len*2)
@@ -35,6 +33,8 @@ function calc_traj(xmap, preimage, x0)
     end
     maptraj
 end
+
+include("../tools/symbolics.jl")
 
 fig2 = let
     try close(sc2) 
@@ -61,6 +61,11 @@ fig2 = let
 
     # ## Chaotic region
     # p[] = vcat(p[][1:15], [-0.477, -44.7669])
+
+    # ## Sweep
+    # p[] = vcat(p[][1:15], [-1.1, -33])
+
+    p[] = vcat(p[][1:15], [-0.6, -41]) # -1.078, -41])
 
     # calculate saddle trajectory
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
@@ -114,8 +119,12 @@ fig2 = let
     # calculate u0 from v0
     u0 = lerp[](v0)
     # solve trajectory
-    prob = ODEProblem(Plant.melibeNew, u0, (0., 300000.), p[])
+    prob = ODEProblem(Plant.melibeNew, u0, (0., 1e5), p[])
     sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14)
+    itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
+    for i in 1:length(itinerary)
+        println(itinerary[i])
+    end
 
     # plot nullclines
     # ca nullcline
@@ -188,8 +197,15 @@ fig2 = let
     lines!(tax, sol.t, sol[6,:], color = :dodgerblue4, linewidth = 2)
 
     Θ = atan.(sol[1,:]./sol[5,:]).-atan(eq[][1]/eq[][5])
-    lines!(tanax, sol.t, Θ, color = :dodgerblue4, linewidth = 2)
-    lines!(caax, sol.t, sol[5,:], color = :dodgerblue4, linewidth = 2)
+    #lines!(tanax, sol.t, Θ, color = :dodgerblue4, linewidth = 2)
+    # lines!(caax, sol.t, sol[5,:], color = :dodgerblue4, linewidth = 2)
+    
+    # Calculate V derivative numerically
+    dt = diff(sol.t)
+    dVdt = diff(sol[6,:]) ./ dt
+    
+    # Plot V derivative on caax
+    lines!(tanax, sol.t[1:end-1], dVdt, color = :dodgerblue4, linewidth = 2)
     
 
     crossings = Int[]
@@ -219,8 +235,8 @@ fig2 = let
     
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :black, markersize = 12)
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :red, markersize = 8)
-    scatter!(caax, sol.t[crossings], sol[5,crossings], color = :black, markersize = 12)
-    scatter!(caax, sol.t[crossings], sol[5,crossings], color = :red, markersize = 8)
+    # scatter!(caax, sol.t[crossings], sol[5,crossings], color = :black, markersize = 12)
+    # scatter!(caax, sol.t[crossings], sol[5,crossings], color = :red, markersize = 8)
     # plot ca peaks on return map
     scatter!(mapax, [e[1] for e in maptraj[1:2:end-2]], [e[1] for e in maptraj[3:2:end]], color = :black, markersize = 12)
     scatter!(mapax, [e[1] for e in maptraj[1:2:end-2]], [e[1] for e in maptraj[3:2:end]], color = :red, markersize = 8)
