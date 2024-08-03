@@ -125,6 +125,7 @@ fig2 = let
     for i in 1:length(itinerary)
         println(itinerary[i])
     end
+    println(itinerary_to_kneading_coordinate(itinerary))
 
     # plot nullclines
     # ca nullcline

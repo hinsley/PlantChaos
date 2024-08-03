@@ -7,6 +7,44 @@
   SymbolF
 end
 
+function itinerary_to_kneading_coordinate(itinerary::Vector{BranchSymbol}, periodic::Bool = false)::Vector{Float64}
+  positive_orientation = true
+  window = [0.0, 1.0]
+
+  truncated_itinerary = itinerary
+  start_index = findfirst(s -> s == SymbolA || s == SymbolB, itinerary)
+  if start_index !== nothing
+    truncated_itinerary = itinerary[start_index:end]
+  else
+    throw(ErrorException("No valid starting symbol (A or B) found in itinerary"))
+  end
+
+  while true
+    for symbol in truncated_itinerary
+      traverse_left = true
+      left_index = positive_orientation ? 1 : 2
+      right_index = positive_orientation ? 2 : 1
+      if symbol == SymbolA
+        traverse_left = true
+      elseif symbol == SymbolB || symbol == SymbolD || symbol == SymbolF
+        traverse_left = false
+      elseif symbol == SymbolC || symbol == SymbolE
+        positive_orientation = !positive_orientation
+      end
+      window[traverse_left ? right_index : left_index] = (window[left_index] + window[right_index]) / 2
+    end
+    if !periodic
+      break
+    end
+    if window[1] == window[2]
+      break
+    end
+    truncated_itinerary = itinerary[]
+  end
+
+  return window
+end
+
 function voltage_trace_to_itinerary(voltage_trace::Vector{Float64}, times::Vector{Float64})::Vector{BranchSymbol}
   itinerary = BranchSymbol[]
   spike_threshold = 0.0 # This is a V value.
