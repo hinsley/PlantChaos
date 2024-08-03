@@ -12,7 +12,7 @@ begin
 end
 
 function calc_traj(xmap, preimage, x0)
-    len = 1#0000
+    len = 30#000
     x = x0
 
     maptraj = fill(Point2f(NaN32,NaN32), len*2)
@@ -65,7 +65,7 @@ fig2 = let
     # ## Sweep
     # p[] = vcat(p[][1:15], [-1.1, -33])
 
-    p[] = vcat(p[][1:15], [-0.6, -41]) # -1.078, -41])
+    p[] = vcat(p[][1:15], [-0.81, -41]) # -1.078, -41])
 
     # calculate saddle trajectory
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
@@ -123,7 +123,9 @@ fig2 = let
     sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14)
     itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
     for i in 1:length(itinerary)
-        println(itinerary[i])
+        if itinerary[i] == SymbolE || itinerary[i] == SymbolF
+            println(itinerary[i])
+        end
     end
     println(itinerary_to_kneading_coordinate(itinerary))
 

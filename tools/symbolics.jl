@@ -56,7 +56,6 @@ function voltage_trace_to_itinerary(voltage_trace::Vector{Float64}, times::Vecto
   Vdot_prebounce_threshold_max = 0.05
   Vdot_bounce_watchdog_threshold_min = 0.005
   min_Vdot_observed = Inf
-  bounce_Vdot_increase_threshold = 1e-6
 
   for i in 3:length(voltage_trace) # Start at 3 so we can detect turning points.
     if length(itinerary) == 0 || itinerary[end] == SymbolA || itinerary[end] == SymbolE || itinerary[end] == SymbolF # Top branch line.
@@ -88,7 +87,7 @@ function voltage_trace_to_itinerary(voltage_trace::Vector{Float64}, times::Vecto
           end
         elseif interspike_state == 4 # Bounce detection watchdog.
           min_Vdot_observed = min(min_Vdot_observed, Vdot)
-          if Vdot >= min_Vdot_observed + bounce_Vdot_increase_threshold # Bounce detected.
+          if Vdot > min_Vdot_observed# Bounce detected.
             exit_on_E = true
           elseif Vdot <= 0 # Completed return to dune, including any potential half-rotation.
             push!(itinerary, SymbolC)
