@@ -118,16 +118,38 @@ fig2 = let
     hidespines!(caax, :t,:r)
     # calculate u0 from v0
     u0 = lerp[](v0)
-    # solve trajectory
-    prob = ODEProblem(Plant.melibeNew, u0, (0., 1e5), p[])
-    sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14)
-    itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
-    for i in 1:length(itinerary)
-        if itinerary[i] == SymbolE || itinerary[i] == SymbolF
-            println(itinerary[i])
-        end
-    end
-    println(itinerary_to_kneading_coordinate(itinerary))
+    # solve flow tangency trajectory
+    prob = ODEProblem(Plant.melibeNew, u0, (0., 1e6), p[])
+    sol = solve(prob, Tsit5(), abstol=1e-14, reltol=1e-14)
+    flow_tangency_itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
+    # for i in 1:length(flow_tangency_itinerary)
+    #     if flow_tangency_itinerary[i] == SymbolE || flow_tangency_itinerary[i] == SymbolF
+    #         println(flow_tangency_itinerary[i])
+    #     end
+    # end
+    # solve upper saddle trajectory
+    sad_upper0 = sad_upper[:,1]
+    u0sad = SVector(sad_upper0[2], 0.0, Plant.ninf(sad_upper0[3]), Plant.hinf(sad_upper0[3]), sad_upper0[1], sad_upper0[3])
+    prob = ODEProblem(Plant.melibeNew, u0sad, (0., 1e6), p[])
+    sol = solve(prob, Tsit5(), abstol=1e-14, reltol=1e-14)
+    upper_saddle_itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
+    # for i in 1:length(upper_saddle_itinerary)
+    #     if upper_saddle_itinerary[i] == SymbolE || upper_saddle_itinerary[i] == SymbolF
+    #         println(upper_saddle_itinerary[i])
+    #     end
+    # end
+    # Calculate topological entropy
+    println("Kneading coordinate of flow tangency: $(itinerary_to_kneading_coordinate(flow_tangency_itinerary))")
+    upper_saddle_kneading_sequence = itinerary_to_kneading_sequence(upper_saddle_itinerary)
+    flow_tangency_kneading_sequence = itinerary_to_kneading_sequence(flow_tangency_itinerary)
+    println("Upper saddle kneading sequence: $upper_saddle_kneading_sequence")
+    println("Flow tangency kneading sequence: $flow_tangency_kneading_sequence")
+    println("Topological entropy estimate: $(topological_entropy(
+        upper_saddle_kneading_sequence,
+        flow_tangency_kneading_sequence,
+        minimum([length(upper_saddle_kneading_sequence), length(flow_tangency_kneading_sequence)]),
+        4e-2
+    ))")
 
     # plot nullclines
     # ca nullcline
