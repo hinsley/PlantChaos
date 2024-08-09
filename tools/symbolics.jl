@@ -77,8 +77,8 @@ function topological_entropy(upper_saddle_kneading_sequence::Vector{Int}, flow_t
   # ε is the dynamic halt criterion.
 
   # We don't have i going from 1 to l, but instead just from 1 to 2, so we need to have multipliers for the number of extrema.
-  χ_1 = ceil(l/2) # Number of preimages of the upper saddle equilibrium.
-  χ_2 = l - χ_1 # Number of preimages of the flow tangency.
+  χ_1 = BigInt(ceil(l/2)) # Number of preimages of the upper saddle equilibrium.
+  χ_2 = BigInt(l - χ_1) # Number of preimages of the flow tangency.
   max_1 = true # Tracks the min-max state of the upper saddle. True for max, false for min.
   max_2 = false # Tracks the min-max state of the flow tangency. True for max, false for min.
 
@@ -97,8 +97,8 @@ function topological_entropy(upper_saddle_kneading_sequence::Vector{Int}, flow_t
   
   function update_S()
     # Initialize accumulators.
-    S1_acc = 0
-    S2_acc = 0
+    S1_acc = BigInt(0)
+    S2_acc = BigInt(0)
 
     ν = length(s)
     # Update S1_acc.
@@ -168,9 +168,6 @@ function topological_entropy(upper_saddle_kneading_sequence::Vector{Int}, flow_t
     update_K()
     update_S()
     update_s()
-
-    println("S: $S")
-    println("s: $s")
 
     # Update topological entropy estimate.
     top_entropy_estimate = log((s[end]+S[end])/l)/ν
