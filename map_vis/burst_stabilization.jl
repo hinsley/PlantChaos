@@ -11,10 +11,8 @@ begin
     end
 end
 
-
-
 function calc_traj(xmap, preimage, x0)
-    len = 10000
+    len = 30#000
     x = x0
 
     maptraj = fill(Point2f(NaN32,NaN32), len*2)
@@ -35,6 +33,8 @@ function calc_traj(xmap, preimage, x0)
     end
     maptraj
 end
+
+include("../tools/symbolics.jl")
 
 fig2 = let
     try close(sc2) 
@@ -61,6 +61,11 @@ fig2 = let
 
     # ## Chaotic region
     # p[] = vcat(p[][1:15], [-0.477, -44.7669])
+
+    # ## Sweep
+    # p[] = vcat(p[][1:15], [-1.1, -33])
+
+    p[] = vcat(p[][1:15], [-0.81, -41]) # -1.078, -41])
 
     # calculate saddle trajectory
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
@@ -113,9 +118,38 @@ fig2 = let
     hidespines!(caax, :t,:r)
     # calculate u0 from v0
     u0 = lerp[](v0)
-    # solve trajectory
-    prob = ODEProblem(Plant.melibeNew, u0, (0., 300000.), p[])
-    sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14)
+    # solve flow tangency trajectory
+    prob = ODEProblem(Plant.melibeNew, u0, (0., 1e6), p[])
+    sol = solve(prob, Tsit5(), abstol=1e-14, reltol=1e-14)
+    flow_tangency_itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
+    # for i in 1:length(flow_tangency_itinerary)
+    #     if flow_tangency_itinerary[i] == SymbolE || flow_tangency_itinerary[i] == SymbolF
+    #         println(flow_tangency_itinerary[i])
+    #     end
+    # end
+    # solve upper saddle trajectory
+    sad_upper0 = sad_upper[:,1]
+    u0sad = SVector(sad_upper0[2], 0.0, Plant.ninf(sad_upper0[3]), Plant.hinf(sad_upper0[3]), sad_upper0[1], sad_upper0[3])
+    prob = ODEProblem(Plant.melibeNew, u0sad, (0., 1e6), p[])
+    sol = solve(prob, Tsit5(), abstol=1e-14, reltol=1e-14)
+    upper_saddle_itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t) 
+    # for i in 1:length(upper_saddle_itinerary)
+    #     if upper_saddle_itinerary[i] == SymbolE || upper_saddle_itinerary[i] == SymbolF
+    #         println(upper_saddle_itinerary[i])
+    #     end
+    # end
+    # Calculate topological entropy
+    println("Kneading coordinate of flow tangency: $(itinerary_to_kneading_coordinate(flow_tangency_itinerary))")
+    upper_saddle_kneading_sequence = itinerary_to_kneading_sequence(upper_saddle_itinerary)[2:end] # IMPORTANT: CUTTING THE FIRST ELEMENT OUT ISN'T ALWAYS CORRECT. NEED TO MAKE MORE ROBUST.
+    flow_tangency_kneading_sequence = itinerary_to_kneading_sequence(flow_tangency_itinerary)
+    println("Upper saddle kneading sequence: $upper_saddle_kneading_sequence")
+    println("Flow tangency kneading sequence: $flow_tangency_kneading_sequence")
+    println("Topological entropy estimate: $(topological_entropy(
+        upper_saddle_kneading_sequence,
+        flow_tangency_kneading_sequence,
+        minimum([length(upper_saddle_kneading_sequence), length(flow_tangency_kneading_sequence)]),
+        3e-3
+    ))")
 
     # plot nullclines
     # ca nullcline
@@ -188,8 +222,15 @@ fig2 = let
     lines!(tax, sol.t, sol[6,:], color = :dodgerblue4, linewidth = 2)
 
     Θ = atan.(sol[1,:]./sol[5,:]).-atan(eq[][1]/eq[][5])
-    lines!(tanax, sol.t, Θ, color = :dodgerblue4, linewidth = 2)
-    lines!(caax, sol.t, sol[5,:], color = :dodgerblue4, linewidth = 2)
+    #lines!(tanax, sol.t, Θ, color = :dodgerblue4, linewidth = 2)
+    # lines!(caax, sol.t, sol[5,:], color = :dodgerblue4, linewidth = 2)
+    
+    # Calculate V derivative numerically
+    dt = diff(sol.t)
+    dVdt = diff(sol[6,:]) ./ dt
+    
+    # Plot V derivative on caax
+    lines!(tanax, sol.t[1:end-1], dVdt, color = :dodgerblue4, linewidth = 2)
     
 
     crossings = Int[]
@@ -219,8 +260,8 @@ fig2 = let
     
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :black, markersize = 12)
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :red, markersize = 8)
-    scatter!(caax, sol.t[crossings], sol[5,crossings], color = :black, markersize = 12)
-    scatter!(caax, sol.t[crossings], sol[5,crossings], color = :red, markersize = 8)
+    # scatter!(caax, sol.t[crossings], sol[5,crossings], color = :black, markersize = 12)
+    # scatter!(caax, sol.t[crossings], sol[5,crossings], color = :red, markersize = 8)
     # plot ca peaks on return map
     scatter!(mapax, [e[1] for e in maptraj[1:2:end-2]], [e[1] for e in maptraj[3:2:end]], color = :black, markersize = 12)
     scatter!(mapax, [e[1] for e in maptraj[1:2:end-2]], [e[1] for e in maptraj[3:2:end]], color = :red, markersize = 8)
