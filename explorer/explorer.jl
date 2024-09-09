@@ -6,7 +6,7 @@ using OrdinaryDiffEq, DynamicalSystems, GLMakie
 using FileIO, LinearAlgebra, Roots
 using DataStructures: CircularBuffer
 
-p = Observable(Plant.default_params);
+p = Observable(convert.(Float64, Plant.default_params));
 ΔCa = @lift($p[end]);
 Δx = @lift($p[end-1]);
 
@@ -18,8 +18,8 @@ initV = @lift ($u0[6]);
 #use DynamicalSystems interface
 dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
     alg = Tsit5(),
-    abstol=1e-6,
-    reltol=1e-6
+    abstol=1e-5,
+    reltol=1e-5
 ));
 
 set_theme!(theme_black())
@@ -106,8 +106,7 @@ bifctrlax = GridLayout(ctrlax[1,2], tellwidth = false)
 
 include("./trajectory.jl")
 include("./bifurcation.jl")
-include("./return_map.jl")
+#include("./return_map.jl")
 
 display(fig) # display
 run_traj()
-schedule()

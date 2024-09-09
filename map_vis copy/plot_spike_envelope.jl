@@ -67,10 +67,10 @@ begin
     global sc4 = GLMakie.Screen(;resize_to = (500, 500))
     set_theme!(Theme(
         Axis = (
-            xticklabelsize = 28,
-            yticklabelsize = 28,
-            xlabelsize = 32,
-            ylabelsize = 32,
+            xticklabelsize = 14,
+            yticklabelsize = 14,
+            xlabelsize = 18,
+            ylabelsize = 18,
             yticks = WilkinsonTicks(3),
             xticks = WilkinsonTicks(3),
         )
@@ -82,8 +82,8 @@ begin
     image!(bax, Ca_shifts, x_shifts, lcarr)
     lines!(bax, upper, color = :black, linewidth = 2, linestyle = :dot)
     lines!(bax, lower, color = :black, linewidth = 2)
-    scatter!(bax, upper, color = :black, markersize = 40, marker = '⋆')
-    scatter!(bax, lower, color = :black, markersize = 40, marker = '+')
+    scatter!(bax, upper, color = :black, markersize = 25, marker = '⋆')
+    scatter!(bax, lower, color = :black, markersize = 25, marker = '+')
 
     sc = 1.2
     ax1 = Axis(fig[1,1],
@@ -140,29 +140,29 @@ begin
     lines!(ax3, x, y2, color = :red, linestyle = :dash)
     lines!(ax3, x, x, color = :green, linestyle = :dash)
     lines!(ax3, x, y3, color = :blue, linestyle = :dash)
-    scatter!(ax3, (g,f(g)), color = :black, markersize = 20)
-    scatter!(ax3, (g,f(g)), color = :red, markersize = 16)
-    scatter!(ax3, (h,f(h)), color = :black, markersize = 20)
-    scatter!(ax3, (h,f(h)), color = :blue, markersize = 16)
-    scatter!(ax3, (0,0), color = :black, markersize = 20)
-    scatter!(ax3, (0,0), color = :green, markersize = 16)
-    scatter!(ax3, (-1/4,f(-1/4)), color = :black, markersize = 40, marker = '+')
-    scatter!(ax3, (1/3,f(1/3)), color = :black, markersize = 40, marker = '⋆')
-    text!(ax3, -.8,-.3, text = L"α", color = :blue, fontsize = 40)
-    text!(ax3, .1,-.3, text = L"β", color = :green, fontsize = 40)
-    text!(ax3, .2,1.1, text = L"γ", color = :red, fontsize = 40)
+    scatter!(ax3, (g,f(g)), color = :black, markersize = 10)
+    scatter!(ax3, (g,f(g)), color = :red, markersize = 8)
+    scatter!(ax3, (h,f(h)), color = :black, markersize = 10)
+    scatter!(ax3, (h,f(h)), color = :blue, markersize = 8)
+    scatter!(ax3, (0,0), color = :black, markersize = 10)
+    scatter!(ax3, (0,0), color = :green, markersize = 8)
+    scatter!(ax3, (-1/4,f(-1/4)), color = :black, markersize = 20, marker = '+')
+    scatter!(ax3, (1/3,f(1/3)), color = :black, markersize = 20, marker = '⋆')
+    text!(ax3, -.8,-.3, text = L"α", color = :blue, fontsize = 14)
+    text!(ax3, .1,-.3, text = L"β", color = :green, fontsize = 14)
+    text!(ax3, .2,1.1, text = L"γ", color = :red, fontsize = 14)
 
     #text!(ax3, -.9,1, text = "C", color = :black)
 
     limits!(ax3, -1, 1.5, -1, 1.5)
 
-    text!(bax, -28,-.35, text = "A", color = :black, fontsize = 40)
-    text!(bax, -35.5,-1.35, text = "B", color = :black, fontsize = 40)
-    text!(bax, -14,-.81, text = "C", color = :black , fontsize = 40)
+    text!(bax, -28,-.35, text = "A", color = :black)
+    text!(bax, -35.5,-1.35, text = "B", color = :black)
+    text!(bax, -14,-.81, text = "C", color = :black)
 
     limits!(bax, Ca_shifts[1], Ca_shifts[end], x_shifts[1], x_shifts[end])
 
-    resize!(fig, 1200, 1200)
+    resize!(fig, 500, 500)
     display(sc4, fig)
 end
 

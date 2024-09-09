@@ -51,7 +51,7 @@ begin
     mapslider.sliders[1].value[] = sad_lower[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax1 = Axis(fig[1,2], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax1 = Axis(fig[1,2], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     maptraj = calc_traj(xmap[], preimage[], v0, 10)
     lines!(ax1, maptraj, color = :grey, linewidth = 2)
     # plot return map
@@ -87,7 +87,7 @@ begin
     mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax2 = Axis(fig[2,3], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax2 = Axis(fig[2,3], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     maptraj = calc_traj(xmap[], preimage[], v0)
     lines!(ax2, maptraj, color = :grey, linewidth = 2)
     # plot return map
@@ -128,7 +128,7 @@ begin
     mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax3 = Axis(fig[2,1], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax3 = Axis(fig[2,1], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     maptraj = calc_traj(xmap[], preimage[], v0)
     lines!(ax3, maptraj, color = :grey, linewidth = 2)
     # plot return map
@@ -169,7 +169,7 @@ begin
     mapslider.sliders[1].value[] = sad_upper[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
-    ax4 = Axis(fig[3,2], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax4 = Axis(fig[3,2], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     maptraj = calc_traj(xmap[], preimage[], v0, 30)
     lines!(ax4, maptraj, color = :grey, linewidth = 2)
     # plot return map
@@ -208,10 +208,10 @@ begin
     xs = collect(-1.5:0.01:1.5)
     lines!(axmid, xs, -1 .* xs.^2, color = :orange, linewidth = 2)
     lines!(axmid, [(-1.7, 0.0), (1.7, 0)], color = :green, linewidth = 2, linestyle = :dash)
-    lines!(axmid, [(0.0, 0.0), (0.0, 1.7)], color = :red, linewidth = 2)
+    lines!(axmid, [(0.0, 0.0), (0.0, .7)], color = :red, linewidth = 2)
     points = [(0,.5), (1.25, -.5), (1,-1), (.5, -1.25)]
     scatter!(axmid, points, color = :black, markersize = 15)
-    ylims!(axmid, (-1.5, 1.5))
+    ylims!(axmid, (-1.5, .6))
     xlims!(axmid, (-1.5, 1.5))
     labels = ["A", "B", "C", "D"]
     for (i, p) in enumerate(points)
@@ -219,24 +219,24 @@ begin
     end
     scatter!(axmid, (0,0), color = :blue, markersize = 15, marker = :x)
     pos = (ax1.xaxis.attributes.limits[][1] -.23, ax1.yaxis.attributes.limits[][2] - .6)
-    #text!(ax1, pos, text = "A2", color = :black, fontsize = 25)
+    text!(ax1, pos, text = "A2", color = :black, fontsize = 25)
     pos = (ax2.xaxis.attributes.limits[][1] , ax2.yaxis.attributes.limits[][2] - .6)
-    #text!(ax2, pos, text = "B2", color = :black, fontsize = 25)
+    text!(ax2, pos, text = "B2", color = :black, fontsize = 25)
     pos = (ax3.xaxis.attributes.limits[][1] -.18 , ax3.yaxis.attributes.limits[][2] - .6)
-    #text!(ax3, pos, text = "D2", color = :black, fontsize = 25)
+    text!(ax3, pos, text = "D2", color = :black, fontsize = 25)
     pos = (ax4.xaxis.attributes.limits[][1] , ax4.yaxis.attributes.limits[][2] - .6)
-    #text!(ax4, pos, text = "C2", color = :black, fontsize = 25)
-    text!(axmid, (0.05, 0.02), text = L"\text{ShH}", color = :blue, fontsize = 20)
-    text!(axmid, (-1.0, 0.02), text = L"\text{AH_{sub}}", color = :green, fontsize = 20)
-    text!(axmid, (0.05, 0.75), text = L"\text{homSF}", color = :red, fontsize = 20)
-    text!(axmid, (-1.44, -.8), text = L"\text{homPO_t}", color = :orange, fontsize = 20)
+    text!(ax4, pos, text = "C2", color = :black, fontsize = 25)
+    text!(axmid, (0.0, 0.0), text = L"ShH", color = :blue, fontsize = 20)
+    text!(axmid, (-1.0, 0.0), text = L"AH_{sub}", color = :green, fontsize = 20)
+    text!(axmid, (0.0, 0.25), text = L"hom_{SF}", color = :red, fontsize = 20)
+    text!(axmid, (-1.5, -1.0), text = L"hom_{PO}", color = :orange, fontsize = 20)
 
 
 # trajectories
-    a1 = Axis(fig[1,1], xlabel = "[Ca]", ylabel = "x")
-    a2 = Axis(fig[1,3], xlabel = "[Ca]", ylabel = "x")
-    a3 = Axis(fig[3,3], xlabel = "[Ca]", ylabel = "x")
-    a4 = Axis(fig[3,1], xlabel = "[Ca]", ylabel = "x")
+    a1 = Axis(fig[1,1], xlabel = "Ca", ylabel = "x")
+    a2 = Axis(fig[1,3], xlabel = "Ca", ylabel = "x")
+    a3 = Axis(fig[3,3], xlabel = "Ca", ylabel = "x")
+    a4 = Axis(fig[3,1], xlabel = "Ca", ylabel = "x")
     axs = [a1, a2, a3, a4]
 
 
@@ -247,7 +247,7 @@ ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.001, 0.0])
 tspan = (0.0, 70000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a1, sol[5,:], sol[1,:], color = :grey, linewidth = 2,)
+lines!(a1, sol[5,:], sol[1,:], color = :black, linewidth = 2,)
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.0015, 0.0])
 tspan = (0.0, 70000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
@@ -269,7 +269,7 @@ prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
 lst = 300000
 lines!(a2, sol[5,:], sol[1,:], color = :grey, linewidth = 2,)
-lines!(a2, sol[5,1:lst], sol[1,1:lst], color = :grey, linewidth = 2,)
+lines!(a2, sol[5,1:lst], sol[1,1:lst], color = :black, linewidth = 2,)
 xlims!(a2, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
 ylims!(a2, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
@@ -281,7 +281,7 @@ prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
 lines!(a4, sol[5,:], sol[1,:], color = :red, linewidth = 1,)
 lst = 75000
-lines!(a4, sol[5,1:lst], sol[1,1:lst], color = :grey, linewidth = 2,)
+lines!(a4, sol[5,1:lst], sol[1,1:lst], color = :black, linewidth = 2,)
 xlims!(a4, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
 ylims!(a4, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
@@ -291,7 +291,7 @@ ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.029, 0.0])
 tspan = (0.0, 530000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
 sol = solve(prob, RK4(), saveat = 1.0)
-lines!(a3, sol[5,:], sol[1,:], color = :grey, linewidth = 1,)
+lines!(a3, sol[5,:], sol[1,:], color = :black, linewidth = 1,)
 ics = SVector(eq[] .+ [-0.00096, 0.0, 0.0, 0.0, -0.025, 0.0])
 tspan = (0.0, 1000000.0)
 prob = ODEProblem(Plant.melibeNew, ics, tspan, p[])
@@ -301,10 +301,10 @@ xlims!(a3, minimum(sol[5,:])-.02, maximum(sol[5,:])+.02)
 ylims!(a3, minimum(sol[1,:])-.02, maximum(sol[1,:])+.02)
 
 # more labels
-    #text!(a1, (0.575, 0.85), text = "A1", color = :black, fontsize = 25)
-    #text!(a2, (0.655, 0.86), text = "B1", color = :black, fontsize = 25)
-    #text!(a3, (0.822, 0.88), text = "C1", color = :black, fontsize = 25)
-    #text!(a4, (0.682, 0.86), text = "D1", color = :black, fontsize = 25)
+    text!(a1, (0.575, 0.85), text = "A1", color = :black, fontsize = 25)
+    text!(a2, (0.655, 0.86), text = "B1", color = :black, fontsize = 25)
+    text!(a3, (0.822, 0.88), text = "C1", color = :black, fontsize = 25)
+    text!(a4, (0.682, 0.86), text = "D1", color = :black, fontsize = 25)
 end
 
 save("shilnikov_hopf.png", fig)

@@ -1,15 +1,8 @@
-using DelimitedFiles
-using FileIO
-
+"""
 isiimg = rotr90(load("./explorer/ISI_variance.png"))
 min_x, max_x = -130, 100
 min_y, max_y = -12, 15
 image!(bifax, [min_x, max_x], [min_y, max_y], isiimg, interpolate=false)
-
-img = rotr90(load("map_vis/lyapunov_3color.png"))
-min_x, max_x = -60, 0
-min_y, max_y = -2, .5
-image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
 
 beimg = rotr90(load("./explorer/block_entropy.png"))
 min_x, max_x = -50, 100
@@ -17,8 +10,28 @@ min_y, max_y = -5, 1
 
 image!(bifax, [min_x, max_x], [min_y, max_y], beimg, interpolate=false)
 
+hilimg = map(rotr90(load("./map_vis/bifurcation_diagram.jpeg"))) do x
+    if norm(x) > .8
+        RGBAf(1,1,1,0)
+    else
+        RGBAf(x.r, x.g, x.b, 1)
+    end
+end
+hilimg2 = hilimg[100:end-50, 100:end-100]
+min_x, max_x = -72, 72
+min_y, max_y = -4, 1.8
+image!(bifax, [min_x, max_x], [min_y, max_y], hilimg2, interpolate=false)
+"""
+img = rotr90(load("map_vis/lyapunov_3color.png"))
+min_x, max_x = -60, 0
+min_y, max_y = -2, .5
+image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
+
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf", linewidth = 3)
+limits!(bifax, -60, 0, -2, .5)
+
+
 lines!(bifax, readdlm("./explorer/homoclinic.csv", ',', Float64), label="homoclinic", linewidth = 3)
 lines!(bifax, readdlm("./explorer/snic.csv", ',', Float64), label="snic", linewidth = 3)
 snpo = readdlm("./explorer/snpo.csv", ',', Float64)
@@ -29,45 +42,36 @@ scatter!(bifax, hopf[1,1063], hopf[2,1063], color=:purple, marker='■', label="
 # scatter!(bifax, hopf[1,8011], hopf[2,8011], color=:green, marker=:star8, label="BP", markersize=16)
 # scatter!(bifax, snpo[1,827], snpo[2,827], color=:orange, marker=:star5, label="CPC", markersize=16)
 
+
+
 bifaxpoint = @lift Point2f( $p[17],$p[16])
+
 scatter!(bifax, bifaxpoint)
 
 axislegend(bifax, position=:rb)
 
-limits!(bifax, -50, 100, -5, 1)
+limits!(bifax, -75, 70, -4, 2)
 
 bifpoint = select_point(bifax.scene, marker = :circle)
 
 on(bifpoint) do pars
     # do not trigger when reset limit
     if !ispressed(mapax, Keyboard.left_control)
+        # delete saddle plots
+        if !isnothing(sadplot1)
+            delete!(trajax.scene, sadplot1)
+            global sadplot1 = nothing
+            delete!(trajax.scene, sadplot2)
+            global sadplot2 = nothing
+            delete!(mapax, sadplot3)
+            global sadplot3 = nothing
+        end
+    
         delCa, delx = pars
         p.val = (p[][1:end-2]..., delx, delCa)
-        auto_dt_reset!(dynsys[].integ)
         p[] = p[]
-        #build_map!(map_prob, mapics[])
-        #reset_limits!(mapax)
+        reset_limits!(mapax)
+        reset_limits!(trajax)
     end
 end
 
-Label(bifctrlax[1,1], "ΔCa: ")
-bifctrlax[1,2] = delCa_tb = Textbox(fig, validator = Float32, placeholder="$(ΔCa[])", width=150)
-
-on(ΔCa) do delCa
-    delCa_tb.displayed_string = string(delCa)
-end
-
-Label(bifctrlax[1,3], "Δx: ")
-bifctrlax[1,4] = delx_tb = Textbox(fig, validator = Float32, placeholder="$(Δx[])", width=150)
-
-on(Δx) do delx
-    delx_tb.displayed_string = string(delx)
-end
-
-bifupdatebutton = Button(bifctrlax[1,5], label = "update", buttoncolor = RGBf(.2,.2,.2))
-
-on(bifupdatebutton.clicks) do clicks
-    delCa = parse(Float64, delCa_tb.displayed_string[])
-    delx = parse(Float64, delx_tb.displayed_string[])
-    bifpoint[]=Point2f(delCa, delx)
-end

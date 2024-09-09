@@ -65,13 +65,8 @@ fig2 = let
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
 
     # plot return map
-    mapax = Axis(fig[1:4,2], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
+    mapax = Axis(fig[1:4,1], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
     colorrng = range(0, 1, length = length(xmap[])) |> collect
-
-    maptraj = calc_traj(xmap[], preimage[], v0)
-    lines!(mapax, maptraj, color = :dodgerblue4, linewidth = 1)
-
-    lines!(mapax, preimage[], xmap[], color = :black, linewidth = 4.5)
     lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 4)
     lines!(mapax, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
     # saddle focus
@@ -87,8 +82,13 @@ fig2 = let
 
     lines!(mapax, ln_, color = :green, linewidth = 2.0, linestyle = :dot)
    
+    # map trajectory
+    
+    maptraj = calc_traj(xmap[], preimage[], v0)
+    lines!(mapax, maptraj, color = :dodgerblue4, linewidth = 2)
+    
     # ODE trajectory
-    trajax = Axis(fig[1:4,1], xlabel = L"\text{[Ca]}", ylabel = L"x")
+    trajax = Axis(fig[1:4,2], xlabel = L"\text{[Ca]}", ylabel = L"x")
     tax = Axis(fig[5,:], ylabel = L"V(t)", xlabel = L"t", yticks = [-50,0])
     hidexdecorations!(tax)
     hidespines!(tax, :t,:r)
@@ -100,7 +100,7 @@ fig2 = let
     # calculate u0 from v0
     u0 = lerp[](v0)
     # solve trajectory
-    prob = ODEProblem(Plant.melibeNew, u0, (0., 260000.), p[])
+    prob = ODEProblem(Plant.melibeNew, u0, (0., 300000.), p[])
     sol = solve(prob, RK4())
 
     # plot nullclines
@@ -117,7 +117,7 @@ fig2 = let
     Θ = atan.(sol[1,:]./sol[5,:]).-atan(eq[][1]/eq[][5])
     lines!(tanax, sol.t, Θ, color = :dodgerblue4, linewidth = 2)
     lines!(caax, sol.t, sol[5,:], color = :dodgerblue4, linewidth = 2)
-
+    
 
     crossings = Int[]
     θref = atan(eq[][1]/eq[][5])
@@ -139,17 +139,13 @@ fig2 = let
 
     caps = (sol[5, crossings].+ sol[5, crossings.+1])./2
     xps = (sol[1, crossings].+ sol[1, crossings.+1])./2
-    vps = (sol[6, crossings].+ sol[6, crossings.+1])./2
 
     scatter!(trajax, caps, xps, color = :black, markersize = 12)
     scatter!(trajax, caps, xps, color = :red, markersize = 8)
     # plot ca peaks on time series
     
-    scatter!(tax, sol.t[crossings], vps, color = :black, markersize = 12)
-    scatter!(tax, sol.t[crossings], vps, color = :red, markersize = 8)
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :black, markersize = 12)
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :red, markersize = 8)
-    lines!(tanax, sol.t, zeros(length(sol.t)), color = :grey, linestyle = :dash, linewidth = 2)
     scatter!(caax, sol.t[crossings], sol[5,crossings], color = :black, markersize = 12)
     scatter!(caax, sol.t[crossings], sol[5,crossings], color = :red, markersize = 8)
     # plot ca peaks on return map
@@ -180,16 +176,6 @@ fig2 = let
     hidedecorations!(mapax, ticks = false, label = false, ticklabels = false)
     hidedecorations!(tax, ticks = false, label = false, ticklabels = false)
     hidedecorations!(tanax, ticks = false, label = false, ticklabels = false)
-
-    xlims!(tax, (0, maximum(sol.t)))
-    xlims!(tanax, (0, maximum(sol.t)))
-    xlims!(caax, (0, maximum(sol.t)))
-
-    #text!(trajax, (0.575, 0.85), text = "A", color = :black, fontsize = 25)
-    #text!(mapax, (0.655, 0.86), text = "B", color = :black, fontsize = 25)
-    #text!(tax, (0.822, 0.88), text = "C", color = :black, fontsize = 25)
-    #text!(tanax, (0.682, 0.86), text = "D", color = :black, fontsize = 25)
-    #text!(caax, (0.682, 0.86), text = "E", color = :black, fontsize = 25)
     
     set_theme!(theme_black())
     display(sc2, fig)

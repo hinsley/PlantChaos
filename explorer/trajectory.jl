@@ -1,5 +1,6 @@
 function progress_for_one_step!(solver, traj)
     s = solver[]
+    step!(s.integ, 10.0, true)
     push!(traj[], Point3f(s.integ.u[[5,1,6]]))
     traj[] = traj[]
 end
@@ -23,7 +24,7 @@ lines!(traceax, trace)
 ##Interactivity
 
 isrunning = Observable(true)
-delay = @lift 1/10^$(speedslider.sliders[1].value)
+delay = @lift 1/10^($(speedslider.sliders[1].value)+1)
 
 function run_traj()
     @async while isrunning[]

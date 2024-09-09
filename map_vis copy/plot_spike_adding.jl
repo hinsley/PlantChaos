@@ -153,7 +153,7 @@ begin
     image!(bax, Ca_shifts, x_shifts, rotr90(lcarr))
     lines!(bax, [pd_curve...], color = :white, linestyle = :dot, linewidth = 3)
     lines!(bax, [snpog_curve...], color = :orange, linewidth = 3)
-    lines!(bax, [snpog_curve...], color = :white, linestyle = :dot, linewidth = 3)
+    lines!(bax, [snpog_curve...], color = :black, linestyle = :dot, linewidth = 3)
     lines!(bax, [snpoa_curve...], color = :yellow, linewidth = 3)
     lines!(bax, [snpoa_curve...], color = :black, linestyle = :dot, linewidth = 3)
     lines!(bax, [snpo0_curve...], color = :red, linewidth = 3)
@@ -170,25 +170,24 @@ begin
     scatter!(bax, points[3], color = :gold, marker = 'o' , markersize = 20)
     scatter!(bax, points[3], color = :black , markersize = 8)
     scatter!(bax, points[4], color = :red, marker = '□' , markersize = 25)
-    text!(bax, pd_curve[5] .+ (2.0,-0.0005) ..., text = L"\textbf{\text{PD}}", color = :white, fontsize = 16)
-    text!(bax, snpog_curve[4] .+ (-1.0,.024) ..., text = L"\textbf{\text{SN_{PO}-\gamma / PD}}", color = :white, fontsize = 16, rotation = -.75)
-    text!(bax, snpog_curve[4] .+ (-1.0,.024) ..., text = L"\textbf{\text{SN_{PO}-\gamma}}", color = :orange, fontsize = 16, rotation = -.75)
-    text!(bax, snpoa_curve[7].+ (1.58,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :white, fontsize = 16, rotation = .98)
-    text!(bax, snpoa_curve[7].+ (1.58,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :yellow, fontsize = 16, rotation = .98)
-    text!(bax, snpob_curve[2].+ (-1,-.013) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :white, fontsize = 16, rotation = -.6)
-    text!(bax, snpob_curve[2].+ (-1,-.013) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :green, fontsize = 16, rotation = -.6)
-    text!(bax, snpo0_curve[1].+ (3,-.045) ..., text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = 16, rotation = -.68)
-    text!(bax, ah_sup_curve[1].+ (1.5,-.065) ..., text = L"\textbf{\text{AH_{sup}}}", color = :lightgrey, fontsize = 16, rotation = -.7)
-    text!(bax, ah_sub_curve[1].+ (-5,.065) ..., text = L"\textbf{\text{AH_{sub}}}", color = :lightgrey, fontsize = 16, rotation = -.7)
+    text!(bax, pd_curve[5]..., text = L"\textbf{PD}", color = :white, fontsize = 16)
+    text!(bax, snpog_curve[4]..., text = L"\textbf{SN_{PO}-\gamma / PD}", color = :white, fontsize = 16, rotation = -.7)
+    text!(bax, snpog_curve[4]..., text = L"\textbf{SN_{PO}-\gamma}", color = :orange, fontsize = 16, rotation = -.7)
+    text!(bax, snpoa_curve[7].+ (1.5,0.) ..., text = L"\textbf{SN_{PO}-\alpha}", color = :yellow, fontsize = 16, rotation = .95)
+    text!(bax, snpob_curve[2].+ (-1,-.01) ..., text = L"\textbf{SN_{PO}-\beta}", color = :white, fontsize = 16, rotation = -.6)
+    text!(bax, snpob_curve[2].+ (-1,-.01) ..., text = L"\textbf{SN_{PO}-\beta}", color = :green, fontsize = 16, rotation = -.6)
+    text!(bax, snpo0_curve[1].+ (3,-.048) ..., text = L"\textbf{SN_{PO}-0}", color = :red, fontsize = 16, rotation = -.65)
+    text!(bax, ah_sup_curve[1].+ (1.5,-.065) ..., text = L"\textbf{AH_{sup}}", color = :lightgrey, fontsize = 16, rotation = -.7)
+    text!(bax, ah_sub_curve[1].+ (-5,.065) ..., text = L"\textbf{AH_{sub}}", color = :lightgrey, fontsize = 16, rotation = -.7)
     
     # alpha_beta cusp
-    ax1 = Axis(fig[1,3], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax1 = Axis(fig[1,3], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     p[] = vcat(p[][1:15], [reverse(points[1])...])
     plotmap!(ax1, -54.1)
     scatter!(ax1, (-53.46,-53.46), color = :black, marker = '+', markersize = 45)
     scatter!(ax1, (-53.46, -53.46), color = :lawngreen, marker = '+', markersize = 40)
 
-    ax2 = Axis(fig[1,4], xlabel = L"\text{[Ca]}", ylabel = L"\text{x}")
+    ax2 = Axis(fig[1,4], xlabel = L"\text{[Ca]}", ylabel = L"x")
 
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
     plot_nullclines!(ax2, sad_lower, sad_upper, p[])
@@ -203,13 +202,13 @@ begin
     limits!(ax2, minimum(sol[5,:]) - .05, maximum(sol[5,:]) + .05, minimum(sol[1,:]) - .05, maximum(sol[1,:]) + .05)
 
     # beta gamma cusp
-    ax3 = Axis(fig[2,3], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax3 = Axis(fig[2,3], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     p[] = vcat(p[][1:15], [reverse(points[2])...])
     plotmap!(ax3, -54.4)
     scatter!(ax3, (-53.94,-53.94), color = :black, marker = '*', markersize = 55)
     scatter!(ax3, (-53.94,-53.94), color = :olive, marker = '*', markersize = 50)
 
-    ax4 = Axis(fig[2,4], xlabel = L"\text{[Ca]}", ylabel = L"\text{x}")
+    ax4 = Axis(fig[2,4], xlabel = L"\text{[Ca]}", ylabel = L"x")
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
     plot_nullclines!(ax4, sad_lower, sad_upper, p[])
     u0 = @SVector [0.5, 0.0, 0.0, 0.0, 1.0, -53.5]
@@ -222,7 +221,7 @@ begin
     limits!(ax4, minimum(sol[5,:]) - .05, maximum(sol[5,:]) + .05, minimum(sol[1,:]) - .05, maximum(sol[1,:]) + .05)
 
     # multi snpo
-    ax5 = Axis(fig[3,3], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
+    ax5 = Axis(fig[3,3], xlabel = L"V_n", ylabel = L"V_{n+1}", aspect = DataAspect())
     p[] = vcat(p[][1:15], [reverse(points[3])...])
     plotmap!(ax5, -53.295)
     scatter!(ax5, (-53.83,-53.83), color = :black, marker = 'o', markersize = 25)
@@ -230,7 +229,7 @@ begin
     scatter!(ax5, (-53.285,-53.285), color = :black, marker = 'o', markersize = 25)
     scatter!(ax5, (-53.285,-53.285), color = :gold, marker = 'o', markersize = 20)
 
-    ax6 = Axis(fig[3,4], xlabel = L"\text{[Ca]}", ylabel = L"\text{x}")
+    ax6 = Axis(fig[3,4], xlabel = L"\text{[Ca]}", ylabel = L"x")
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
     plot_nullclines!(ax6, sad_lower, sad_upper, p[])
     u0 = @SVector [0.5694, 0.0, 0.0, 0.0, 1.0, -53.5]
@@ -245,7 +244,7 @@ begin
     limits!(ax6, minimum(sol[5,:]) - .05, maximum(sol[5,:]) + .05, minimum(sol[1,:]) - .05, maximum(sol[1,:]) + .05)
 
     # stability of blue sky
-    ax7 = Axis(fig[3,2], aspect = DataAspect(), xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}")
+    ax7 = Axis(fig[3,2], aspect = DataAspect())
     pt = (42.00076675415039, -2.9138572216033936)
     p[] = vcat(p[][1:15], [reverse(pt)...])
     plotmap!(ax7, -54.6, len = 20000, final = 5000)
@@ -265,23 +264,23 @@ begin
     scatter!(ax8, [0.0], [0.0], color = :red, marker = '□', markersize = 20)
     scatter!(ax8, [(-1,-1)], color = :black, markersize = 15)
     xlims!(ax8, -2, 2)
-    text!(ax8, (-1.5, 0.1), text = L"\textbf{\text{AH_{sub}}}", color = :grey, fontsize = 16)
-    text!(ax8, (.5, 0.1), text = L"\textbf{\text{AH_{sup}}}", color = :grey, fontsize = 16)
-    text!(ax8, (-.3, -.5), text = L"\textbf{\text{Bautin}}", color = :red, fontsize = 16)
-    text!(ax8, (-.9, -1.1), text = L"\textbf{\text{cusp}}", color = :black, fontsize = 16)
-    text!(ax8, (0, 1.8), text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = 16, rotation = .85)
-    text!(ax8, (-1.5, 2.5), text = L"\text{↖Ch∀0s}", color = :black, fontsize = 20)
+    text!(ax8, (-1.5, 0.1), text = L"\textbf{AH_{sub}}", color = :grey, fontsize = 16)
+    text!(ax8, (.5, 0.1), text = L"\textbf{AH_{sup}}", color = :grey, fontsize = 16)
+    text!(ax8, (-.3, -.5), text = L"\textbf{Bautin}", color = :red, fontsize = 16)
+    text!(ax8, (-.9, -1.1), text = L"\textbf{cusp}", color = :black, fontsize = 16)
+    text!(ax8, (0, 1.8), text = L"\textbf{SN_{PO}-0}", color = :red, fontsize = 16, rotation = .85)
+    text!(ax8, (-1.5, 2.5), text = L"↖Ch∀0s", color = :black, fontsize = 20)
 
     # panel labels
-    #text!(bax, (15.2, -2.225), text = L"\textbf{\text{A}}", color = :black, fontsize = 20)
-    #text!(ax8, (-1.9, 4.3), text = L"\textbf{\text{B}}", color = :black, fontsize = 20)
-    #text!(ax7, (-54.65, -53.33), text = L"\textbf{\text{C}}", color = :black, fontsize = 20)
-    #text!(ax1, (-54.13, -52.7), text = L"\textbf{\text{D}}", color = :black, fontsize = 20)
-    #text!(ax2, (0.65, 0.888), text = L"\textbf{\text{E}}", color = :black, fontsize = 20),
-    #text!(ax3, (-54.59, -53.9), text = L"\textbf{\text{F}}", color = :black, fontsize = 20)
-    #text!(ax4, (0.685, 0.887), text = L"\textbf{\text{G}}", color = :black, fontsize = 20)
-    #text!(ax5, (-54.27, -53.29), text = L"\textbf{\text{H}}", color = :black, fontsize = 20)
-    #text!(ax6, (0.665, 0.89), text = L"\textbf{\text{I}}", color = :black, fontsize = 20)
+    text!(bax, (15.2, -2.225), text = L"\textbf{A}", color = :black, fontsize = 20)
+    text!(ax8, (-1.9, 4.3), text = L"\textbf{B}", color = :black, fontsize = 20)
+    text!(ax7, (-54.65, -53.33), text = L"\textbf{C}", color = :black, fontsize = 20)
+    text!(ax1, (-54.13, -52.7), text = L"\textbf{D}", color = :black, fontsize = 20)
+    text!(ax2, (0.65, 0.888), text = L"\textbf{E}", color = :black, fontsize = 20),
+    text!(ax3, (-54.59, -53.9), text = L"\textbf{F}", color = :black, fontsize = 20)
+    text!(ax4, (0.685, 0.887), text = L"\textbf{G}", color = :black, fontsize = 20)
+    text!(ax5, (-54.27, -53.29), text = L"\textbf{H}", color = :black, fontsize = 20)
+    text!(ax6, (0.665, 0.89), text = L"\textbf{I}", color = :black, fontsize = 20)
     
     resize!(fig, 1350, 1000)
     display(sc4, fig)

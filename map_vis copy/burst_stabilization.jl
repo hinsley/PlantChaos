@@ -1,3 +1,5 @@
+# Run everything in main.jl first.
+
 # refine
 begin
     mx = maximum(xmap[])
@@ -10,8 +12,9 @@ begin
 end
 
 
+
 function calc_traj(xmap, preimage, x0)
-    len = 100
+    len = 10000
     x = x0
 
     maptraj = fill(Point2f(NaN32,NaN32), len*2)
@@ -33,10 +36,6 @@ function calc_traj(xmap, preimage, x0)
     maptraj
 end
 
-# shilnikov hopf
-
-include("./plot_nullclines.jl")
-
 fig2 = let
     try close(sc2) 
     catch
@@ -53,26 +52,36 @@ fig2 = let
     ))
     fig = Figure()
 
-    # on the homoclinic
-    p[] = vcat(p[][1:15], [-1.078, -36.3154]);
-    v0 = -48 # for map
-    
+    ## on the homoclinic
+    #p[] = vcat(p[][1:15], [-1.078, -36.3154])
+    #v0 = -48 # for map
+
+    ## Stable region
+    p[] = vcat(p[][1:15], [-0.4775, -44.839])
+
+    # ## Chaotic region
+    # p[] = vcat(p[][1:15], [-0.477, -44.7669])
+
     # calculate saddle trajectory
     sad_upper, sad_lower = get_saddle_traj(remake(map_prob, p = (p = p[], eq = eq[])), p[])
     # set map limit to saddle image
     mapslider.sliders[1].value[] = sad_lower[1,end]/eq[][5]
     # refine local minima
     refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage)
+    # refine local maxima
+    refine_map!(remake(map_prob, p = (p = p[], eq = eq[])), lerp[], xmap, preimage, true)
+
+    # Set voltage to one-spike flow tangency.
+    # Only the one-spike flow tangency is used because it is the easiest to adhere to
+    # numerically, staying on the spiking manifold for the shortest amount of time.
+    # Claude 3.5 Sonnet produced this...
+    maximum_idxs = findall(i -> i > 1 && i < length(xmap[]) && xmap[][i] > xmap[][i-1] && xmap[][i] > xmap[][i+1], 1:length(xmap[]))
+    v0 = preimage[][maximum_idxs[end]]
 
     # plot return map
-    mapax = Axis(fig[1:4,2], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
+    mapax = Axis(fig[1:4,1], xlabel = L"V_n", ylabel = L"V_{n+1}", limits = ((-53.5,-46), (-53.5,-46)), aspect = DataAspect())
     colorrng = range(0, 1, length = length(xmap[])) |> collect
-
-    maptraj = calc_traj(xmap[], preimage[], v0)
-    lines!(mapax, maptraj, color = :dodgerblue4, linewidth = 1)
-
-    lines!(mapax, preimage[], xmap[], color = :black, linewidth = 4.5)
-    lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 4)
+    lines!(mapax, preimage[], xmap[], color = colorrng, colormap = Reverse(:RdYlGn_10), linewidth = 2)
     lines!(mapax, preimage[], preimage[], color = :grey, linestyle = :dash, linewidth = 2,)
     # saddle focus
     lines!(mapax, ln1[], color = :red, linewidth = 2.0, linestyle = :dot)
@@ -87,8 +96,13 @@ fig2 = let
 
     lines!(mapax, ln_, color = :green, linewidth = 2.0, linestyle = :dot)
    
+    # map trajectory
+    
+    maptraj = calc_traj(xmap[], preimage[], v0)
+    lines!(mapax, maptraj, color = :dodgerblue4, linewidth = 2)
+    
     # ODE trajectory
-    trajax = Axis(fig[1:4,1], xlabel = L"\text{[Ca]}", ylabel = L"x")
+    trajax = Axis(fig[1:4,2], xlabel = L"\text{[Ca]}", ylabel = L"x")
     tax = Axis(fig[5,:], ylabel = L"V(t)", xlabel = L"t", yticks = [-50,0])
     hidexdecorations!(tax)
     hidespines!(tax, :t,:r)
@@ -100,11 +114,70 @@ fig2 = let
     # calculate u0 from v0
     u0 = lerp[](v0)
     # solve trajectory
-    prob = ODEProblem(Plant.melibeNew, u0, (0., 260000.), p[])
-    sol = solve(prob, RK4())
+    prob = ODEProblem(Plant.melibeNew, u0, (0., 300000.), p[])
+    sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14)
 
     # plot nullclines
-    plot_nullclines!(trajax, sad_lower, sad_upper, p[])
+    # ca nullcline
+    vs = range(-80, -20, length = 500) |> collect
+    xs = Plant.xinf.(Ref(p[]), vs)
+    casca = p[][13].*xs.*(p[][12].-vs.+p[][17])
+    # select range
+    pad = 5
+    camin = sad_lower[1,end]
+    camax = sad_upper[1,1]
+    xmin = minimum(sad_lower[2,:])
+    xmax = maximum(sad_upper[2,:])
+    ixbeg = findfirst(x -> x > xmin, xs)
+    icabeg = findfirst(x -> x > camin, casca)
+    ixend = findlast(x -> x < xmax, xs)
+    icaend = findlast(x -> x < camax, casca)
+    ibeg = max(ixbeg, icabeg) - pad
+    iend = min(ixend, icaend)
+    casca = casca[ibeg:iend]
+    xsca = xs[ibeg:iend]
+    lines!(trajax, casca, xsca, color = :red, linewidth = 2, linestyle = :dash)
+
+    # x nullcline
+    Q = Plant.II.(Ref(p[]), Plant.hinf.(vs), vs) .+
+        Plant.IK.(Ref(p[]), Plant.ninf.(vs), vs) .+
+        Plant.IT.(Ref(p[]), xs, vs) .+
+        Plant.Ileak.(Ref(p[]), vs)
+
+    casx  = @. .5*Q/(p[][7]*(-vs+p[][9]) - Q)
+    # select range
+    icabeg = findfirst(x -> x > camin, casx)
+    icaend = findlast(x -> x < 0, casx)
+    icaend = findlast(x -> x > 0, casx[1:icaend])
+    icaend = findlast(x -> x < camax, casx[1:icaend])
+    ibeg = max(icabeg, ixbeg) - pad*4
+    iend = min(icaend, ixend) + pad
+    casx2 = casx[ibeg:iend]
+    xsx = xs[ibeg:iend]
+    # separate stable from unstable
+    xstable = Float64[]
+    xunstable = Float64[]
+    cstable = Float64[]
+    cunstable = Float64[]
+    for i in 1:length(casx2)-1
+        e = casx2[i]
+        e2 = casx2[i+1]
+        if e<e2
+            push!(xunstable, xsx[i])
+            push!(cunstable, casx2[i])
+        else
+            push!(xstable, xsx[i])
+            push!(cstable, casx2[i])
+        end
+        if e*e2<0
+            push!(xstable,NaN)
+            push!(cstable, NaN)
+            push!(xunstable, NaN)
+            push!(cunstable, NaN)
+        end
+    end
+    lines!(trajax, cstable, xstable, color = :black, linewidth = 2)
+    lines!(trajax, cunstable, xunstable, color = :black, linewidth = 2, linestyle = :dash)
 
     # plot trajectories that generate map
     colorrng = range(0, 1, length = length(cass[])) |> collect
@@ -117,7 +190,7 @@ fig2 = let
     Θ = atan.(sol[1,:]./sol[5,:]).-atan(eq[][1]/eq[][5])
     lines!(tanax, sol.t, Θ, color = :dodgerblue4, linewidth = 2)
     lines!(caax, sol.t, sol[5,:], color = :dodgerblue4, linewidth = 2)
-
+    
 
     crossings = Int[]
     θref = atan(eq[][1]/eq[][5])
@@ -139,17 +212,13 @@ fig2 = let
 
     caps = (sol[5, crossings].+ sol[5, crossings.+1])./2
     xps = (sol[1, crossings].+ sol[1, crossings.+1])./2
-    vps = (sol[6, crossings].+ sol[6, crossings.+1])./2
 
     scatter!(trajax, caps, xps, color = :black, markersize = 12)
     scatter!(trajax, caps, xps, color = :red, markersize = 8)
     # plot ca peaks on time series
     
-    scatter!(tax, sol.t[crossings], vps, color = :black, markersize = 12)
-    scatter!(tax, sol.t[crossings], vps, color = :red, markersize = 8)
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :black, markersize = 12)
     scatter!(tanax, sol.t[crossings], Θ[crossings], color = :red, markersize = 8)
-    lines!(tanax, sol.t, zeros(length(sol.t)), color = :grey, linestyle = :dash, linewidth = 2)
     scatter!(caax, sol.t[crossings], sol[5,crossings], color = :black, markersize = 12)
     scatter!(caax, sol.t[crossings], sol[5,crossings], color = :red, markersize = 8)
     # plot ca peaks on return map
@@ -166,30 +235,12 @@ fig2 = let
 
     # plot Equilibria
     scatter!(trajax, [(eq[][5], eq[][1])], color = :black, markersize = 38, marker = '♦')
-    scatter!(trajax, [(eq[][5], eq[][1])], color = :red, markersize = 30, marker = '♦')
     scatter!(trajax, [(sad_lower[1,1], sad_lower[2,1])], color = :black, markersize = 38, marker = '★')
-    scatter!(trajax, [(sad_upper[1,end], sad_upper[2,end])], color = :black, markersize = 38, marker = '★')
-    scatter!(trajax, [(sad_upper[1,end], sad_upper[2,end])], color = :green, markersize = 30, marker = '★')
-
-    scatter!(mapax, [(eq[][6], eq[][6])], color = :black, markersize = 38, marker = '♦')
-    scatter!(mapax, [(eq[][6], eq[][6])], color = :red, markersize = 30, marker = '♦')
-    scatter!(mapax, [(sad_lower[3,end], sad_lower[3,end])], color = :black, markersize = 38, marker = '★')
-    scatter!(mapax, [(sad_upper[3,end], sad_upper[3,end])], color = :green, markersize = 30, marker = '★')
 
     hidedecorations!(trajax, ticks = false, label = false, ticklabels = false)
     hidedecorations!(mapax, ticks = false, label = false, ticklabels = false)
     hidedecorations!(tax, ticks = false, label = false, ticklabels = false)
     hidedecorations!(tanax, ticks = false, label = false, ticklabels = false)
-
-    xlims!(tax, (0, maximum(sol.t)))
-    xlims!(tanax, (0, maximum(sol.t)))
-    xlims!(caax, (0, maximum(sol.t)))
-
-    #text!(trajax, (0.575, 0.85), text = "A", color = :black, fontsize = 25)
-    #text!(mapax, (0.655, 0.86), text = "B", color = :black, fontsize = 25)
-    #text!(tax, (0.822, 0.88), text = "C", color = :black, fontsize = 25)
-    #text!(tanax, (0.682, 0.86), text = "D", color = :black, fontsize = 25)
-    #text!(caax, (0.682, 0.86), text = "E", color = :black, fontsize = 25)
     
     set_theme!(theme_black())
     display(sc2, fig)
@@ -198,4 +249,4 @@ fig2 = let
     fig
 end
 
-save("homoclinic_map.png", fig2)
+#save("homoclinic_map.png", fig2)
