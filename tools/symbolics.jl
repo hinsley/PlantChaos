@@ -7,6 +7,45 @@
   SymbolF
 end
 
+# Conditional block entropy for size n blocks
+function conditional_block_entropy(sequence::Vector{Int}, n::Int)::Float64
+    if n <= 0 || isempty(sequence)
+        return 0.0
+    end
+
+    # Count occurrences of blocks and their extensions
+    block_counts = Dict{Vector{Int}, Int}()
+    extended_block_counts = Dict{Vector{Int}, Int}()
+
+    for i in 1:(length(sequence) - n)
+        block = sequence[i:(i+n-1)]
+        extended_block = sequence[i:(i+n)]
+
+        block_counts[block] = get(block_counts, block, 0) + 1
+        extended_block_counts[extended_block] = get(extended_block_counts, extended_block, 0) + 1
+    end
+
+    # Calculate conditional entropy
+    total_blocks = length(sequence) - n + 1
+    entropy = 0.0
+
+    for (block, count) in block_counts
+        p_block = count / total_blocks
+
+        for symbol in unique(sequence)
+            extended_block = vcat(block, symbol)
+            extended_count = get(extended_block_counts, extended_block, 0)
+
+            if extended_count > 0
+                p_extended = extended_count / count
+                entropy -= p_block * p_extended * log2(p_extended)
+            end
+        end
+    end
+
+    return entropy
+end
+
 function itinerary_to_kneading_coordinate(itinerary::Vector{BranchSymbol}, periodic::Bool = false)::Vector{Float64}
   positive_orientation = true
   window = [0.0, 1.0]
@@ -68,6 +107,45 @@ function itinerary_to_kneading_sequence(itinerary::Vector{BranchSymbol})::Vector
   end
 
   return kneading_sequence
+end
+
+# Normalized Lempel-Ziv complexity.
+function normalized_LZ_complexity(sequence::Vector{Int})::Float64
+    if isempty(sequence)
+        return 0.0
+    end
+
+    # Initialize variables
+    dictionary = Dict{Vector{Int}, Bool}()
+    current_substring = Int[]
+    complexity = 0
+
+    for symbol in sequence
+        push!(current_substring, symbol)
+        
+        if !haskey(dictionary, current_substring)
+            complexity += 1
+            dictionary[copy(current_substring)] = true
+            current_substring = Int[]
+        end
+    end
+
+    # Add the last substring if it's not empty
+    if !isempty(current_substring) && !haskey(dictionary, current_substring)
+        complexity += 1
+    end
+
+    # Normalize the complexity
+    n = length(sequence)
+    b = length(unique(sequence))
+    if b == 1
+        normalized_complexity = 0.0
+    else
+        normalized_complexity = complexity * log2(n) / (n * log2(b))
+    end
+
+    return complexity
+    #return normalized_complexity
 end
 
 function topological_entropy(upper_saddle_kneading_sequence::Vector{Int}, flow_tangency_kneading_sequence::Vector{Int}, n_max::Int, ε::Float64=1e-2)::Float64
