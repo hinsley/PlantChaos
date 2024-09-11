@@ -1,7 +1,7 @@
 module Plant
 
 export melibeNew, melibeNew!, melibeNewReverse!, default_params, default_state,
-       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa
+       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa, Vddot
 
 using StaticArrays
 
@@ -145,5 +145,44 @@ default_state = @SVector Float32[
     -62.0e0;   # V
     #0.0e0      # Isyn
 ]
+
+# Methods involved in calculating Vddot (d^2V/dt^2).
+const Vs' = 127.0/105.0
+
+function am'(V)
+    return Vs'*(1.0+(4.0-Vs(V))*exp((50.0-Vs(V))/10.0))/(10.0*(exp((50.0-Vs(V))/10.0)-1)^2.0)
+end
+
+function bm'(V)
+    return -2.0/9.0*Vs'*exp((25.0-Vs(V))/18.0)
+end
+
+function minfdot(V, Vdot)
+    return Vdot*(am'(V)*bm(V)-am(V)*bm'(V))/(am(V)+bm(V))^2.0
+end
+
+function IIdot(p, h, hdot, V, Vdot)
+    return p[2]*((hdot*minf(V)^3.0+3.0*h*minfdot(V, Vdot)*minf(V)^2.0)*(V-p[8])+h*minf(V)^3.0*Vdot)
+end
+
+function IKdot(p, n, ndot, V, Vdot)
+    return p[3]*n^3.0*(4*ndot*(V-p[9])+n*Vdot)
+end
+
+function ITdot(p, x, xdot, V, Vdot)
+    return p[6]*(xdot(V-p[8])+x*Vdot)
+end
+
+function IKCadot(p, Ca, Cadot, V, Vdot)
+    return p[7]*(Cadot*(V-p[9])*(2*Ca+0.5)+Ca*Vdot*(Ca+0.5))/(Ca+0.5)^2.0
+end
+
+function Ileakdot(p, Vdot)
+    return p[5]*Vdot
+end
+
+function Vddot(p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot)
+    return -(IIdot(p, h, hdot, V, Vdot) + IKdot(p, n, ndot, V, Vdot) + ITdot(p, x, xdot, V, Vdot) + IKCadot(p, Ca, Cadot, V, Vdot) + Ileakdot(p, Vdot))/p[1]
+end
 
 end # module
