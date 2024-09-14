@@ -6,12 +6,12 @@ using CairoMakie, IterTools, OrdinaryDiffEq, Roots, StaticArrays
 include("../model/Plant.jl")
 using .Plant
 
-include("../tools/symbolics.jl")
 include("../tools/equilibria.jl")
+include("../tools/symbolics.jl")
 
 p_base = SVector{length(Plant.default_params)}(Plant.default_params)
 u0_base = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
-prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 3e5), p_base) # Adjust the time span here.
+prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 1e6), p_base) # Adjust the time span here.
 
 @enum EventSymbol begin
     Void # Nothing detected yet.
@@ -20,24 +20,30 @@ prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 3e5), p_base) # Adjust th
     Vminus # Slow subsystem oscillation (V max below V_sd).
 end
 
+transient_time = 1e2 # Time to wait before beginning to detect events.
 function condition(out, u, t, integrator)
-  Vdot = Plant.dV(integrator.p, u...)
-  out[1] = -Vdot
+  if t < transient_time
+    out[1] = 0.0
+    out[2] = 0.0
+  else
+    Vdot = Plant.dV(integrator.p, u...)
+    out[1] = -Vdot
 
-  # out[2] is -Vddot, but we must use finite differencing to
-  # calculate it accurately, as the analytical derivative of
-  # minf is numerically unstable.
-  out[2] = -Plant.numerical_derivative(
-    (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
-    u,
-    integrator.p,
-    1e-4
-  )
+    # out[2] is -Vddot, but we must use finite differencing to
+    # calculate it accurately, as the analytical derivative of
+    # minf is numerically unstable.
+    out[2] = -Plant.numerical_derivative(
+      (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
+      u,
+      integrator.p,
+      1e-4
+    )
+  end
 end
 
 # Define the scan parameters.
-ΔCa_values = collect(range(-45.0, 20.0, length=100)) # Adjust this.
-ΔVx_values = collect(range(-1.5, -0.5, length=100)) # Adjust this.
+ΔCa_values = collect(range(-45.0, -20.0, length=200)) # Adjust this.
+ΔVx_values = collect(range(-1.5, -0.5, length=200)) # Adjust this.
 param_list = collect(Iterators.product(ΔCa_values, ΔVx_values))
 state_list = [Dict( # State machines for symbolic encoder.
   :scs => [], # Signed spike count sequence.
@@ -53,20 +59,16 @@ function prob_func(prob, i, repeat)
   ΔCa, ΔVx = param_list[i]
 
   # Construct new parameter SVector.
-  p_new = SVector{length(prob.p)}(prob.p[1:15]..., ΔCa, ΔVx)
+  p_new = SVector{length(prob.p)}(prob.p[1:15]..., ΔVx, ΔCa)
 
   # Recalculate the initial conditions at the upper saddle equilibrium.
-  v_eqs = find_zeros(v -> Equilibria.Ca_difference(p_new, v), Plant.xinfinv(p_new, 0.99e0), Plant.xinfinv(p_new, 0.01e0))
+  v_eqs = find_zeros(v -> Equilibria.Ca_difference(p_new, v), Plant.xinfinv(p_new, 0.99), Plant.xinfinv(p_new, 0.01))
   if length(v_eqs) < 3
-    v_eq = 0.0
-    Ca_eq = 0.0
-    x_eq = 0.0
-    # error("Unable to find upper saddle equilibrium for parameter vector $i: $p_new. Found only v_eqs $v_eqs.")
-  else
-    v_eq = v_eqs[3]
-    Ca_eq = Equilibria.Ca_null_Ca(p_new, v_eq)
-    x_eq = Plant.xinf(p_new, v_eq)
+    error("Unable to find upper saddle equilibrium for parameter vector $i: $p_new. Found only v_eqs $v_eqs.")
   end
+  v_eq = v_eqs[3]
+  Ca_eq = Equilibria.Ca_null_Ca(p_new, v_eq)
+  x_eq = Plant.xinf(p_new, v_eq)
   u0 = SVector{6}(x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq)
 
   # Update the state machine with the appropriate V_sd value.
@@ -120,7 +122,7 @@ ensemble_prob = EnsembleProblem(
 )
 
 # Solve the ensemble problem, saving only the signed spike count sequence.
-sol = solve(
+@time sol = solve(
   ensemble_prob,
   Tsit5(),
   EnsembleThreads(),
@@ -129,29 +131,62 @@ sol = solve(
   progress=true
 )
 
-# Calculate normalized Lempel-Ziv complexity for each solution
-lz_complexities = [length(sequence) > 0 ? normalized_LZ_complexity(Vector{Int}(sequence)) : 0.0 for sequence in sol]
+# Calculate & render normalized Lempel-Ziv complexity heatmap.
+begin
+  # Calculate normalized Lempel-Ziv complexity for each solution.
+  last_n = 150 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
+  lz_complexities = [length(sequence) >= last_n ? normalized_LZ_complexity(Vector{Int}(sequence[end-last_n+1:end])) : (length(sequence) > 0 ? normalized_LZ_complexity(Vector{Int}(sequence)) : 0.0) for sequence in sol]
 
-# Reshape the LZ complexities into a 2D array
-lz_complexity_matrix = reshape(lz_complexities, (length(ΔCa_values), length(ΔVx_values)))
+  # Reshape the LZ complexities into a 2D array.
+  lz_complexity_matrix = reshape(lz_complexities, (length(ΔCa_values), length(ΔVx_values)))
 
-# Create a heatmap of the complexities
-fig = Figure(size=(800, 600))
-ax = Axis(fig[1, 1], 
-    xlabel="ΔCa", 
-    ylabel="ΔVx",
-    title="Normalized Lempel-Ziv Complexity of Signed Spike-Count Sequences")
+  # Create a heatmap of the complexities.
+  fig_lz = Figure(size=(800, 600))
+  ax = Axis(fig_lz[1, 1], 
+      xlabel="ΔCa", 
+      ylabel="ΔVx",
+      title="Normalized Lempel-Ziv Complexity of Signed Spike-Count Sequences")
 
-hm = heatmap!(ax, ΔCa_values, ΔVx_values, lz_complexity_matrix, colormap=:viridis)
-Colorbar(fig[1, 2], hm, label="LZ Complexity")
+  hm = heatmap!(ax, ΔCa_values, ΔVx_values, lz_complexity_matrix, colormap=:thermal)
+  Colorbar(fig_lz[1, 2], hm, label="LZ Complexity")
 
-# Adjust the layout
-colsize!(fig.layout, 1, Aspect(1, 1.0))
-colgap!(fig.layout, 20)
+  # Adjust the layout.
+  colsize!(fig_lz.layout, 1, Aspect(1, 1.0))
+  colgap!(fig_lz.layout, 20)
 
-# Display the figure
-display(fig)
+  # Display the figure.
+  display(fig_lz)
 
-# Optionally, save the figure
-# save("lz_complexity_scatter.png", fig)
+  # Optionally, save the figure.
+  # save("lz_complexity_heatmap.png", fig)
+end
 
+# Calculate & render conditional block entropy heatmap.
+begin
+  # Calculate conditional block entropy for each solution.
+  block_size = 10 # Block size for conditional block entropy calculation.
+  CBEs = [length(sequence) > 0 ? conditional_block_entropy(Vector{Int}(sequence), block_size) : 0.0 for sequence in sol]
+
+  # Reshape the CBEs into a 2D array.
+  CBE_matrix = reshape(CBEs, (length(ΔCa_values), length(ΔVx_values)))
+
+  # Create a heatmap of the conditional block entropies.
+  fig_cbe = Figure(size=(800, 600))
+  ax_cbe = Axis(fig_cbe[1, 1], 
+      xlabel="ΔCa", 
+      ylabel="ΔVx",
+      title="Conditional Block Entropy of Signed Spike-Count Sequences")
+
+  hm_cbe = heatmap!(ax_cbe, ΔCa_values, ΔVx_values, CBE_matrix, colormap=:thermal)
+  Colorbar(fig_cbe[1, 2], hm_cbe, label="Conditional Block Entropy")
+
+  # Adjust the layout.
+  colsize!(fig_cbe.layout, 1, Aspect(1, 1.0))
+  colgap!(fig_cbe.layout, 20)
+
+  # Display the figure.
+  display(fig_cbe)
+
+  # Optionally, save the figure.
+  # save("conditional_block_entropy_heatmap.png", fig_cbe)
+end
