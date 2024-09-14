@@ -2,6 +2,7 @@
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
+IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"

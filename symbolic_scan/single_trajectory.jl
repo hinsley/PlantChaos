@@ -48,8 +48,6 @@ const global STATE = Ref(EncoderState(
 ))
 
 function condition(out, u, t, integrator)
-  # du = get_du(integrator)
-
   Vdot = Plant.dV(integrator.p, u...)
   out[1] = -Vdot
 
@@ -57,7 +55,7 @@ function condition(out, u, t, integrator)
   out[2] = -Plant.numerical_derivative(
     (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
     u,
-    p,
+    integrator.p,
     1e-4
   )
 end
@@ -95,7 +93,7 @@ cb = VectorContinuousCallback(condition, affect!, nothing, 2)
 ##########
 
 prob = ODEProblem(Plant.melibeNew, u0, (0., 1e5), p)
-sol = solve(prob, RK4(), adaptive=false, dt=3e-1, callback=cb)#, save_everystep=false)
+sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14, callback=cb)#, save_everystep=false)
 
 # Plot voltage trace and Vdot over time.
 begin
