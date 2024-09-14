@@ -164,7 +164,7 @@ end
 # Calculate & render conditional block entropy heatmap.
 begin
   # Calculate conditional block entropy for each solution.
-  block_size = 10 # Block size for conditional block entropy calculation.
+  block_size = 50 # Block size for conditional block entropy calculation.
   CBEs = [length(sequence) > 0 ? conditional_block_entropy(Vector{Int}(sequence), block_size) : 0.0 for sequence in sol]
 
   # Reshape the CBEs into a 2D array.
@@ -175,7 +175,7 @@ begin
   ax_cbe = Axis(fig_cbe[1, 1], 
       xlabel="ΔCa", 
       ylabel="ΔVx",
-      title="Conditional Block Entropy of Signed Spike-Count Sequences")
+      title="Conditional $(block_size)-Block Entropy of Signed Spike-Count Sequences")
 
   hm_cbe = heatmap!(ax_cbe, ΔCa_values, ΔVx_values, CBE_matrix, colormap=:thermal)
   Colorbar(fig_cbe[1, 2], hm_cbe, label="Conditional Block Entropy")
