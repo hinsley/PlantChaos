@@ -8,7 +8,7 @@ using .Plant
 
 include("../tools/symbolics.jl")
 
-p = vcat(Plant.default_params[1:15], [-0.81, -41]) # Parameters: Delta V_x and Delta Ca
+p = vcat(Plant.default_params[1:15], [-2.229, 67.072]) # Parameters: Delta V_x and Delta Ca
 u0 = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
 
 ##########
@@ -92,14 +92,17 @@ cb = VectorContinuousCallback(condition, affect!, nothing, 2)
 ## End algorithm
 ##########
 
-prob = ODEProblem(Plant.melibeNew, u0, (0., 1e5), p)
-sol = solve(prob, RK4(), abstol=1e-14, reltol=1e-14, callback=cb)#, save_everystep=false)
+prob = ODEProblem(Plant.melibeNew, u0, (0., 3e5), p)
+sol = solve(prob, Tsit5(), abstol=3e-6, reltol=3e-6, callback=cb)#, save_everystep=false)
 
 # Plot voltage trace and Vdot over time.
 begin
   # Extract V(t) and time values from the solution
   V_values = [u[6] for u in sol.u]
   t_values = sol.t
+
+  # Calculate Vdot values using the analytical formula
+  Vdot_values = [Plant.dV(p, u...) for u in sol.u]
 
   # Create a figure with two panels: V(t) and Vdot(t)
   fig = Figure(resolution=(800, 600))
@@ -134,6 +137,37 @@ begin
     markersize=10
   )
   axislegend(ax1)
+
+  # Create a second axis for Vdot(t)
+  ax2 = Axis(fig[2, 1], xlabel="Time", ylabel="Vdot", title="Vdot(t)")
+  lines!(ax2, t_values, Vdot_values, label="Vdot(t)", color=:orange)
+
+  # Plot event times on Vdot(t) plot
+  scatter!(
+    ax2,
+    I_times,
+    fill(0, length(I_times)),  # Adjusted y-value for scatter points
+    label="I times",
+    color=:red,
+    markersize=10
+  )
+  scatter!(
+    ax2,
+    Vplus_times,
+    fill(0, length(Vplus_times)),  # Adjusted y-value for scatter points
+    label="Vplus times",
+    color=:blue,
+    markersize=10
+  )
+  scatter!(
+    ax2,
+    Vminus_times,
+    fill(0, length(Vminus_times)),  # Adjusted y-value for scatter points
+    label="Vminus times",
+    color=:black,
+    markersize=10
+  )
+  axislegend(ax2)
 
   # Display the figure
   display(fig)

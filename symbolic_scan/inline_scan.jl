@@ -1,7 +1,7 @@
 using Pkg
 Pkg.activate("./symbolic_scan")
 Pkg.instantiate()
-using CairoMakie, IterTools, OrdinaryDiffEq, Roots, StaticArrays
+using CairoMakie, Colors, IterTools, OrdinaryDiffEq, Roots, StaticArrays
 
 include("../model/Plant.jl")
 using .Plant
@@ -11,7 +11,7 @@ include("../tools/symbolics.jl")
 
 p_base = SVector{length(Plant.default_params)}(Plant.default_params)
 u0_base = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
-prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 1e6), p_base) # Adjust the time span here.
+prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 3e5), p_base) # Adjust the time span here.
 
 @enum EventSymbol begin
     Void # Nothing detected yet.
@@ -42,8 +42,8 @@ function condition(out, u, t, integrator)
 end
 
 # Define the scan parameters.
-ΔCa_values = collect(range(-45.0, -20.0, length=200)) # Adjust this.
-ΔVx_values = collect(range(-1.5, -0.5, length=200)) # Adjust this.
+ΔCa_values = collect(range(-60.0, 100.0, length=500)) # Adjust this.
+ΔVx_values = collect(range(-4.0, 1.0, length=500)) # Adjust this.
 param_list = collect(Iterators.product(ΔCa_values, ΔVx_values))
 state_list = [Dict( # State machines for symbolic encoder.
   :scs => [], # Signed spike count sequence.
@@ -64,7 +64,8 @@ function prob_func(prob, i, repeat)
   # Recalculate the initial conditions at the upper saddle equilibrium.
   v_eqs = find_zeros(v -> Equilibria.Ca_difference(p_new, v), Plant.xinfinv(p_new, 0.99), Plant.xinfinv(p_new, 0.01))
   if length(v_eqs) < 3
-    error("Unable to find upper saddle equilibrium for parameter vector $i: $p_new. Found only v_eqs $v_eqs.")
+    v_eqs = [0.0, 0.0, 0.0] # TODO: Codesmell. This is a bad approximation and may produce artifacts.
+    # error("Unable to find upper saddle equilibrium for parameter vector $i: $p_new. Found only v_eqs $v_eqs.")
   end
   v_eq = v_eqs[3]
   Ca_eq = Equilibria.Ca_null_Ca(p_new, v_eq)
@@ -125,6 +126,8 @@ ensemble_prob = EnsembleProblem(
 @time sol = solve(
   ensemble_prob,
   Tsit5(),
+  abstol=3e-6,
+  reltol=3e-6,
   EnsembleThreads(),
   trajectories=length(param_list),
   save_on=false,
@@ -134,20 +137,34 @@ ensemble_prob = EnsembleProblem(
 # Calculate & render normalized Lempel-Ziv complexity heatmap.
 begin
   # Calculate normalized Lempel-Ziv complexity for each solution.
-  last_n = 150 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
-  lz_complexities = [length(sequence) >= last_n ? normalized_LZ_complexity(Vector{Int}(sequence[end-last_n+1:end])) : (length(sequence) > 0 ? normalized_LZ_complexity(Vector{Int}(sequence)) : 0.0) for sequence in sol]
+  last_n = 5000 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
+  # Before calculating normalized LZ complexities, I discard any sequence comprising more than 99.3% subthreshold oscillations.
+  # @time lz_complexities = [
+  #     (count(x -> x == 0, sequence) / length(sequence) > 0.993) ? 0.0 : 
+  #     (length(sequence) >= last_n ? normalized_LZ_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
+  #     (length(sequence) > 0 ? normalized_LZ_complexity(Vector{Int}(sequence)) : 0.0)) 
+  #     for sequence in sol
+  # ]
 
   # Reshape the LZ complexities into a 2D array.
   lz_complexity_matrix = reshape(lz_complexities, (length(ΔCa_values), length(ΔVx_values)))
 
   # Create a heatmap of the complexities.
-  fig_lz = Figure(size=(800, 600))
+  fig_lz = Figure(size=(800, 700))
   ax = Axis(fig_lz[1, 1], 
       xlabel="ΔCa", 
       ylabel="ΔVx",
       title="Normalized Lempel-Ziv Complexity of Signed Spike-Count Sequences")
 
-  hm = heatmap!(ax, ΔCa_values, ΔVx_values, lz_complexity_matrix, colormap=:thermal)
+  color_gradient = cgrad([
+    Colors.RGB(0.0, 0.0, 0.0),
+    Colors.RGB(0.0, 0.15, 0.6),
+    Colors.RGB(1.0, 0.0, 0.0)
+  ], [0.17, 0.19, 0.2, 0.21, 0.22, 0.3, 0.31]) # for last_n = 5000 on 500x500 grid
+  # ], [0.18, 0.21, 0.23]) # for last_n = 2000
+  # ], [0.061, 0.065, 0.18, 0.39, 0.4]) # for last_n = 10000
+  # ], [0.0, 0.29, 0.3, 0.5]) # for last_n = 500, I think? Maybe 1000.
+  hm = heatmap!(ax, ΔCa_values, ΔVx_values, lz_complexity_matrix, colormap=color_gradient)
   Colorbar(fig_lz[1, 2], hm, label="LZ Complexity")
 
   # Adjust the layout.
@@ -164,14 +181,14 @@ end
 # Calculate & render conditional block entropy heatmap.
 begin
   # Calculate conditional block entropy for each solution.
-  block_size = 50 # Block size for conditional block entropy calculation.
-  CBEs = [length(sequence) > 0 ? conditional_block_entropy(Vector{Int}(sequence), block_size) : 0.0 for sequence in sol]
+  block_size = 3 # Block size for conditional block entropy calculation.
+  @time CBEs = [length(sequence) > 0 ? conditional_block_entropy(Vector{Int}(sequence), block_size) : 0.0 for sequence in sol]
 
   # Reshape the CBEs into a 2D array.
   CBE_matrix = reshape(CBEs, (length(ΔCa_values), length(ΔVx_values)))
 
   # Create a heatmap of the conditional block entropies.
-  fig_cbe = Figure(size=(800, 600))
+  fig_cbe = Figure(size=(800, 700))
   ax_cbe = Axis(fig_cbe[1, 1], 
       xlabel="ΔCa", 
       ylabel="ΔVx",
