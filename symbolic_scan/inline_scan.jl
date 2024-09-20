@@ -1,7 +1,7 @@
 using Pkg
 Pkg.activate("./symbolic_scan")
 Pkg.instantiate()
-using CairoMakie, Colors, IterTools, OrdinaryDiffEq, Roots, StaticArrays
+using CairoMakie, Colors, IterTools, JLD2, OrdinaryDiffEq, Roots, StaticArrays
 
 include("../model/Plant.jl")
 using .Plant
@@ -11,7 +11,7 @@ include("../tools/symbolics.jl")
 
 p_base = SVector{length(Plant.default_params)}(Plant.default_params)
 u0_base = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
-prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 3e5), p_base) # Adjust the time span here.
+prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 1e6), p_base) # Adjust the time span here.
 
 @enum EventSymbol begin
     Void # Nothing detected yet.
@@ -20,30 +20,9 @@ prob_base = ODEProblem(Plant.melibeNew, u0_base, (0.0, 3e5), p_base) # Adjust th
     Vminus # Slow subsystem oscillation (V max below V_sd).
 end
 
-transient_time = 1e2 # Time to wait before beginning to detect events.
-function condition(out, u, t, integrator)
-  if t < transient_time
-    out[1] = 0.0
-    out[2] = 0.0
-  else
-    Vdot = Plant.dV(integrator.p, u...)
-    out[1] = -Vdot
-
-    # out[2] is -Vddot, but we must use finite differencing to
-    # calculate it accurately, as the analytical derivative of
-    # minf is numerically unstable.
-    out[2] = -Plant.numerical_derivative(
-      (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
-      u,
-      integrator.p,
-      1e-4
-    )
-  end
-end
-
 # Define the scan parameters.
-ΔCa_values = collect(range(-60.0, 100.0, length=500)) # Adjust this.
-ΔVx_values = collect(range(-4.0, 1.0, length=500)) # Adjust this.
+ΔCa_values = collect(range(-60.0, 100.0, length=2000)) # Adjust this.
+ΔVx_values = collect(range(-4.0, 1.0, length=2000)) # Adjust this.
 param_list = collect(Iterators.product(ΔCa_values, ΔVx_values))
 state_list = [Dict( # State machines for symbolic encoder.
   :scs => [], # Signed spike count sequence.
@@ -52,6 +31,9 @@ state_list = [Dict( # State machines for symbolic encoder.
   :last2_symbol => Void, # Second-most recently detected symbol.
   :V_sd => 0.0 # The voltage value of the upper saddle equilibrium.
 ) for i in 1:length(param_list)]
+max_seq_length = 80 # Maximum length of signed spike counts before terminating trajectory integration.
+max_spike_count = 35 # Maximum number of spikes in a single burst before considering the trajectory tonic-spiking and terminating.
+transient_time = 1e2 # Time to wait before beginning to detect events.
 
 # Adjust the problem for each parameter vector in the scan.
 function prob_func(prob, i, repeat)
@@ -75,6 +57,27 @@ function prob_func(prob, i, repeat)
   # Update the state machine with the appropriate V_sd value.
   state_list[i][:V_sd] = v_eq
 
+  # Define the condition function inside of prob_func as a closure so it can access the problem index i.
+  function condition(out, u, t, integrator)
+    if t < transient_time
+      out[1] = 0.0
+      out[2] = 0.0
+    else
+      Vdot = Plant.dV(integrator.p, u...)
+      out[1] = -Vdot
+
+      # out[2] is -Vddot, but we must use finite differencing to
+      # calculate it accurately, as the analytical derivative of
+      # minf is numerically unstable.
+      out[2] = -Plant.numerical_derivative(
+        (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
+        u,
+        integrator.p,
+        1e-4
+      )
+    end
+  end
+
   # Define the affect! function inside of prob_func as a closure so it can access the problem index i.
   function affect!(integrator, idx)
     if idx == 1
@@ -82,6 +85,9 @@ function prob_func(prob, i, repeat)
         state_list[i][:count] += 1
         state_list[i][:last2_symbol] = state_list[i][:last_symbol]
         state_list[i][:last_symbol] = Vplus
+        if state_list[i][:count] > max_spike_count
+          terminate!(integrator) # Early termination upon tonic-spiking detected.
+        end
       else
         push!(
           state_list[i][:scs], # Spike count sequence.
@@ -90,6 +96,9 @@ function prob_func(prob, i, repeat)
         state_list[i][:count] = 0
         state_list[i][:last2_symbol] = state_list[i][:last_symbol]
         state_list[i][:last_symbol] = Vminus
+        if length(state_list[i][:scs]) > max_seq_length
+          terminate!(integrator) # Early termination upon satisfactory sequence length.
+        end
       end
     elseif idx == 2
       state_list[i][:last2_symbol] = state_list[i][:last_symbol]
@@ -134,15 +143,17 @@ ensemble_prob = EnsembleProblem(
   progress=true
 )
 
+@save "inline_scan_SSC_sequences.jld2" sol
+
 # Calculate & render normalized Lempel-Ziv complexity heatmap.
 begin
   # Calculate normalized Lempel-Ziv complexity for each solution.
-  last_n = 5000 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
-  # Before calculating normalized LZ complexities, I discard any sequence comprising more than 99.3% subthreshold oscillations.
+  last_n = 70 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
+  prune_threshold = 1.0 # Discard any sequence comprising more than this fraction of subthreshold oscillations.
   # @time lz_complexities = [
-  #     (count(x -> x == 0, sequence) / length(sequence) > 0.993) ? 0.0 : 
-  #     (length(sequence) >= last_n ? normalized_LZ_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
-  #     (length(sequence) > 0 ? normalized_LZ_complexity(Vector{Int}(sequence)) : 0.0)) 
+  #     (count(x -> x == 0, sequence) / length(sequence) > prune_threshold) ? 0.0 : 
+  #     (length(sequence) >= last_n ? normalized_LZ76_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
+  #     (length(sequence) > 0 ? normalized_LZ76_complexity(Vector{Int}(sequence)) : 0.0)) 
   #     for sequence in sol
   # ]
 
@@ -150,22 +161,22 @@ begin
   lz_complexity_matrix = reshape(lz_complexities, (length(ΔCa_values), length(ΔVx_values)))
 
   # Create a heatmap of the complexities.
-  fig_lz = Figure(size=(800, 700))
-  ax = Axis(fig_lz[1, 1], 
-      xlabel="ΔCa", 
+  fig_lz = Figure(size=(1100, 1000))
+  ax = Axis(fig_lz[1, 1],
+      xlabel="ΔCa",
       ylabel="ΔVx",
-      title="Normalized Lempel-Ziv Complexity of Signed Spike-Count Sequences")
+      title="Normalized Lempel-Ziv Complexity of\nSigned Spike-Count Sequences",
+      xlabelsize=28,
+      ylabelsize=28,
+      titlesize=32,  # Increased title size
+      xticksize=12,  # Increased x-axis tick size
+      yticksize=12,  # Increased y-axis tick size
+      xticklabelsize=24,  # Increased x-axis tick label size
+      yticklabelsize=24)  # Increased y-axis tick label size
 
-  color_gradient = cgrad([
-    Colors.RGB(0.0, 0.0, 0.0),
-    Colors.RGB(0.0, 0.15, 0.6),
-    Colors.RGB(1.0, 0.0, 0.0)
-  ], [0.17, 0.19, 0.2, 0.21, 0.22, 0.3, 0.31]) # for last_n = 5000 on 500x500 grid
-  # ], [0.18, 0.21, 0.23]) # for last_n = 2000
-  # ], [0.061, 0.065, 0.18, 0.39, 0.4]) # for last_n = 10000
-  # ], [0.0, 0.29, 0.3, 0.5]) # for last_n = 500, I think? Maybe 1000.
-  hm = heatmap!(ax, ΔCa_values, ΔVx_values, lz_complexity_matrix, colormap=color_gradient)
-  Colorbar(fig_lz[1, 2], hm, label="LZ Complexity")
+  # hm = heatmap!(ax, ΔCa_values, ΔVx_values, clipped_lz_complexity_matrix, colormap=:gist_heat, colorrange=(0.4, 1.0))
+  hm = heatmap!(ax, ΔCa_values, ΔVx_values, clipped_lz_complexity_matrix, colormap=Reverse(:gist_heat), colorrange=(0.4, 1.0))
+  Colorbar(fig_lz[1, 2], hm, label="LZ Complexity", labelsize=28, ticklabelsize=24)  # Increased colorbar tick label size
 
   # Adjust the layout.
   colsize!(fig_lz.layout, 1, Aspect(1, 1.0))
@@ -175,13 +186,13 @@ begin
   display(fig_lz)
 
   # Optionally, save the figure.
-  # save("lz_complexity_heatmap.png", fig)
+  save("lz_complexity_heatmap.png", fig_lz)
 end
 
 # Calculate & render conditional block entropy heatmap.
 begin
   # Calculate conditional block entropy for each solution.
-  block_size = 3 # Block size for conditional block entropy calculation.
+  block_size = 5 # Block size for conditional block entropy calculation.
   @time CBEs = [length(sequence) > 0 ? conditional_block_entropy(Vector{Int}(sequence), block_size) : 0.0 for sequence in sol]
 
   # Reshape the CBEs into a 2D array.
