@@ -92,7 +92,7 @@ cb = VectorContinuousCallback(condition, affect!, nothing, 2)
 ## End algorithm
 ##########
 
-prob = ODEProblem(Plant.melibeNew, u0, (0., 3e5), p)
+prob = ODEProblem(Plant.melibeNew, u0, (0., 1e6), p)
 sol = solve(prob, Tsit5(), abstol=3e-6, reltol=3e-6, callback=cb)#, save_everystep=false)
 
 # Plot voltage trace and Vdot over time.
@@ -109,7 +109,7 @@ begin
 
   # Plot V(t) time trace in the first panel
   ax1 = Axis(fig[1, 1], xlabel="Time", ylabel="Voltage (mV)", title="V(t)")
-  lines!(ax1, t_values, V_values, label="V(t)", color=:green)
+  lines!(ax1, t_values, V_values, label="V(t)", color=:green, linewidth=0.5)
 
   # Plot event times on V(t) plot
   scatter!(

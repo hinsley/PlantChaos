@@ -143,53 +143,60 @@ ensemble_prob = EnsembleProblem(
   progress=true
 )
 
-@save "inline_scan_SSC_sequences.jld2" sol
+# @save "inline_scan_SSC_sequences.jld2" sol
+@load "inline_scan_SSC_sequences.jld2" sol
 
 # Calculate & render normalized Lempel-Ziv complexity heatmap.
+# Calculate normalized Lempel-Ziv complexity for each solution.
+last_n = 70 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
+prune_threshold = 1.0 # Discard any sequence comprising more than this fraction of subthreshold oscillations.
+minimum_n = 20 # Minimum number of signed spike counts to plot.
+@time lz_complexities = [
+    (count(x -> x == 0, sequence) / length(sequence) > prune_threshold) ? 0.0 : 
+    (length(sequence) >= last_n ? normalized_LZ76_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
+    (length(sequence) > minimum_n ? normalized_LZ76_complexity(Vector{Int}(sequence)) : 0.0)) 
+    for sequence in sol
+]
+
+# Reshape the LZ complexities into a 2D array.
+lz_complexity_matrix = reshape(lz_complexities, (length(ΔCa_values), length(ΔVx_values)))
+
 let frame = false
-  # Calculate normalized Lempel-Ziv complexity for each solution.
-  last_n = 70 # Length of tail of signed spike-count sequences to use for LZ complexity calculation.
-  prune_threshold = 1.0 # Discard any sequence comprising more than this fraction of subthreshold oscillations.
-  # @time lz_complexities = [
-  #     (count(x -> x == 0, sequence) / length(sequence) > prune_threshold) ? 0.0 : 
-  #     (length(sequence) >= last_n ? normalized_LZ76_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
-  #     (length(sequence) > 0 ? normalized_LZ76_complexity(Vector{Int}(sequence)) : 0.0)) 
-  #     for sequence in sol
-  # ]
-
-  # Reshape the LZ complexities into a 2D array.
-  lz_complexity_matrix = reshape(lz_complexities, (length(ΔCa_values), length(ΔVx_values)))
-
   # Create a heatmap of the complexities.
-  # fig_lz = Figure(size=(1100, 1000))
-  fig_lz = Figure(size=(1200, 1000), figure_padding=0, backgroundcolor=:transparent)
-  # ax = Axis(fig_lz[1, 1],
-  #   xlabel="ΔCa",
-  #   ylabel="ΔVx",
-  #   title="Normalized Lempel-Ziv Complexity of\nSigned Spike-Count Sequences",
-  #   xlabelsize=28,
-  #   ylabelsize=28,
-  #   titlesize=32,  # Increased title size
-  #   xticksize=12,  # Increased x-axis tick size
-  #   yticksize=12,  # Increased y-axis tick size
-  #   xticklabelsize=24,  # Increased x-axis tick label size
-  #   yticklabelsize=24)  # Increased y-axis tick label size
-  ax = Axis(fig_lz[1, 1],
-    xlabelvisible=false, ylabelvisible=false, 
-    xticksvisible=false, yticksvisible=false, 
-    xgridvisible=false, ygridvisible=false, 
-    titlevisible=false, backgroundcolor=:transparent)  # Increased y-axis tick label size
-  hidedecorations!(ax)
-  hidespines!(ax)
+  if frame
+    fig_lz = Figure(size=(1100, 1000))
+    ax = Axis(fig_lz[1, 1],
+      xlabel="ΔCa",
+      ylabel="ΔVx",
+      title="Normalized Lempel-Ziv Complexity of\nSigned Spike-Count Sequences",
+      xlabelsize=28,
+      ylabelsize=28,
+      titlesize=32,  # Increased title size
+      xticksize=12,  # Increased x-axis tick size
+      yticksize=12,  # Increased y-axis tick size
+      xticklabelsize=24,  # Increased x-axis tick label size
+      yticklabelsize=24)  # Increased y-axis tick label size
+  else
+    fig_lz = Figure(size=(1200, 1000), figure_padding=0, backgroundcolor=:transparent)
+    ax = Axis(fig_lz[1, 1],
+      xlabelvisible=false, ylabelvisible=false, 
+      xticksvisible=false, yticksvisible=false, 
+      xgridvisible=false, ygridvisible=false, 
+      titlevisible=false, backgroundcolor=:transparent)  # Increased y-axis tick label size
+    hidedecorations!(ax)
+    hidespines!(ax)
+  end
 
-  # hm = heatmap!(ax, ΔCa_values, ΔVx_values, clipped_lz_complexity_matrix, colormap=:gist_heat, colorrange=(0.4, 1.0))
-  filtered_matrix = replace(x -> x == 0 ? NaN : x, clipped_lz_complexity_matrix)
+  filtered_matrix = replace(x -> x == 0 ? NaN : x, lz_complexity_matrix)
   hm = heatmap!(ax, ΔCa_values, ΔVx_values, filtered_matrix, colormap=Reverse(:gist_heat), colorrange=(0.4, 1.0))
-  # Colorbar(fig_lz[1, 2], hm, label="LZ Complexity", labelsize=28, ticklabelsize=24)  # Increased colorbar tick label size
+  if frame
+    Colorbar(fig_lz[1, 2], hm, label="LZ Complexity", labelsize=28, ticklabelsize=24)  # Increased colorbar tick label size
 
-  # Adjust the layout.
-  # colsize!(fig_lz.layout, 1, Aspect(1, 1.0))
-  # colgap!(fig_lz.layout, 20)
+    # Adjust the layout.
+    colsize!(fig_lz.layout, 1, Aspect(1, 1.0))
+    colgap!(fig_lz.layout, 20)
+  end
+
 
   # Display the figure.
   display(fig_lz)
