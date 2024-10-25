@@ -169,18 +169,32 @@ begin
     scatter!(bax, points[3], color = :black, marker = 'o' , markersize = 25)
     scatter!(bax, points[3], color = :gold, marker = 'o' , markersize = 20)
     scatter!(bax, points[3], color = :black , markersize = 8)
-    scatter!(bax, points[4], color = :red, marker = '□' , markersize = 25)
-    text!(bax, pd_curve[5] .+ (2.0,-0.0005) ..., text = L"\textbf{\text{PD}}", color = :white, fontsize = 16)
-    text!(bax, snpog_curve[4] .+ (-1.0,.024) ..., text = L"\textbf{\text{SN_{PO}-\gamma / PD}}", color = :white, fontsize = 16, rotation = -.75)
-    text!(bax, snpog_curve[4] .+ (-1.0,.024) ..., text = L"\textbf{\text{SN_{PO}-\gamma}}", color = :orange, fontsize = 16, rotation = -.75)
-    text!(bax, snpoa_curve[7].+ (1.58,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :white, fontsize = 16, rotation = .98)
-    text!(bax, snpoa_curve[7].+ (1.58,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :yellow, fontsize = 16, rotation = .98)
-    text!(bax, snpob_curve[2].+ (-1,-.013) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :white, fontsize = 16, rotation = -.6)
-    text!(bax, snpob_curve[2].+ (-1,-.013) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :green, fontsize = 16, rotation = -.6)
-    text!(bax, snpo0_curve[1].+ (3,-.045) ..., text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = 16, rotation = -.68)
-    text!(bax, ah_sup_curve[1].+ (1.5,-.065) ..., text = L"\textbf{\text{AH_{sup}}}", color = :lightgrey, fontsize = 16, rotation = -.7)
-    text!(bax, ah_sub_curve[1].+ (-5,.065) ..., text = L"\textbf{\text{AH_{sub}}}", color = :lightgrey, fontsize = 16, rotation = -.7)
+    scatter!(bax, points[4], color = :red , markersize = 25)
     
+    #text!(bax, pd_curve[5] .+ (2.0,-0.0005) ..., text = L"\textbf{\text{PD}}", color = :white, fontsize = 16)
+    #text!(bax, snpog_curve[4] .+ (-1.0,.024) ..., text = L"\textbf{\text{SN_{PO}-\gamma / PD}}", color = :white, fontsize = 16, rotation = -.75)
+    #text!(bax, snpog_curve[4] .+ (-1.0,.024) ..., text = L"\textbf{\text{SN_{PO}-\gamma}}", color = :orange, fontsize = 16, rotation = -.75)
+    #text!(bax, snpoa_curve[7].+ (1.58,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :white, fontsize = 16, rotation = .98)
+    #text!(bax, snpoa_curve[7].+ (1.58,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :yellow, fontsize = 16, rotation = .98)
+    #text!(bax, snpob_curve[2].+ (-1,-.013) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :white, fontsize = 16, rotation = -.6)
+    #text!(bax, snpob_curve[2].+ (-1,-.013) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :green, fontsize = 16, rotation = -.6)
+    #text!(bax, snpo0_curve[1].+ (3,-.045) ..., text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = 16, rotation = -.68)
+    #text!(bax, ah_sup_curve[1].+ (1.5,-.065) ..., text = L"\textbf{\text{AH_{sup}}}", color = :lightgrey, fontsize = 16, rotation = -.7)
+    #text!(bax, ah_sub_curve[1].+ (-5,.065) ..., text = L"\textbf{\text{AH_{sub}}}", color = :lightgrey, fontsize = 16, rotation = -.7)
+    
+    fsz = 20
+    text!(bax, pd_curve[5] .+ (2.0,-0.0002) ..., text = L"\textbf{\text{PD}}", color = :white, fontsize = fsz)
+    text!(bax, snpog_curve[4] .+ (-1.8,.045) ..., text = L"\textbf{\text{SN_{PO}-\gamma / PD}}", color = :white, fontsize = fsz, rotation = -.75)
+    text!(bax, snpog_curve[4] .+ (-1.8,.045) ..., text = L"\textbf{\text{SN_{PO}-\gamma}}", color = :orange, fontsize = fsz, rotation = -.75)
+    text!(bax, snpoa_curve[7].+ (2,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :white, fontsize = fsz, rotation = .98)
+    text!(bax, snpoa_curve[7].+ (2,0.) ..., text = L"\textbf{\text{SN_{PO}-\alpha}}", color = :yellow, fontsize = fsz, rotation = .98)
+    text!(bax, snpob_curve[2].+ (-1,-.016) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :white, fontsize = fsz, rotation = -.6)
+    text!(bax, snpob_curve[2].+ (-1,-.016) ..., text = L"\textbf{\text{SN_{PO}-\beta}}", color = :green, fontsize = fsz, rotation = -.6)
+    text!(bax, snpo0_curve[1].+ (3,-.045) ..., text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = fsz, rotation = -.68)
+    text!(bax, ah_sup_curve[1].+ (1.5,-.07) ..., text = L"\textbf{\text{AH_{sup}}}", color = :lightgrey, fontsize = fsz, rotation = -.7)
+    text!(bax, ah_sub_curve[1].+ (-5,.06) ..., text = L"\textbf{\text{AH_{sub}}}", color = :lightgrey, fontsize = fsz, rotation = -.7)
+    
+
     # alpha_beta cusp
     ax1 = Axis(fig[1,3], xlabel = L"\text{V_n}", ylabel = L"\text{V_{n+1}}", aspect = DataAspect())
     p[] = vcat(p[][1:15], [reverse(points[1])...])
@@ -262,15 +276,15 @@ begin
     lines!(ax8, x1, y1, color = :red, linestyle = :dot, linewidth = 3)
     lines!(ax8, x2, y2, color = :red, linewidth = 3)
     lines!(ax8, x3, fill(0.0, 100), color = :grey, linestyle = :dash, linewidth = 3)
-    scatter!(ax8, [0.0], [0.0], color = :red, marker = '□', markersize = 20)
+    scatter!(ax8, [0.0], [0.0], color = :red, markersize = 20)
     scatter!(ax8, [(-1,-1)], color = :black, markersize = 15)
     xlims!(ax8, -2, 2)
     text!(ax8, (-1.5, 0.1), text = L"\textbf{\text{AH_{sub}}}", color = :grey, fontsize = 16)
     text!(ax8, (.5, 0.1), text = L"\textbf{\text{AH_{sup}}}", color = :grey, fontsize = 16)
-    text!(ax8, (-.3, -.5), text = L"\textbf{\text{Bautin}}", color = :red, fontsize = 16)
-    text!(ax8, (-.9, -1.1), text = L"\textbf{\text{cusp}}", color = :black, fontsize = 16)
-    text!(ax8, (0, 1.8), text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = 16, rotation = .85)
-    text!(ax8, (-1.5, 2.5), text = L"\text{↖Ch∀0s}", color = :black, fontsize = 20)
+    text!(ax8, (-.2, -.6), text = "BAUTIN", color = :red, fontsize = 16)
+    text!(ax8, (-.85, -1.15), text = "CUSP", color = :black, fontsize = 16)
+    text!(ax8, (-.05, 1.8), text = L"\textbf{\text{SN_{PO}-0}}", color = :red, fontsize = 16, rotation = .85)
+    #text!(ax8, (-1.5, 2.5), text = L"\text{↖Ch∀0s}", color = :black, fontsize = 20)
 
     # panel labels
     #text!(bax, (15.2, -2.225), text = L"\textbf{\text{A}}", color = :black, fontsize = 20)
@@ -282,9 +296,46 @@ begin
     #text!(ax4, (0.685, 0.887), text = L"\textbf{\text{G}}", color = :black, fontsize = 20)
     #text!(ax5, (-54.27, -53.29), text = L"\textbf{\text{H}}", color = :black, fontsize = 20)
     #text!(ax6, (0.665, 0.89), text = L"\textbf{\text{I}}", color = :black, fontsize = 20)
+
+    pt = (42.00076675415039, -2.9135)
+    p[] = vcat(p[][1:15], [reverse(pt)...])
+
+    ax9 = Axis(fig[4,:], xlabel = L"t", ylabel = L"V")
+    hidedecorations!(ax9, label = false)
+    hidespines!(ax9)
+    tspan = (0., 1e6)
+    u0 = @SVector [0.5, 0.0, 0.0, 0.0, 1.0, -53.5]
+    prob = ODEProblem(Plant.melibeNew, u0, tspan, p[])
+    sol = solve(prob, RK4())
+    lines!(ax9, sol.t, sol[6,:], color = :black, linewidth = 2.5)
+    limits!(ax9, 0, sol.t[end], minimum(sol[6,:]), maximum(sol[6,:]))
     
-    resize!(fig, 1350, 1000)
+    rowsize!(fig.layout, 4, Relative(.1))
+    
+    resize!(fig, 1350, 1130)
     display(sc4, fig)
+    Label(fig[1,1, TopLeft()], "A", padding= (0,0,0,0), fontsize = 25, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[3,1, TopLeft()], "B", padding= (0,0,0,0), fontsize = 25, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[3,2, TopLeft()], "C", padding= (0,0,0,0), fontsize = 25, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[1,3, TopLeft()], "D1", padding= (0,0,0,0), fontsize = 22, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[1,4, TopLeft()], "D2", padding= (0,0,0,0), fontsize = 22, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[2,3, TopLeft()], "E1", padding= (0,0,0,0), fontsize = 22, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[2,4, TopLeft()], "E2", padding= (0,0,0,0), fontsize = 22, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[3,3, TopLeft()], "F1", padding= (0,0,0,0), fontsize = 22, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[3,4, TopLeft()], "F2", padding= (0,0,0,0), fontsize = 22, halign = :right, valign = :bottom, font = :bold)
+    Label(fig[4,1, TopLeft()], "G", padding= (0,0,0,0), fontsize = 25, halign = :right, valign = :bottom, font = :bold)
+
+    rowgap!(fig.layout, 1, 0)
+    rowgap!(fig.layout, 2, 0)
+    rowgap!(fig.layout, 3, 0)
+
+    colgap!(fig.layout, 1, 0)
+    colgap!(fig.layout, 2, 0)
+    colgap!(fig.layout, 3, 0)
+
+
+
+
 end
 
 save("spike_adding_chaos.png", fig)
