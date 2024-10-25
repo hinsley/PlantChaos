@@ -1,7 +1,8 @@
 module Plant
 
 export melibeNew, melibeNew!, melibeNewReverse!, default_params, default_state,
-       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa
+       Vs, ah, bh, hinf, am, bm, minf, an, bn, ninf, xinf, IKCa, Vddot,
+       numerical_derivative
 
 using StaticArrays
 
@@ -145,5 +146,77 @@ default_state = @SVector Float32[
     -62.0e0;   # V
     #0.0e0      # Isyn
 ]
+
+# Methods involved in calculating Vddot (d^2V/dt^2).
+const Vsprime = 127.0/105.0
+
+function amprime(V)
+    return 0.1 * (-Vsprime * (exp((50.0 - Vs(V)) / 10.0) - 1.0) + (50.0 - Vs(V)) / 10.0 * exp((50.0 - Vs(V)) / 10.0) ) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)^2
+end
+
+function bmprime(V)
+    return -2.0/9.0*Vsprime*exp((25.0-Vs(V))/18.0)
+end
+
+function minfdot(V, Vdot)
+    return Vdot*(amprime(V)*bm(V)-am(V)*bmprime(V))/(am(V)+bm(V))^2.0
+end
+
+function IIdot(p, h, hdot, V, Vdot)
+    return p[2]*((hdot*minf(V)^3.0+3.0*h*minfdot(V, Vdot)*minf(V)^2.0)*(V-p[8])+h*minf(V)^3.0*Vdot)
+end
+
+function IKdot(p, n, ndot, V, Vdot)
+    return p[3]*n^3.0*(4*ndot*(V-p[9])+n*Vdot)
+end
+
+function ITdot(p, x, xdot, V, Vdot)
+    return p[6]*(xdot*(V-p[8])+x*Vdot)
+end
+
+function IKCadot(p, Ca, Cadot, V, Vdot)
+    return p[7]*(0.5*Cadot*(V - p[9]) + Ca*Vdot*(Ca + 0.5))/(Ca + 0.5)^2.0
+end
+
+function Ileakdot(p, Vdot)
+    return p[5]*Vdot
+end
+
+function Vddot(p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot)
+    return -(IIdot(p, h, hdot, V, Vdot) + IKdot(p, n, ndot, V, Vdot) + ITdot(p, x, xdot, V, Vdot) + IKCadot(p, Ca, Cadot, V, Vdot) + Ileakdot(p, Vdot))/p[1]
+end
+
+function numerical_derivative(f, u, p, dt=1e-8)
+    # Compute du/dt at the current state u
+    du = melibeNew(u, p, 0.0)  # Assuming t=0.0 for simplicity
+
+    # Evaluate the function f at the current state
+    x = u[1]; xdot = du[1]
+    y = u[2]; ydot = du[2]
+    n = u[3]; ndot = du[3]
+    h = u[4]; hdot = du[4]
+    Ca = u[5]; Cadot = du[5]
+    V = u[6]; Vdot = du[6]
+    f_u = f(p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot)
+
+    # Perform an Euler step to get the new state u_new
+    u_new = u .+ du .* dt
+
+    # Compute du/dt at the new state u_new
+    du_new = melibeNew(u_new, p, dt)
+
+    # Evaluate the function f at the new state
+    x_new = u_new[1]; xdot_new = du_new[1]
+    y_new = u_new[2]; ydot_new = du_new[2]
+    n_new = u_new[3]; ndot_new = du_new[3]
+    h_new = u_new[4]; hdot_new = du_new[4]
+    Ca_new = u_new[5]; Cadot_new = du_new[5]
+    V_new = u_new[6]; Vdot_new = du_new[6]
+    f_u_new = f(p, h_new, hdot_new, n_new, ndot_new, x_new, xdot_new, Ca_new, Cadot_new, V_new, Vdot_new)
+
+    # Compute the derivative of f with respect to time
+    df_dt = (f_u_new - f_u) / dt
+    return df_dt
+end
 
 end # module

@@ -7,6 +7,45 @@
   SymbolF
 end
 
+# Conditional block entropy for size n blocks
+function conditional_block_entropy(sequence::Vector{Int}, n::Int)::Float64
+    if n <= 0 || isempty(sequence)
+        return 0.0
+    end
+
+    # Count occurrences of blocks and their extensions
+    block_counts = Dict{Vector{Int}, Int}()
+    extended_block_counts = Dict{Vector{Int}, Int}()
+
+    for i in 1:(length(sequence) - n)
+        block = sequence[i:(i+n-1)]
+        extended_block = sequence[i:(i+n)]
+
+        block_counts[block] = get(block_counts, block, 0) + 1
+        extended_block_counts[extended_block] = get(extended_block_counts, extended_block, 0) + 1
+    end
+
+    # Calculate conditional entropy
+    total_blocks = length(sequence) - n + 1
+    entropy = 0.0
+
+    for (block, count) in block_counts
+        p_block = count / total_blocks
+
+        for symbol in unique(sequence)
+            extended_block = vcat(block, symbol)
+            extended_count = get(extended_block_counts, extended_block, 0)
+
+            if extended_count > 0
+                p_extended = extended_count / count
+                entropy -= p_block * p_extended * log2(p_extended)
+            end
+        end
+    end
+
+    return entropy
+end
+
 function itinerary_to_kneading_coordinate(itinerary::Vector{BranchSymbol}, periodic::Bool = false)::Vector{Float64}
   positive_orientation = true
   window = [0.0, 1.0]
@@ -68,6 +107,93 @@ function itinerary_to_kneading_sequence(itinerary::Vector{BranchSymbol})::Vector
   end
 
   return kneading_sequence
+end
+
+# Normalized Lempel-Ziv 1976 complexity.
+function normalized_LZ76_complexity(sequence::Vector{Int})::Float64
+    if isempty(sequence)
+        return 0.0
+    end
+
+    complexity = 0
+    i = 1
+    n = length(sequence)
+    b = length(unique(sequence))
+    
+    if b == 1
+        return 0.0
+    end
+
+    while i <= n
+        max_match_length = 0
+        
+        # Search for the longest match in the window (from the start up to position i-1).
+        for j in 1:(i-1)
+            match_length = 0
+            while (i + match_length <= n) && (sequence[j + match_length] == sequence[i + match_length])
+                match_length += 1
+                # Prevent overlapping matches.
+                if (j + match_length > i - 1)
+                    break
+                end
+            end
+            if match_length > max_match_length
+                max_match_length = match_length
+            end
+        end
+        
+        if max_match_length > 0
+            # Found a match; increment complexity and move the pointer.
+            complexity += 1
+            i += max_match_length + 1
+        else
+            # No match found; treat the current symbol as a new phrase.
+            complexity += 1
+            i += 1
+        end
+    end
+
+    # Normalize the complexity.
+    normalized_complexity = complexity * log2(n) / (n * log2(b))
+    return normalized_complexity
+end
+
+# Normalized Lempel-Ziv 1978 complexity.
+function normalized_LZ78_complexity(sequence::Vector{Int})::Float64
+    if isempty(sequence)
+        return 0.0
+    end
+
+    # Initialize variables.
+    dictionary = Dict{Vector{Int}, Bool}()
+    current_substring = Int[]
+    complexity = 0
+
+    for symbol in sequence
+        push!(current_substring, symbol)
+        
+        if !haskey(dictionary, current_substring)
+            complexity += 1
+            dictionary[copy(current_substring)] = true
+            current_substring = Int[]
+        end
+    end
+
+    # Add the last substring if it's not empty.
+    if !isempty(current_substring) && !haskey(dictionary, current_substring)
+        complexity += 1
+    end
+
+    # Normalize the complexity.
+    n = length(sequence)
+    b = length(unique(sequence))
+    if b == 1
+        normalized_complexity = 0.0
+    else
+        normalized_complexity = complexity * log2(n) / (n * log2(b))
+    end
+
+    return normalized_complexity
 end
 
 function topological_entropy(upper_saddle_kneading_sequence::Vector{Int}, flow_tangency_kneading_sequence::Vector{Int}, n_max::Int, ε::Float64=1e-2)::Float64

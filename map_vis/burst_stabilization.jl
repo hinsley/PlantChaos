@@ -119,7 +119,7 @@ fig2 = let
     # calculate u0 from v0
     u0 = lerp[](v0)
     # solve flow tangency trajectory
-    prob = ODEProblem(Plant.melibeNew, u0, (0., 1e6), p[])
+    prob = ODEProblem(Plant.melibeNew, u0, (0., 1e5), p[])
     sol = solve(prob, Tsit5(), abstol=1e-14, reltol=1e-14)
     flow_tangency_itinerary = voltage_trace_to_itinerary(sol[6,:], sol.t)
     # for i in 1:length(flow_tangency_itinerary)
@@ -148,7 +148,7 @@ fig2 = let
         upper_saddle_kneading_sequence,
         flow_tangency_kneading_sequence,
         minimum([length(upper_saddle_kneading_sequence), length(flow_tangency_kneading_sequence)]),
-        3e-3
+        3e-2
     ))")
 
     # plot nullclines
