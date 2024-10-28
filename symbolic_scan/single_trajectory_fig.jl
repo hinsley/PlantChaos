@@ -8,7 +8,8 @@ using .Plant
 
 include("../tools/symbolics.jl")
 
-p = vcat(Plant.default_params[1:15], [-.35, -47.2]) # Parameters: Delta V_x and Delta Ca
+# p = vcat(Plant.default_params[1:15], [-.35, -47.2]) # Parameters: Delta V_x and Delta Ca
+p = vcat(Plant.default_params[1:15], [-0.68008, -40.0]) # Parameters: Delta V_x and Delta Ca
 u0 = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
 
 ##########
@@ -92,13 +93,13 @@ cb = VectorContinuousCallback(condition, affect!, nothing, 2)
 ## End algorithm
 ##########
 
-prob = ODEProblem(Plant.melibeNew, u0, (0., 3e5), p)
+prob = ODEProblem(Plant.melibeNew, u0, (0., 4e5), p)
 sol = solve(prob, Tsit5(), abstol=3e-6, reltol=3e-6, callback=cb)#, save_everystep=false)
 
 # Plot voltage trace and Vdot over time.
 begin
   # Extract V(t) and time values from the solution
-  ttr = 100
+  ttr = 20
   u2 = sol.u[ttr:end]
   V_values = [u[6][] for u in u2]
   t_values = sol.t[ttr:end]
@@ -107,75 +108,44 @@ begin
   Vdot_values = [Plant.dV(p, u...) for u in u2]
 
   # Create a figure with two panels: V(t) and Vdot(t)
-  fig = Figure(resolution=(1500, 200))
+  fig = Figure(resolution=(1500, 150))
 
   # Plot V(t) time trace in the first panel
   ax1 = Axis(fig[1, 1], xlabel="t", ylabel="V")
 
   lines!(ax1, t_values, V_values, label="V(t)", color=:black, linewidth=1)
 
-  # Plot event times on V(t) plot
-  scatter!(
-    ax1,
-    I_times,
-    fill(-40, length(I_times)),
-    label="I times",
-    color=:red,
-    markersize=10
-  )
-  scatter!(
-    ax1,
-    Vplus_times,
-    fill(-36, length(Vplus_times)),
-    label="Vplus times",
-    color=:blue,
-    markersize=10
-  )
+  # Plot SSCS registration event times on V(t) plot
+  Vminus_indices = [findfirst(>=(t), sol.t) for t in Vminus_times]
   scatter!(
     ax1,
     Vminus_times,
-    fill(-38, length(Vminus_times)),
+    [u[6] for u in sol.u[Vminus_indices]],
     label="Vminus times",
-    color=:black,
+    color=:red,
     markersize=10
   )
+  # Add SSCS symbol labels under scatter points
+  vertical_offset = 12
+  for (i, t) in enumerate(Vminus_times)
+    text!(
+      ax1,
+      string(STATE[].symbols[i]),
+      position=(t, sol.u[Vminus_indices[i]][6] + (STATE[].symbols[i] == 0 ? 2.2 * vertical_offset : -vertical_offset)),
+      align=(:center, :top),
+      color=:red
+    )
+  end
 
   xlims!(ax1, sol.t[ttr], t_values[end])
+  ylims!(ax1, -75, 30)
   hidespines!(ax1)
   hidedecorations!(ax1, label=false)
 
-
-"""  # Create a second axis for Vdot(t)
-  ax2 = Axis(fig[2, 1], xlabel="Time", ylabel="Vdot", title="Vdot(t)")
-  lines!(ax2, t_values, Vdot_values, label="Vdot(t)", color=:orange)
-
-  # Plot event times on Vdot(t) plot
-  scatter!(
-    ax2,
-    I_times,
-    fill(0, length(I_times)),  # Adjusted y-value for scatter points
-    label="I times",
-    color=:red,
-    markersize=10
-  )
-  scatter!(
-    ax2,
-    Vplus_times,
-    fill(0, length(Vplus_times)),  # Adjusted y-value for scatter points
-    label="Vplus times",
-    color=:blue,
-    markersize=10
-  )
-  scatter!(
-    ax2,
-    Vminus_times,
-    fill(0, length(Vminus_times)),  # Adjusted y-value for scatter points
-    label="Vminus times",
-    color=:black,
-    markersize=10
-  )
-  axislegend(ax2)"""
-
   # Display the figure
   display(fig)
+
+  # Save the figure
+  save("single_trajectory_SSCS.png", fig, dpi=300)
 end
+
