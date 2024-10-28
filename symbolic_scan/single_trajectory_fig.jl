@@ -8,8 +8,7 @@ using .Plant
 
 include("../tools/symbolics.jl")
 
-# p = vcat(Plant.default_params[1:15], [-.35, -47.2]) # Parameters: Delta V_x and Delta Ca
-p = vcat(Plant.default_params[1:15], [-0.68008, -40.0]) # Parameters: Delta V_x and Delta Ca
+p = vcat(Plant.default_params[1:15], [-0.9, -38.289]) # Parameters: Delta V_x and Delta Ca
 u0 = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
 
 ##########
@@ -123,7 +122,7 @@ begin
     [u[6] for u in sol.u[Vminus_indices]],
     label="Vminus times",
     color=:red,
-    markersize=10
+    markersize=7
   )
   # Add SSCS symbol labels under scatter points
   vertical_offset = 12
