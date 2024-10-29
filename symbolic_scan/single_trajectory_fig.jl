@@ -1,7 +1,7 @@
 using Pkg
 Pkg.activate("./symbolic_scan")
 Pkg.instantiate()
-using CairoMakie, OrdinaryDiffEq, StaticArrays
+using GLMakie, OrdinaryDiffEq, StaticArrays
 
 include("../model/Plant.jl")
 using .Plant
@@ -107,10 +107,10 @@ begin
   Vdot_values = [Plant.dV(p, u...) for u in u2]
 
   # Create a figure with two panels: V(t) and Vdot(t)
-  fig = Figure(resolution=(1500, 150))
+  fig = Figure(resolution=(1500, 150), fontsize=20)
 
   # Plot V(t) time trace in the first panel
-  ax1 = Axis(fig[1, 1], xlabel="t", ylabel="V")
+  ax1 = Axis(fig[1, 1], xlabel=L"t", ylabel=L"V")
 
   lines!(ax1, t_values, V_values, label="V(t)", color=:black, linewidth=1)
 
@@ -132,7 +132,8 @@ begin
       string(STATE[].symbols[i]),
       position=(t, sol.u[Vminus_indices[i]][6] + (STATE[].symbols[i] == 0 ? 2.2 * vertical_offset : -vertical_offset)),
       align=(:center, :top),
-      color=:red
+      color=:red,
+      fontsize=14
     )
   end
 
