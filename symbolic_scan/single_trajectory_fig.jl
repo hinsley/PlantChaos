@@ -110,7 +110,7 @@ begin
   fig = Figure(resolution=(1500, 150), fontsize=20)
 
   # Plot V(t) time trace in the first panel
-  ax1 = Axis(fig[1, 1], xlabel=L"t", ylabel=L"V")
+  ax1 = Axis(fig[1, 1], xlabel=L"t", ylabel=L"V(t)")
 
   lines!(ax1, t_values, V_values, label="V(t)", color=:black, linewidth=1)
 
