@@ -8,7 +8,7 @@ using .Plant
 
 include("../tools/symbolics.jl")
 
-p = vcat(Plant.default_params[1:15], [-0.9, -38.289]) # Parameters: Delta V_x and Delta Ca
+p = vcat(Plant.default_params[1:15], [-0.9, -38.285]) # Parameters: Delta V_x and Delta Ca
 u0 = SVector{6}(Plant.default_state[1], 0., Plant.default_state[2:end]...)
 
 ##########
@@ -107,12 +107,12 @@ begin
   Vdot_values = [Plant.dV(p, u...) for u in u2]
 
   # Create a figure with two panels: V(t) and Vdot(t)
-  fig = Figure(resolution=(1500, 150), fontsize=20)
+  fig = Figure(resolution=(3000, 200), fontsize=36)  # Scaled resolution and fontsize
 
   # Plot V(t) time trace in the first panel
   ax1 = Axis(fig[1, 1], xlabel=L"t", ylabel=L"V(t)")
 
-  lines!(ax1, t_values, V_values, label="V(t)", color=:black, linewidth=1)
+  lines!(ax1, t_values, V_values, label="V(t)", color=:black, linewidth=2)  # Scaled linewidth
 
   # Plot SSCS registration event times on V(t) plot
   Vminus_indices = [findfirst(>=(t), sol.t) for t in Vminus_times]
@@ -122,23 +122,23 @@ begin
     [u[6] for u in sol.u[Vminus_indices]],
     label="Vminus times",
     color=:red,
-    markersize=7
+    markersize=10
   )
   # Add SSCS symbol labels under scatter points
-  vertical_offset = 12
+  vertical_offset = 12  # Scaled vertical offset
   for (i, t) in enumerate(Vminus_times)
     text!(
       ax1,
       string(STATE[].symbols[i]),
-      position=(t, sol.u[Vminus_indices[i]][6] + (STATE[].symbols[i] == 0 ? 2.2 * vertical_offset : -vertical_offset)),
+      position=(t, sol.u[Vminus_indices[i]][6] + (STATE[].symbols[i] == 0 ? 2.4 * vertical_offset : -vertical_offset)),  # Scaled vertical position
       align=(:center, :top),
       color=:red,
-      fontsize=14
+      fontsize=22
     )
   end
 
-  xlims!(ax1, sol.t[ttr], t_values[end])
-  ylims!(ax1, -75, 30)
+  xlims!(ax1, sol.t[ttr], t_values[end]+1e3)
+  ylims!(ax1, -80, 37)  # Adjusted y-limits for scaling
   hidespines!(ax1)
   hidedecorations!(ax1, label=false)
 
@@ -146,6 +146,6 @@ begin
   display(fig)
 
   # Save the figure
-  save("single_trajectory_SSCS.png", fig, dpi=300)
+  save("single_trajectory_SSCS.png", fig, dpi=1200)  # Increased dpi for better quality
 end
 
