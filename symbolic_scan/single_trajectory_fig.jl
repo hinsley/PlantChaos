@@ -133,7 +133,7 @@ begin
       position=(t, sol.u[Vminus_indices[i]][6] + (STATE[].symbols[i] == 0 ? 2.4 * vertical_offset : -vertical_offset)),  # Scaled vertical position
       align=(:center, :top),
       color=:red,
-      fontsize=22
+      fontsize=23
     )
   end
 
