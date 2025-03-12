@@ -16,7 +16,7 @@ default_params = @SVector Float32[
     0.03e0,   # 7: gKCa
     30.0e0,   # 8: EI
     -75.0e0,  # 9: EK
-    70.0e0,   # 10: Eₕ
+    -70.0e0,   # 10: Eₕ
     -40.0e0,  # 11: EL
     140.0e0,  # 12: ECa
     0.0085e0, # 13: Kc
@@ -30,16 +30,15 @@ Vs(V) = (127.0 * V + 8265.0) / 105.0
 
 am(V) = 0.1 * (50.0 - Vs(V)) / (exp((50.0 - Vs(V)) / 10.0) - 1.0)
 bm(V) = 4.0 * exp((25.0 - Vs(V))/18.0)
-minf(V) = am(V) / (am(V) + bm(V))
-# Fast inward sodium and calcium current
-II(p, h, V) = p[2] * h * minf(V)^3.0 * (V - p[8])
 
+# Fast inward sodium and calcium current
+minf(V) = am(V) / (am(V) + bm(V))
 ah(V) = 0.07 * exp((25.0 - Vs(V)) / 20.0)
 bh(V) = 1.0 / (1.0 + exp((55.0 - Vs(V)) / 10.0))
 hinf(V) = ah(V) / (ah(V) + bh(V))
 th(V) = 12.5 / (ah(V) + bh(V))
-Ih(p, y, V) = p[4] * y * (V - p[10]) / (1.0 + exp(-(63.0 + V) / 7.8))^3.0
 dh(h, V) = (hinf(V) - h) / th(V)
+II(p, h, V) = p[2] * h * minf(V)^3.0 * (V - p[8])
 
 an(V) = 0.01 * (55.0 - Vs(V)) / (exp((55.0 - Vs(V)) / 10.0) - 1.0)
 bn(V) = 0.125 * exp((45.0 - Vs(V)) / 80.0)
@@ -53,7 +52,8 @@ IT(p, x, V) = p[6] * x * (V - p[8])
 dx(p, x, V) = (xinf(p, V) - x) / p[14]
 xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 
-dy(y, V) = .0005*((.1/(1+exp(10*(V+52))))-y)/1000
+Ih(p, y, V) = p[4] * y * (V - p[10])
+dy(y, V) = 2e-4*((1/(1+exp((V+50))))-y)
 
 Ileak(p, V) = p[5] * (V - p[11])
 

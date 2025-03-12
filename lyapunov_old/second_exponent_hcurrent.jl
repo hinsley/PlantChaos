@@ -1,11 +1,12 @@
 using Pkg
 Pkg.activate("../lyapunov_old/")
 Pkg.instantiate()
-using GLMakie
-using StaticArrays, ProgressMeter
+using GLMakie, StaticArrays, OrdinaryDiffEq, LinearAlgebra, ForwardDiff, ImageShow
+import LinearAlgebra
+
+gh = .002
 
 include("../model/Plant.jl")
-
 function melibeNew(u::AbstractArray{T}, p, t) where T
     return @SVector T[
         Plant.dx(p, u[1], u[6]),
@@ -26,8 +27,7 @@ u0 = @SVector Float64[
     -62.0e0;   # V
 ]
 
-#include("../tools/equilibria.jl")
-gh = .0015
+# set up parameter space
 start_p = Float64[Plant.default_params...]
 start_p[4] = gh
 start_p[17] = -60.0 # Cashift
@@ -37,139 +37,99 @@ end_p[4] = gh
 end_p[17] = 0.0 # Cashift
 end_p[16] = .5 # xshift
 
-resolution = 2 # How many points to sample.
+resolution = 300 # How many points to sample.
 Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
 x_shifts = LinRange(start_p[16], end_p[16], resolution)
 ps = [[Plant.default_params[1:3];[gh];Plant.default_params[5:15]; [x_shifts[i], Ca_shifts[j]]] for i in 1:resolution, j in 1:resolution]
 
-using DynamicalSystems, ChaosTools
-import LinearAlgebra
-
-using OrdinaryDiffEq
-p = vcat(Plant.default_params[1:3], gh, Plant.default_params[5:15], [-1.0, -38.0])
-diffeq = (alg = RK4(), abstol = 1e-8, reltol = 1e-8)
-sys = CoupledODEs(melibeNew, u0, p; diffeq)
-tands = TangentDynamicalSystem(sys)
-
-#test trajectory
+# test plot
 begin
-    prob = ODEProblem(melibeNew, u0, (0.0, 1000000.0), p)
-    sol = solve(prob, RK4(), abstol = 1e-8, reltol = 1e-8)
-
-    #plot test trajectory
     fig = Figure()
-    ax = Axis(fig[1, 1])
-    lines!(ax, sol.t, sol[2, :], color = :blue)
-    ax2 = Axis3(fig[1, 2])
-    lines!(ax2, sol[1, :], sol[5, :], sol[6, :], color = :blue)
+    ax = Axis(fig[1,1])
+    tspan = (0.0, 1000000.0)
+    p = [ps[1,1][1:3]; gh; ps[1,1][5:15]; [-1.0, -38.0]]
+    prob = ODEProblem(melibeNew, u0, tspan, p)
+    @time sol = solve(prob, Rosenbrock23(), saveat = 1.0)
+    @time begin
+        integ = init(prob, 
+        Rosenbrock23(), 
+        save_everystep = false, 
+        save_start = false, 
+        save_end = false)
+        while integ.t < 1000000.0
+            step!(integ)
+        end
+    end
+    lines!(ax, sol.t, sol[6, :])
+    ax2 = Axis3(fig[1,2])
+    lines!(ax2, sol[5, :], sol[1, :], sol[2, :])
     fig
 end
 
-lyapunovspectrum(sys, 1000, 5, Ttr = 0)
+using DynamicalSystems
+p = [ps[1,1][1:3]; gh; ps[1,1][5:15]; [-1.0, -38.0]]
+sys = ContinuousDynamicalSystem(melibeNew, u0, p)
 
-# test lyapunov spectrum
-Δt = 1.0
-Ttr = 449
-u0 = current_state(tands)
-reinit!(tands, u0)
+# test lyapunov
+lyapunov = lyapunovspectrum(sys, 1000000)
 
-function _buffered_qr(B::SMatrix, Y) # Y are the deviations
-    Q, R = LinearAlgebra.qr(Y)
-    return Q, R
-end
-function _buffered_qr(B::Matrix, Y) # Y are the deviations
-    B .= Y
-    Q, R = LinearAlgebra.qr!(B)
-    return Q, R
-end
-function set_Q_as_deviations!(tands::TangentDynamicalSystem{true}, Q)
-    devs = current_deviations(tands) # it is a view
-    if size(Q) ≠ size(devs)
-        copyto!(devs, LinearAlgebra.I)
-        LinearAlgebra.lmul!(Q, devs)
-        set_deviations!(tands, devs)
-    else
-        set_deviations!(tands, Q)
+# Allocate space for first three Lyapunov exponents
+lyap_vals = zeros(3, resolution, resolution)
+
+using ProgressMeter
+total_points = resolution * resolution
+progress = Progress(total_points, desc="Parameter Scan", dt=1)
+
+Threads.@threads for i in 1:resolution
+    for j in 1:resolution
+        p_ij = ps[i, j]
+        sys = ContinuousDynamicalSystem(melibeNew, u0, p_ij)
+        # For demonstration, use fewer steps if runtime is excessive
+        lyaps = lyapunovspectrum(sys, 500000)
+        # Store the first three exponents if available, else pad with zeros
+        lyap_vals[1, i, j] = length(lyaps) >= 1 ? lyaps[1] : 0
+        lyap_vals[2, i, j] = length(lyaps) >= 2 ? lyaps[2] : 0
+        lyap_vals[3, i, j] = length(lyaps) >= 3 ? lyaps[3] : 0
+        next!(progress)
     end
 end
 
-function set_Q_as_deviations!(tands::TangentDynamicalSystem{false}, Q)
-    # here `devs` is a static vector
-    devs = current_deviations(tands)
-    ks = axes(devs, 2) # it is a `StaticArrays.SOneTo(k)`
-    set_deviations!(tands, Q[:, ks])
+# Normalize each exponent channel to [0,1] for plotting
+function normv(v, mn, mx)
+    mx == mn && return 0.0
+    return (v - mn) / (mx - mn)
 end
 
-B = copy(current_deviations(tands))
-if Ttr > 0 # This is useful to start orienting the deviation vectors
-    t0 = current_time(tands)
-    while (current_time(tands) < t0 + Ttr)
-        if any(x -> abs(x) > 1000, current_deviations(tands))
-            g = false
-        end
-        step!(tands, Δt)
-        Q, R = _buffered_qr(B, current_deviations(tands))
-        set_Q_as_deviations!(tands, Q)
-    end
+function shape(v, mn, mx, bot, top)
+    v = v > top ? top : v
+    v = v < bot ? bot : v
+    mx == mn && return 0.0
+    return (v - bot) / (top - bot) 
 end
 
-k = size(current_deviations(tands))[2]
-λ = zeros(eltype(current_deviations(tands)), k)
-t0 = current_time(tands)
+min1, max1 = extrema(lyap_vals[1, :, :])
+min2, max2 = extrema(lyap_vals[2, :, :])
+min3, max3 = extrema(lyap_vals[3, :, :])
 
-for i in 1:N
-    step!(tands, Δt)
-    Q, R = _buffered_qr(B, current_deviations(tands))
-    for j in 1:k
-        @inbounds λ[j] += log(abs(R[j,j]))
-    end
-    set_Q_as_deviations!(tands, Q)
-    ProgressMeter.update!(progress, i)
-end
+top3 = lyap_vals[1, :, :] .+ lyap_vals[2, :, :] .+ lyap_vals[3, :, :]
+min4, max4 = extrema(top3)
 
 
 
+[RGBf(shape(top3[i, j], min4, max4, -.0005, .0000001), 0,0) for j in 1:resolution, i in 1:resolution]
 
+img = rotl90([RGBf(shape(lyap_vals[1, i, j], min1, max1, .0, 5e-6),
+            shape(lyap_vals[2, i, j], min2, max2, 0, .0000015),
+            shape(top3[i,j], min4, max4, -.00015, 0.0 ))
+       for j in 1:resolution, i in 1:resolution])
 
-import LinearAlgebra
+fig = Figure()
+ax = Axis(fig[1, 1], aspect=1)
+image!(ax, rotr90(img))
+fig
 
-N = Threads.nthreads()
+maximum(lyap_vals[1,:,:])
 
-begin
-    lyaparray = Array{Float64}(undef, resolution, resolution)
-    lyap2array = Array{Float64}(undef, resolution, resolution)
-    lyap3array = Array{Float64}(undef, resolution, resolution)
-    lyap4array = Array{Float64}(undef, resolution, resolution)
-    lyap5array = Array{Float64}(undef, resolution, resolution)
-    
-    # Initialize a progress bar
-    p = Progress(resolution^2, 1, "Computing Lyapunov Exponents: ", 50)
-
-    Threads.@threads for i in 1:resolution
-        for j in 1:resolution
-            sys = CoupledODEs(melibeNew, u0, ps[i,j])
-            ls = lyapunovspectrum(sys, 1000000, 5; Ttr = 500000)
-            lyaparray[i,j] = ls[1]
-            lyap2array[i,j] = ls[2]
-            lyap3array[i,j] = ls[3]
-            lyap4array[i,j] = ls[4]
-            lyap5array[i,j] = ls[5]
-            next!(p)
-        end
-    end
-end
-
-scale(x, min, max) = x < min ? 0.0 : x > max ? 1.0 : (x - min) / (max - min) 
-using ImageShow
-lcarr = rotl90([Makie.RGB(
-    let a = lyaparray'[i,j]
-        abs2(scale(a, 0, 0.00021))
-    end, let a = lyap2array'[i,j]
-        sqrt(scale(a, 0.0000, 0.0015))
-    end, let a = lyap2array'[i,j]
-        sqrt(sqrt(scale(-a, .00, 0.00019)))
-    end
-) for i in 1:resolution, j in 1:resolution])
-
+# save data
 using JLD2
-save("lyapunov_3color.jld2", "lcarr", lcarr)
+@save "lyapunov.jld2" lyap_vals
