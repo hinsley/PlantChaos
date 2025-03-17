@@ -5,7 +5,7 @@ I_default = 0.0
 # To perform a sweep over a range of constant currents, manually set I_min, I_max, and N_points.
 # For a single simulation with the default current, set I_min = I_max = I_default.
 I_min = -8e-3
-I_max = 5e-3
+I_max = 3e-3
 N_points = 100
 
 using Pkg
