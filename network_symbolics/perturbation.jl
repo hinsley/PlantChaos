@@ -1,7 +1,6 @@
 using Pkg
-# Pkg.activate("./network_symbolics")
-# Pkg.instantiate()
-Pkg.activate(".")
+Pkg.activate("./network_symbolics")
+Pkg.instantiate()
 using GLMakie, OrdinaryDiffEq, StaticArrays
 
 include("../model/Plant.jl")
@@ -11,20 +10,22 @@ include("../tools/symbolics.jl")
 
 p = vcat(Plant.default_params[1:15], [-0.9, -38.285]) # Parameters: Delta V_x and Delta Ca
 u0 = SVector{7}(Plant.default_state_Isyn[1], 0., Plant.default_state_Isyn[2:end]...)
-tspan = (0.0, 1e6)
+tspan = (0.0, 1e5)
 
 # Define a synaptic current function (can be modified as needed)
 function synaptic_current(t)
-    # Example: A step current that turns on at t=200 and off at t=600.
-    if 1e0 <= t <= 1e5
-        return 1.0  # Current amplitude (adjust as needed).
+    # Constant current.
+    if tspan[1] <= t <= tspan[2]
+        return -3e-3
     else
         return 0.0
     end
     
-    # Uncomment for other current patterns:
     # Sinusoidal current.
-    # return 0.2 * sin(0.01 * t)
+    # amplitude = 0.05
+    # frequency = 1e-2
+    # offset = -amplitude
+    # return amplitude * sin(frequency / 2pi * t) + offset
     
     # Pulse train.
     # return t % 200 < 50 ? 0.5 : 0.0
@@ -67,14 +68,15 @@ const global STATE = Ref(EncoderState(
 ))
 
 function condition(out, u, t, integrator)
-  Vdot = Plant.dV(integrator.p, u...)
+  u_Isyn = [u[1:end-1]..., synaptic_current(t)]
+  Vdot = Plant.dV(integrator.p, u_Isyn...)
   out[1] = -Vdot
 
   # out[2] is -Vddot, but we must use finite differencing to calculate it accurately as the analytical derivative of minf is numerically unstable.
   out[2] = -Plant.numerical_derivative_Isyn(
     (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
     synaptic_current,
-    u,
+    u_Isyn,
     integrator.p,
     t,
     1e-4
@@ -110,13 +112,25 @@ function affect!(integrator, event_index)
 end
 
 cb = VectorContinuousCallback(condition, affect!, nothing, 2)
-## End algorithm
-##########
+
+# Add this function to update Isyn during integration
+function update_isyn!(integrator)
+    # Update the last component of the state vector (Isyn) at each timestep
+    integrator.u = SVector{7}(integrator.u[1:6]..., synaptic_current(integrator.t))
+    return nothing
+end
+
+cb_isyn = DiscreteCallback(
+    (u,t,integrator) -> true, # Always triggered
+    update_isyn!
+)
+
+cb_combined = CallbackSet(cb, cb_isyn)
 
 prob = ODEProblem(Plant.melibeNewIsyn, u0, tspan, p)
-sol = solve(prob, Tsit5(), abstol=3e-6, reltol=3e-6, callback=cb)#, save_everystep=false)
+sol = solve(prob, Tsit5(), abstol=3e-6, reltol=3e-6, callback=cb_combined)#, save_everystep=false)
 
-# Plot voltage trace and Vdot over time.
+# Plot voltage trace and synaptic current in aligned subplots.
 begin
   # Extract V(t) and time values from the solution
   ttr = 20
@@ -124,48 +138,88 @@ begin
   V_values = [u[6][] for u in u2]
   t_values = sol.t[ttr:end]
 
-  # Calculate Vdot values using the analytical formula
-  Vdot_values = [Plant.dV(p, u...) for u in u2]
+  # Create figure with two vertically aligned subplots
+  fig = Figure(resolution=(3000, 400), fontsize=36)  # Increased height for two subplots
 
-  # Create a figure with two panels: V(t) and Vdot(t)
-  fig = Figure(resolution=(3000, 200), fontsize=36)  # Scaled resolution and fontsize
-
-  # Plot V(t) time trace in the first panel
-  ax1 = Axis(fig[1, 1], xlabel=L"t", ylabel=L"V(t)")
-
-  lines!(ax1, t_values, V_values, label="V(t)", color=:black, linewidth=2)  # Scaled linewidth
-
-  # Plot SSCS registration event times on V(t) plot
+  # Voltage trace plot (top panel)
+  ax1 = Axis(fig[1, 1], ylabel=L"V(t)")
+  lines!(ax1, t_values, V_values, color=:black, linewidth=2)
+  
+  # Plot SSCS events and labels (existing functionality)
   Vminus_indices = [findfirst(>=(t), sol.t) for t in Vminus_times]
-  scatter!(
-    ax1,
-    Vminus_times,
-    [u[6] for u in sol.u[Vminus_indices]],
-    label="Vminus times",
-    color=:red,
-    markersize=10
-  )
-  # Add SSCS symbol labels under scatter points
-  vertical_offset = 12  # Scaled vertical offset
+  scatter!(ax1, Vminus_times, [u[6] for u in sol.u[Vminus_indices]],
+          color=:red, markersize=10)
+  
+  # Add SSCS labels
+  vertical_offset = 12
   for (i, t) in enumerate(Vminus_times)
-    text!(
-      ax1,
-      string(STATE[].symbols[i]),
-      position=(t, sol.u[Vminus_indices[i]][6] + (STATE[].symbols[i] == 0 ? 2.4 * vertical_offset : -vertical_offset)),  # Scaled vertical position
-      align=(:center, :top),
-      color=:red,
-      fontsize=23
-    )
+    text!(ax1, string(STATE[].symbols[i]),
+          position=(t, sol.u[Vminus_indices[i]][6] + 
+                   (STATE[].symbols[i] == 0 ? 2.4 * vertical_offset : -vertical_offset)),
+          align=(:center, :top), color=:red, fontsize=23)
   end
 
+  # Synaptic current plot (bottom panel)
+  ax2 = Axis(fig[2, 1], xlabel=L"t", ylabel=L"I_{\mathrm{syn}}")
+  
+  # Get observed current values and extend range to include zero
+  isyn_vals = synaptic_current.(t_values)
+  min_unit = min(floor(Int, minimum(isyn_vals)), 0)
+  max_unit = max(ceil(Int, maximum(isyn_vals)), 0)
+  levels = min_unit:max_unit
+  
+  # Add horizontal rules at each integer unit (including zero)
+  for level in levels
+      lines!(ax2, [t_values[1], t_values[end]], [level, level], 
+             color=:black, linestyle=:dot, linewidth=1)
+  end
+  
+  # Plot synaptic current on top
+  lines!(ax2, t_values, synaptic_current.(t_values), 
+        color=:blue, linewidth=2)
+
+  # Shared formatting
+  linkxaxes!(ax1, ax2)  # Ensure time alignment
   xlims!(ax1, sol.t[ttr], t_values[end]+1e3)
-  ylims!(ax1, -80, 37)  # Adjusted y-limits for scaling
+  ylims!(ax1, -80, 37)
+  
   hidespines!(ax1)
+  hidespines!(ax2)
   hidedecorations!(ax1, label=false)
+  hidedecorations!(ax2, label=false)
 
-  # Display the figure
   display(fig)
-
-  # Save the figure
-  # save("single_trajectory_SSCS.png", fig, dpi=1200)  # Increased dpi for better quality
+  # save("dual_trajectory_plot.png", fig, dpi=1200)
 end
+
+function sscs_to_branch_coordinate(sscs::Vector{Int})
+    coordinate_interval = (0, 1)
+    orientation = 1
+    new_orientation = orientation
+    for i in 1:length(sscs)
+        if sscs[i] <= 0
+            individual_coordinate_interval = (1.0-2.0^sscs[i], 1.0-3.0*2.0^(sscs[i]-2))
+            new_orientation *= -1
+        else
+            individual_coordinate_interval = (1.0-3.0*2.0^(-sscs[i]-2), 1.0-2.0^(-sscs[i]-1))
+        end
+        a, b = individual_coordinate_interval
+        if orientation == 1
+            coordinate_interval = (
+                (1-a)*coordinate_interval[1] + a*coordinate_interval[2],
+                (1-b)*coordinate_interval[1] + b*coordinate_interval[2]
+            )
+        else
+            coordinate_interval = (
+                a*coordinate_interval[1] + (1-a)*coordinate_interval[2],
+                b*coordinate_interval[1] + (1-b)*coordinate_interval[2]
+            )
+        end
+        orientation = new_orientation
+    end
+    return coordinate_interval
+end
+
+# Print the range of possible branch coordinate values
+println("Branch coordinate range:")
+println(sscs_to_branch_coordinate(STATE[].symbols[2:end]))

@@ -66,7 +66,7 @@ function dV(p, x, y, n, h, Ca, V)#, Isyn)
 end
 function dV(p, x, y, n, h, Ca, V, Isyn)
     # TODO: Add a function for Isyn per (12) in the appendix of the paper.
-    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V)+ Isyn) / p[1]
+    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
 end
 
 function melibeNew(u::AbstractArray{T}, p, t) where T
