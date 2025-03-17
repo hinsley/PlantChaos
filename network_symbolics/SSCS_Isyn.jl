@@ -12,14 +12,10 @@ p = vcat(Plant.default_params[1:15], [-0.9, -38.285]) # Parameters: Delta V_x an
 u0 = SVector{7}(Plant.default_state_Isyn[1], 0., Plant.default_state_Isyn[2:end]...)
 tspan = (0.0, 1e5)
 
-# Define a synaptic current function (can be modified as needed)
+# Define a synaptic current function.
 function synaptic_current(t)
     # Constant current.
-    if tspan[1] <= t <= tspan[2]
-        return -3e-3
-    else
-        return 0.0
-    end
+    return -3e-3
     
     # Sinusoidal current.
     # amplitude = 0.05
@@ -133,7 +129,7 @@ sol = solve(prob, Tsit5(), abstol=3e-6, reltol=3e-6, callback=cb_combined)#, sav
 # Plot voltage trace and synaptic current in aligned subplots.
 begin
   # Extract V(t) and time values from the solution
-  ttr = 20
+  ttr = 1
   u2 = sol.u[ttr:end]
   V_values = [u[6][] for u in u2]
   t_values = sol.t[ttr:end]
@@ -221,5 +217,8 @@ function sscs_to_branch_coordinate(sscs::Vector{Int})
 end
 
 # Print the range of possible branch coordinate values
+branch_coordinate_range = sscs_to_branch_coordinate(STATE[].symbols)
 println("Branch coordinate range:")
-println(sscs_to_branch_coordinate(STATE[].symbols[2:end]))
+println(branch_coordinate_range)
+println("Center branch coordinate:")
+println(sum(branch_coordinate_range) / 2)
