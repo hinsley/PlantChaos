@@ -6,7 +6,7 @@ I_default = 0.0
 # For a single simulation with the default current, set I_min = I_max = I_default.
 I_min = -8e-3
 I_max = 5e-3
-N_points = 3000
+N_points = 100
 
 using Pkg
 Pkg.activate("./network_symbolics")
