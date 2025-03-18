@@ -6,7 +6,7 @@ I_default = 0.0
 # For a single simulation with the default current, set I_min = I_max = I_default.
 I_min = -8e-3
 I_max = 3e-3
-N_points = 100
+N_points = 5000
 
 using Pkg
 Pkg.activate("./network_symbolics")
@@ -166,7 +166,16 @@ for I in I_values
 end
 
 # Plot the graph: constant current (horizontal) vs. center branch coordinate (vertical).
-fig = Figure(resolution = (1200, 900))
-ax = Axis(fig[1, 1], xlabel="Constant Synaptic Current (mA)", ylabel="Center Branch Coordinate")
-scatterlines!(ax, I_values, center_coords, markersize=0, linewidth=2)
+fig = Figure(resolution = (1200, 1200))
+ax = Axis(fig[1, 1], 
+    xlabel=L"I_{\mathrm{syn}}\textrm{ (Synaptic current)}", 
+    ylabel=L"\textrm{Symbolic coordinate}",
+    xlabelsize=48,
+    ylabelsize=48,
+    xticklabelsize=24,
+    yticklabelsize=24)
+lines!(ax, I_values, center_coords, linewidth=3)
 display(fig)
+# Save the figure to disk with high resolution.
+save("network_symbolics/current_vs_coordinate.png", fig, dpi=600)
+println("Figure saved as 'current_vs_coordinate.png'.")
