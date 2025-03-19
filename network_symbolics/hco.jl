@@ -11,6 +11,8 @@ using GLMakie, OrdinaryDiffEq, StaticArrays
 include("../model/Plant.jl")
 using .Plant
 
+include("../network_symbolics/network_coordinate_diagram.jl")
+
 tspan = (0.0, 1e6)
 
 function two_neurons!(du, u, p, t)
@@ -469,9 +471,10 @@ end
 sol = run_hco_simulation(tspan)
 
 # Encode SSCSs from the voltage traces
-sscs_data = encode_sscs(sol, 20.0, :minima, 3.0, 180.0)
+sscs_data = encode_sscs(sol, 20.0, :minima, 2.0, 180.0)
 
 # Discard transients at the start in case of a partial burst.
+# 1 means no discard.
 sscs1_transient_begin = 1
 sscs2_transient_begin = 2
 
@@ -479,7 +482,6 @@ sscs1 = sscs_data.symbols1[sscs1_transient_begin:end]
 sscs2 = sscs_data.symbols2[sscs2_transient_begin:end]
 sscs1_times = sscs_data.Vminus_times1[sscs1_transient_begin:end]
 sscs2_times = sscs_data.Vminus_times2[sscs2_transient_begin:end]
-
 
 # Calculate branch coordinates
 branch1 = sscs_to_branch_coordinate(sscs1)
@@ -495,9 +497,46 @@ println("Neuron 2 center branch coordinate: ", sum(branch2)/2)
 
 # Plot results with SSCS markers
 fig = plot_hco_results_with_sscs(sol, sscs_data)
-save("hco_results_with_sscs.png", fig)
+# save("hco_results_with_sscs.png", fig)
 display(fig)
 
 # Also display the original plot
 fig_original = plot_hco_results(sol)
+# save("hco_results.png", fig_original)
 display(fig_original)
+
+# Compute the network coordinate diagram
+sscs_list = [sscs1, sscs2]
+order_list = [sscs1_times, sscs2_times]
+ncd = NetworkCoordinateDiagram.sequence(sscs_list, order_list)
+
+### Plot the network coordinate diagram as a scatter plot in 2D joined by lines
+### between consecutive points in the diagrammed sequence.
+
+# Create a figure for the network coordinate diagram
+fig_ncd = Figure(resolution=(800, 600))
+ax_ncd = Axis(
+  fig_ncd[1, 1], 
+  xlabel="Neuron 1 Coordinate", 
+  ylabel="Neuron 2 Coordinate",
+  title="Network Coordinate Diagram"
+)
+
+# Extract x and y coordinates from the network coordinate diagram
+x_coords = [point[1] for point in ncd]
+y_coords = [point[2] for point in ncd]
+
+# Plot the points
+scatter!(ax_ncd, x_coords, y_coords, color=(:blue, 0.2), markersize=8)
+
+# Connect the points with lines (with transparency)
+lines!(ax_ncd, x_coords, y_coords, color=(:black, 0.2), linewidth=1)
+
+# Set axis limits with a small margin
+margin = 0.05
+xlims!(ax_ncd, minimum(x_coords) - margin, maximum(x_coords) + margin)
+ylims!(ax_ncd, minimum(y_coords) - margin, maximum(y_coords) + margin)
+
+# Display the network coordinate diagram
+display(fig_ncd)
+# save("network_coordinate_diagram.png", fig_ncd)
