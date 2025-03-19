@@ -471,9 +471,19 @@ sol = run_hco_simulation(tspan)
 # Encode SSCSs from the voltage traces
 sscs_data = encode_sscs(sol, 20.0, :minima, 3.0, 180.0)
 
+# Discard transients at the start in case of a partial burst.
+sscs1_transient_begin = 1
+sscs2_transient_begin = 2
+
+sscs1 = sscs_data.symbols1[sscs1_transient_begin:end]
+sscs2 = sscs_data.symbols2[sscs2_transient_begin:end]
+sscs1_times = sscs_data.Vminus_times1[sscs1_transient_begin:end]
+sscs2_times = sscs_data.Vminus_times2[sscs2_transient_begin:end]
+
+
 # Calculate branch coordinates
-branch1 = sscs_to_branch_coordinate(sscs_data.symbols1)
-branch2 = sscs_to_branch_coordinate(sscs_data.symbols2)
+branch1 = sscs_to_branch_coordinate(sscs1)
+branch2 = sscs_to_branch_coordinate(sscs2)
 
 # Print SSCS information
 println("Neuron 1 SSCS: ", sscs_data.symbols1)
