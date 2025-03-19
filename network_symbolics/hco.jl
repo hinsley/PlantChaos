@@ -168,6 +168,8 @@ function plot_hco_results(sol)
 end
 
 # Function to encode voltage traces as SSCSs after simulation
+# Note: There is currently a bug whereby subthreshold oscillations are not being
+#       detected.
 function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0, I_proximity_threshold=10.0)
   # Extract voltage and synaptic current time series for both neurons
   t_values = sol.t
