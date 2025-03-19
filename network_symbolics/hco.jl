@@ -165,8 +165,258 @@ function plot_hco_results(sol)
   return fig
 end
 
-# Run the simulation when the script is executed directly
+# Function to encode voltage traces as SSCSs after simulation
+function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0)
+  # Extract voltage and synaptic current time series for both neurons
+  t_values = sol.t
+  V1_values = sol[6, :]
+  V2_values = sol[13, :]
+  Isyn1_values = sol[7, :]
+  Isyn2_values = sol[14, :]
+  
+  # Initialize SSCS data structures for both neurons
+  symbols1 = Int[]
+  symbols2 = Int[]
+  Vplus_times1 = Float64[]
+  Vminus_times1 = Float64[]
+  Vplus_times2 = Float64[]
+  Vminus_times2 = Float64[]
+  
+  # Find extrema in synaptic currents for filtering (if needed)
+  Isyn1_extrema_times = Float64[]
+  Isyn2_extrema_times = Float64[]
+  
+  # Find local extrema in Isyn1
+  for i in 2:(length(t_values)-1)
+    is_extremum = false
+    if filter_by == :minima
+      is_extremum = Isyn1_values[i] < Isyn1_values[i-1] && Isyn1_values[i] < Isyn1_values[i+1]
+    elseif filter_by == :maxima
+      is_extremum = Isyn1_values[i] > Isyn1_values[i-1] && Isyn1_values[i] > Isyn1_values[i+1]
+    end
+    
+    if is_extremum
+      push!(Isyn1_extrema_times, t_values[i])
+    end
+  end
+  
+  # Find local extrema in Isyn2
+  for i in 2:(length(t_values)-1)
+    is_extremum = false
+    if filter_by == :minima
+      is_extremum = Isyn2_values[i] < Isyn2_values[i-1] && Isyn2_values[i] < Isyn2_values[i+1]
+    elseif filter_by == :maxima
+      is_extremum = Isyn2_values[i] > Isyn2_values[i-1] && Isyn2_values[i] > Isyn2_values[i+1]
+    end
+    
+    if is_extremum
+      push!(Isyn2_extrema_times, t_values[i])
+    end
+  end
+  
+  # Detect V maxima and encode as SSCS for Neuron 1
+  count1 = 0
+  last_symbol1 = :void
+  last2_symbol1 = :void
+  
+  for i in 2:(length(t_values)-1)
+    # Check if this is a local maximum in V1
+    if V1_values[i] > V1_values[i-1] && V1_values[i] > V1_values[i+1]
+      is_close_to_extremum = false
+      # Check if this maximum is close to a synaptic current extremum
+      for ext_time in Isyn1_extrema_times
+        if abs(t_values[i] - ext_time) < filter_threshold
+          is_close_to_extremum = true
+          break
+        end
+      end
+      
+      if !is_close_to_extremum
+        if V1_values[i] > V_sd
+          # Vplus event (spike)
+          count1 += 1
+          last2_symbol1 = last_symbol1
+          last_symbol1 = :Vplus
+          push!(Vplus_times1, t_values[i])
+        else
+          # Vminus event (slow oscillation)
+          if count1 > 0  # Only record if there were spikes to count
+            if last2_symbol1 == :Vplus
+              push!(symbols1, -count1)  # Negative count
+            else
+              push!(symbols1, count1)   # Positive count
+            end
+            count1 = 0
+            last2_symbol1 = last_symbol1
+            last_symbol1 = :Vminus
+            push!(Vminus_times1, t_values[i])
+          end
+        end
+      end
+    end
+  end
+  
+  # Detect V maxima and encode as SSCS for Neuron 2
+  count2 = 0
+  last_symbol2 = :void
+  last2_symbol2 = :void
+  
+  for i in 2:(length(t_values)-1)
+    # Check if this is a local maximum in V2
+    if V2_values[i] > V2_values[i-1] && V2_values[i] > V2_values[i+1]
+      is_close_to_extremum = false
+      # Check if this maximum is close to a synaptic current extremum
+      for ext_time in Isyn2_extrema_times
+        if abs(t_values[i] - ext_time) < filter_threshold
+          is_close_to_extremum = true
+          break
+        end
+      end
+      
+      if !is_close_to_extremum
+        if V2_values[i] > V_sd
+          # Vplus event (spike)
+          count2 += 1
+          last2_symbol2 = last_symbol2
+          last_symbol2 = :Vplus
+          push!(Vplus_times2, t_values[i])
+        else
+          # Vminus event (slow oscillation)
+          if count2 > 0  # Only record if there were spikes to count
+            if last2_symbol2 == :Vplus
+              push!(symbols2, -count2)  # Negative count
+            else
+              push!(symbols2, count2)   # Positive count
+            end
+            count2 = 0
+            last2_symbol2 = last_symbol2
+            last_symbol2 = :Vminus
+            push!(Vminus_times2, t_values[i])
+          end
+        end
+      end
+    end
+  end
+  
+  return (
+    symbols1=symbols1, Vplus_times1=Vplus_times1, Vminus_times1=Vminus_times1,
+    symbols2=symbols2, Vplus_times2=Vplus_times2, Vminus_times2=Vminus_times2
+  )
+end
+
+# Function to convert SSCS to branch coordinate
+function sscs_to_branch_coordinate(sscs::Vector{Int})
+  coordinate_interval = (0, 1)
+  orientation = 1
+  new_orientation = orientation
+  for i in 1:length(sscs)
+    if sscs[i] <= 0
+      individual_coordinate_interval = (1.0-2.0^sscs[i], 1.0-3.0*2.0^(sscs[i]-2))
+      new_orientation *= -1
+    else
+      individual_coordinate_interval = (1.0-3.0*2.0^(-sscs[i]-2), 1.0-2.0^(-sscs[i]-1))
+    end
+    a, b = individual_coordinate_interval
+    if orientation == 1
+      coordinate_interval = (
+        (1-a)*coordinate_interval[1] + a*coordinate_interval[2],
+        (1-b)*coordinate_interval[1] + b*coordinate_interval[2]
+      )
+    else
+      coordinate_interval = (
+        a*coordinate_interval[1] + (1-a)*coordinate_interval[2],
+        b*coordinate_interval[1] + (1-b)*coordinate_interval[2]
+      )
+    end
+    orientation = new_orientation
+  end
+  return coordinate_interval
+end
+
+# Function to plot SSCS events on voltage traces
+function plot_hco_results_with_sscs(sol, sscs_data, V_sd=-50.0)
+  fig = Figure(resolution=(1000, 800))
+  
+  # Create 4 axes in vertical arrangement
+  ax1 = Axis(fig[1, 1], ylabel="V₁ (mV)", title="Half-Center Oscillator with SSCS")
+  ax2 = Axis(fig[2, 1], ylabel="Isyn₁")
+  ax3 = Axis(fig[3, 1], ylabel="V₂ (mV)")
+  ax4 = Axis(fig[4, 1], ylabel="Isyn₂", xlabel="Time")
+  
+  # Hide x-axis labels for all but the bottom plot
+  hidexdecorations!(ax1, grid=false)
+  hidexdecorations!(ax2, grid=false)
+  hidexdecorations!(ax3, grid=false)
+  
+  # Plot the time series
+  lines!(ax1, sol.t, sol[6, :], color=:blue)   # V1
+  lines!(ax2, sol.t, sol[7, :], color=:blue)   # Isyn1
+  lines!(ax3, sol.t, sol[13, :], color=:red)   # V2
+  lines!(ax4, sol.t, sol[14, :], color=:red)   # Isyn2
+  
+  # Add horizontal line for V_sd threshold
+  hlines!(ax1, V_sd, color=:black, linestyle=:dash)
+  hlines!(ax3, V_sd, color=:black, linestyle=:dash)
+  
+  # Plot SSCS events for neuron 1
+  scatter!(ax1, sscs_data.Vplus_times1, fill(V_sd+2, length(sscs_data.Vplus_times1)), 
+           color=:green, markersize=8, marker=:utriangle)
+  scatter!(ax1, sscs_data.Vminus_times1, fill(V_sd-2, length(sscs_data.Vminus_times1)), 
+           color=:purple, markersize=8, marker=:dtriangle)
+  
+  # Plot SSCS events for neuron 2
+  scatter!(ax3, sscs_data.Vplus_times2, fill(V_sd+2, length(sscs_data.Vplus_times2)), 
+           color=:green, markersize=8, marker=:utriangle)
+  scatter!(ax3, sscs_data.Vminus_times2, fill(V_sd-2, length(sscs_data.Vminus_times2)), 
+           color=:purple, markersize=8, marker=:dtriangle)
+  
+  # Add SSCS labels for neuron 1
+  for (i, t) in enumerate(sscs_data.Vminus_times1)
+    if i <= length(sscs_data.symbols1)
+      text!(ax1, string(sscs_data.symbols1[i]),
+            position=(t, V_sd-10),
+            align=(:center, :center), color=:purple, fontsize=14)
+    end
+  end
+  
+  # Add SSCS labels for neuron 2
+  for (i, t) in enumerate(sscs_data.Vminus_times2)
+      if i <= length(sscs_data.symbols2)
+          text!(ax3, string(sscs_data.symbols2[i]),
+              position=(t, V_sd-10),
+              align=(:center, :center), color=:purple, fontsize=14)
+      end
+  end
+  
+  # Link the x-axes so they zoom together
+  linkxaxes!(ax1, ax2, ax3, ax4)
+  
+  return fig
+end
+
+# Run the simulation
 sol = run_hco_simulation(tspan)
-fig = plot_hco_results(sol)
-# save("hco_results.png", fig)
+
+# Encode SSCSs from the voltage traces
+sscs_data = encode_sscs(sol, 20.0, :maxima, 1.0)
+
+# Calculate branch coordinates
+branch1 = sscs_to_branch_coordinate(sscs_data.symbols1)
+branch2 = sscs_to_branch_coordinate(sscs_data.symbols2)
+
+# Print SSCS information
+println("Neuron 1 SSCS: ", sscs_data.symbols1)
+println("Neuron 1 branch coordinate range: ", branch1)
+println("Neuron 1 center branch coordinate: ", sum(branch1)/2)
+println("\nNeuron 2 SSCS: ", sscs_data.symbols2)
+println("Neuron 2 branch coordinate range: ", branch2)
+println("Neuron 2 center branch coordinate: ", sum(branch2)/2)
+
+# Plot results with SSCS markers
+fig = plot_hco_results_with_sscs(sol, sscs_data)
+save("hco_results_with_sscs.png", fig)
 display(fig)
+
+# Also display the original plot
+fig_original = plot_hco_results(sol)
+display(fig_original)
