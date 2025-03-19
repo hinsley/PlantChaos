@@ -13,7 +13,7 @@ using .Plant
 
 include("../network_symbolics/network_coordinate_diagram.jl")
 
-tspan = (0.0, 1e7)
+tspan = (0.0, 1e8)
 
 function two_neurons!(du, u, p, t)
     # Split parameters into two sets
@@ -106,8 +106,8 @@ function run_hco_simulation(tspan=(0.0, 1000.0))
     p2 = vcat(Plant.default_params[1:15], [p2_Δx, p2_ΔCa])
     
     # Coupling parameters - mutual inhibition for half-center oscillator
-    g12 = 0.0  # Inhibition from neuron 1 to 2
-    g21 = 0.0  # Inhibition from neuron 2 to 1
+    g12 = 1e-4  # Inhibition from neuron 1 to 2
+    g21 = 1e-4  # Inhibition from neuron 2 to 1
     
     # Logistic synapse parameters
     # 1->2 synapse parameters
@@ -142,11 +142,10 @@ end
 
 # Function to plot results of the HCO simulation
 function plot_hco_results(sol)
-  fig = Figure(resolution=(1000, 800))
+  fig = Figure(resolution=(1600, 800))
   
   # Create 4 axes in vertical arrangement
-  ax1 = Axis(fig[1, 1], ylabel=L"\textrm{V}_1 \textrm{ (mV)}", title="Half-Center Oscillator", 
-             titlesize=24, ylabelsize=20)
+  ax1 = Axis(fig[1, 1], ylabel=L"\textrm{V}_1 \textrm{ (mV)}", ylabelsize=20)
   ax2 = Axis(fig[2, 1], ylabel=L"\textrm{I}_{\textrm{syn},1}\textrm{ (mA)}", ylabelsize=20)
   ax3 = Axis(fig[3, 1], ylabel=L"\textrm{V}_2 \textrm{ (mV)}", ylabelsize=20)
   ax4 = Axis(fig[4, 1], ylabel=L"\textrm{I}_{\textrm{syn},2}\textrm{ (mA)}", xlabel=L"\textrm{Time (s)}", 
@@ -422,7 +421,7 @@ function plot_hco_results_with_sscs(sol, sscs_data, V_sd=-50.0)
   fig = Figure(resolution=(1000, 800))
   
   # Create 4 axes in vertical arrangement with LaTeX labels
-  ax1 = Axis(fig[1, 1], ylabel=L"\textrm{V}_1 \textrm{ (mV)}", title="Half-Center Oscillator with SSCS")
+  ax1 = Axis(fig[1, 1], ylabel=L"\textrm{V}_1 \textrm{ (mV)}")
   ax2 = Axis(fig[2, 1], ylabel=L"\textrm{I}_{\textrm{syn},1}\textrm{ (mA)}")
   ax3 = Axis(fig[3, 1], ylabel=L"\textrm{V}_2 \textrm{ (mV)}")
   ax4 = Axis(fig[4, 1], ylabel=L"\textrm{I}_{\textrm{syn},2}\textrm{ (mA)}", xlabel=L"\textrm{Time (s)}")
@@ -522,12 +521,12 @@ println("Neuron 2 center branch coordinate: ", sum(branch2)/2)
 
 # Plot results with SSCS markers
 # fig = plot_hco_results_with_sscs(sol, sscs_data)
-# save("hco_results_with_sscs.png", fig)
+# save("./network_symbolics/hco_results_with_sscs.png", fig, dpi=600)
 # display(fig)
 
 # Also display the original plot
 fig_original = plot_hco_results(sol)
-# save("hco_results.png", fig_original)
+# save("./network_symbolics/hco_results.png", fig_original, dpi=600)
 display(fig_original)
 
 # Compute the network coordinate diagram
@@ -540,7 +539,7 @@ ncd = NetworkCoordinateDiagram.sequence(sscs_list, times_list)
 # Function to plot network coordinate diagram
 function plot_network_coordinate_diagram(ncd, sequence_times=nothing)
   # Create figure with higher resolution.
-  fig = Figure(resolution=(800, 800))
+  fig = Figure(resolution=(1200, 1200))
   
   # Extract coordinates
   x_coords = [point[1] for point in ncd]
@@ -552,32 +551,32 @@ function plot_network_coordinate_diagram(ncd, sequence_times=nothing)
     xlabel=L"\textrm{Neuron 1 Coordinate}", 
     ylabel=L"\textrm{Neuron 2 Coordinate}",
     # title=L"\textrm{Network Coordinate Diagram}",
-    # titlesize=24,
-    xlabelsize=20,
-    ylabelsize=20,
-    xticklabelsize=16,
-    yticklabelsize=16
+    # titlesize=48,
+    xlabelsize=30,
+    ylabelsize=30,
+    xticklabelsize=24,
+    yticklabelsize=24
   )
   
   # Color points by sequence order
   colors = sequence_times ./ 5e4
   
   # Connect the points with lines
-  lines!(ax, x_coords, y_coords, color=(:black, 3e-2), linewidth=2)
+  lines!(ax, x_coords, y_coords, color=(:black, 3e-2), linewidth=4)
   
   # Plot original points with color indicating sequence order
   sc = scatter!(ax, x_coords, y_coords, color=colors, colormap=:managua, 
-               markersize=10, alpha=1.0)
+               markersize=16, alpha=1.0)
   
   # Set appropriate margins
-  margin = 0.05
+  margin = 0.03
   xlims!(ax, minimum(x_coords) - margin, maximum(x_coords) + margin)
   ylims!(ax, minimum(y_coords) - margin, maximum(y_coords) + margin)
   
   # Add colorbar to show sequence progression
   Colorbar(fig[2, 1], sc, vertical=false, 
            label=L"\textrm{Time (s)}", flipaxis=false,
-           labelsize=18, ticklabelsize=14)
+           labelsize=27, ticklabelsize=21)
   
   return fig
 end
@@ -588,4 +587,7 @@ fig_ncd = plot_network_coordinate_diagram(
   cat(sscs1_times, sscs2_times, dims=1)
 )
 display(fig_ncd)
-# save("network_coordinate_diagram.png", fig_ncd, dpi=600)
+save(
+  "./network_symbolics/network_coordinate_diagram_weak_coupling.png",
+  fig_ncd
+)
