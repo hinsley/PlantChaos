@@ -166,13 +166,35 @@ function plot_hco_results(sol)
 end
 
 # Function to encode voltage traces as SSCSs after simulation
-function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0)
+function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0, I_proximity_threshold=10.0)
   # Extract voltage and synaptic current time series for both neurons
   t_values = sol.t
   V1_values = sol[6, :]
   V2_values = sol[13, :]
   Isyn1_values = sol[7, :]
   Isyn2_values = sol[14, :]
+  
+  # Calculate voltage derivatives using central differences
+  dV1_values = zeros(length(t_values))
+  dV2_values = zeros(length(t_values))
+  
+  # Calculate derivatives for all interior points
+  for i in 2:(length(t_values)-1)
+    dt_prev = t_values[i] - t_values[i-1]
+    dt_next = t_values[i+1] - t_values[i]
+    
+    # Use central differences for interior points
+    dV1_values[i] = (V1_values[i+1] - V1_values[i-1]) / (dt_prev + dt_next)
+    dV2_values[i] = (V2_values[i+1] - V2_values[i-1]) / (dt_prev + dt_next)
+  end
+  
+  # Forward difference for first point
+  dV1_values[1] = (V1_values[2] - V1_values[1]) / (t_values[2] - t_values[1])
+  dV2_values[1] = (V2_values[2] - V2_values[1]) / (t_values[2] - t_values[1])
+  
+  # Backward difference for last point
+  dV1_values[end] = (V1_values[end] - V1_values[end-1]) / (t_values[end] - t_values[end-1])
+  dV2_values[end] = (V2_values[end] - V2_values[end-1]) / (t_values[end] - t_values[end-1])
   
   # Initialize SSCS data structures for both neurons
   symbols1 = Int[]
@@ -181,6 +203,8 @@ function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0)
   Vminus_times1 = Float64[]
   Vplus_times2 = Float64[]
   Vminus_times2 = Float64[]
+  I_times1 = Float64[]
+  I_times2 = Float64[]
   
   # Find extrema in synaptic currents for filtering (if needed)
   Isyn1_extrema_times = Float64[]
@@ -214,56 +238,10 @@ function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0)
     end
   end
   
-  # Detect V maxima and encode as SSCS for Neuron 1
-  count1 = 0
-  last_symbol1 = :void
-  last2_symbol1 = :void
-  
+  # First find I events (Vdot maxima) for both neurons
   for i in 2:(length(t_values)-1)
-    # Check if this is a local maximum in V1
-    if V1_values[i] > V1_values[i-1] && V1_values[i] > V1_values[i+1]
-      is_close_to_extremum = false
-      # Check if this maximum is close to a synaptic current extremum
-      for ext_time in Isyn1_extrema_times
-        if abs(t_values[i] - ext_time) < filter_threshold
-          is_close_to_extremum = true
-          break
-        end
-      end
-      
-      if !is_close_to_extremum
-        if V1_values[i] > V_sd
-          # Vplus event (spike)
-          count1 += 1
-          last2_symbol1 = last_symbol1
-          last_symbol1 = :Vplus
-          push!(Vplus_times1, t_values[i])
-        else
-          # Vminus event (slow oscillation)
-          if count1 > 0  # Only record if there were spikes to count
-            if last2_symbol1 == :Vplus
-              push!(symbols1, -count1)  # Negative count
-            else
-              push!(symbols1, count1)   # Positive count
-            end
-            count1 = 0
-            last2_symbol1 = last_symbol1
-            last_symbol1 = :Vminus
-            push!(Vminus_times1, t_values[i])
-          end
-        end
-      end
-    end
-  end
-  
-  # Detect V maxima and encode as SSCS for Neuron 2
-  count2 = 0
-  last_symbol2 = :void
-  last2_symbol2 = :void
-  
-  for i in 2:(length(t_values)-1)
-    # Check if this is a local maximum in V2
-    if V2_values[i] > V2_values[i-1] && V2_values[i] > V2_values[i+1]
+    # Check if this is a local maximum in dV1
+    if dV1_values[i] > dV1_values[i-1] && dV1_values[i] > dV1_values[i+1]
       is_close_to_extremum = false
       # Check if this maximum is close to a synaptic current extremum
       for ext_time in Isyn2_extrema_times
@@ -274,23 +252,112 @@ function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0)
       end
       
       if !is_close_to_extremum
+        push!(I_times1, t_values[i])
+      end
+    end
+    
+    # Check if this is a local maximum in dV2
+    if dV2_values[i] > dV2_values[i-1] && dV2_values[i] > dV2_values[i+1]
+      is_close_to_extremum = false
+      # Check if this maximum is close to a synaptic current extremum
+      for ext_time in Isyn1_extrema_times
+        if abs(t_values[i] - ext_time) < filter_threshold
+          is_close_to_extremum = true
+          break
+        end
+      end
+      
+      if !is_close_to_extremum
+        push!(I_times2, t_values[i])
+      end
+    end
+  end
+  
+  # Detect V maxima and encode as SSCS for Neuron 1
+  count1 = 0
+  
+  for i in 2:(length(t_values)-1)
+    # Check if this is a local maximum in V1
+    if V1_values[i] > V1_values[i-1] && V1_values[i] > V1_values[i+1]
+      is_close_to_extremum = false
+      # Check if this maximum is close to a synaptic current extremum
+      for ext_time in Isyn2_extrema_times
+        if abs(t_values[i] - ext_time) < filter_threshold
+          is_close_to_extremum = true
+          break
+        end
+      end
+      
+      if !is_close_to_extremum
+        if V1_values[i] > V_sd
+          # Vplus event (spike)
+          count1 += 1
+          push!(Vplus_times1, t_values[i])
+        else
+          # Vminus event (slow oscillation)
+          if count1 > 0  # Only record if there were spikes to count
+            # Check if this Vminus is close to a previous I event
+            is_close_to_I = false
+            for I_time in I_times1
+              if (t_values[i] - I_time) > 0 && (t_values[i] - I_time) < I_proximity_threshold
+                is_close_to_I = true
+                break
+              end
+            end
+            
+            if is_close_to_I
+              push!(symbols1, -count1)  # Negative count
+            else
+              push!(symbols1, count1)   # Positive count
+            end
+            
+            count1 = 0
+            push!(Vminus_times1, t_values[i])
+          end
+        end
+      end
+    end
+  end
+  
+  # Detect V maxima and encode as SSCS for Neuron 2
+  count2 = 0
+  
+  for i in 2:(length(t_values)-1)
+    # Check if this is a local maximum in V2
+    if V2_values[i] > V2_values[i-1] && V2_values[i] > V2_values[i+1]
+      is_close_to_extremum = false
+      # Check if this maximum is close to a synaptic current extremum
+      for ext_time in Isyn1_extrema_times
+        if abs(t_values[i] - ext_time) < filter_threshold
+          is_close_to_extremum = true
+          break
+        end
+      end
+      
+      if !is_close_to_extremum
         if V2_values[i] > V_sd
           # Vplus event (spike)
           count2 += 1
-          last2_symbol2 = last_symbol2
-          last_symbol2 = :Vplus
           push!(Vplus_times2, t_values[i])
         else
           # Vminus event (slow oscillation)
           if count2 > 0  # Only record if there were spikes to count
-            if last2_symbol2 == :Vplus
+            # Check if this Vminus is close to a previous I event
+            is_close_to_I = false
+            for I_time in I_times2
+              if (t_values[i] - I_time) > 0 && (t_values[i] - I_time) < I_proximity_threshold
+                is_close_to_I = true
+                break
+              end
+            end
+            
+            if is_close_to_I
               push!(symbols2, -count2)  # Negative count
             else
               push!(symbols2, count2)   # Positive count
             end
+            
             count2 = 0
-            last2_symbol2 = last_symbol2
-            last_symbol2 = :Vminus
             push!(Vminus_times2, t_values[i])
           end
         end
@@ -299,8 +366,8 @@ function encode_sscs(sol, V_sd=-50.0, filter_by=:minima, filter_threshold=50.0)
   end
   
   return (
-    symbols1=symbols1, Vplus_times1=Vplus_times1, Vminus_times1=Vminus_times1,
-    symbols2=symbols2, Vplus_times2=Vplus_times2, Vminus_times2=Vminus_times2
+    symbols1=symbols1, Vplus_times1=Vplus_times1, Vminus_times1=Vminus_times1, I_times1=I_times1,
+    symbols2=symbols2, Vplus_times2=Vplus_times2, Vminus_times2=Vminus_times2, I_times2=I_times2
   )
 end
 
@@ -363,12 +430,16 @@ function plot_hco_results_with_sscs(sol, sscs_data, V_sd=-50.0)
            color=:green, markersize=8, marker=:utriangle)
   scatter!(ax1, sscs_data.Vminus_times1, fill(V_sd-2, length(sscs_data.Vminus_times1)), 
            color=:purple, markersize=8, marker=:dtriangle)
+  scatter!(ax1, sscs_data.I_times1, fill(V_sd+5, length(sscs_data.I_times1)), 
+           color=:orange, markersize=8, marker=:diamond)
   
   # Plot SSCS events for neuron 2
   scatter!(ax3, sscs_data.Vplus_times2, fill(V_sd+2, length(sscs_data.Vplus_times2)), 
            color=:green, markersize=8, marker=:utriangle)
   scatter!(ax3, sscs_data.Vminus_times2, fill(V_sd-2, length(sscs_data.Vminus_times2)), 
            color=:purple, markersize=8, marker=:dtriangle)
+  scatter!(ax3, sscs_data.I_times2, fill(V_sd+5, length(sscs_data.I_times2)), 
+           color=:orange, markersize=8, marker=:diamond)
   
   # Add SSCS labels for neuron 1
   for (i, t) in enumerate(sscs_data.Vminus_times1)
@@ -381,11 +452,11 @@ function plot_hco_results_with_sscs(sol, sscs_data, V_sd=-50.0)
   
   # Add SSCS labels for neuron 2
   for (i, t) in enumerate(sscs_data.Vminus_times2)
-      if i <= length(sscs_data.symbols2)
-          text!(ax3, string(sscs_data.symbols2[i]),
-              position=(t, V_sd-10),
-              align=(:center, :center), color=:purple, fontsize=14)
-      end
+    if i <= length(sscs_data.symbols2)
+      text!(ax3, string(sscs_data.symbols2[i]),
+            position=(t, V_sd-10),
+            align=(:center, :center), color=:purple, fontsize=14)
+    end
   end
   
   # Link the x-axes so they zoom together
@@ -398,7 +469,7 @@ end
 sol = run_hco_simulation(tspan)
 
 # Encode SSCSs from the voltage traces
-sscs_data = encode_sscs(sol, 20.0, :maxima, 1.0)
+sscs_data = encode_sscs(sol, 20.0, :minima, 3.0, 180.0)
 
 # Calculate branch coordinates
 branch1 = sscs_to_branch_coordinate(sscs_data.symbols1)
