@@ -13,7 +13,7 @@ using .Plant
 
 include("../network_symbolics/network_coordinate_diagram.jl")
 
-tspan = (0.0, 1e8)
+tspan = (0.0, 1e6)
 
 function two_neurons!(du, u, p, t)
     # Split parameters into two sets
