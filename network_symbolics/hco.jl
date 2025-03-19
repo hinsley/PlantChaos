@@ -13,7 +13,7 @@ using .Plant
 
 include("../network_symbolics/network_coordinate_diagram.jl")
 
-tspan = (0.0, 1e6)
+tspan = (0.0, 1e7)
 
 function two_neurons!(du, u, p, t)
     # Split parameters into two sets
@@ -140,26 +140,39 @@ function run_hco_simulation(tspan=(0.0, 1000.0))
     return sol
 end
 
-# Plot the results of a half-center oscillator
+# Function to plot results of the HCO simulation
 function plot_hco_results(sol)
-  fig = Figure(resolution=(800, 800))
+  fig = Figure(resolution=(1000, 800))
   
   # Create 4 axes in vertical arrangement
-  ax1 = Axis(fig[1, 1], ylabel="V₁ (mV)", title="Half-Center Oscillator")
-  ax2 = Axis(fig[2, 1], ylabel="Isyn₁")
-  ax3 = Axis(fig[3, 1], ylabel="V₂ (mV)")
-  ax4 = Axis(fig[4, 1], ylabel="Isyn₂", xlabel="Time")
+  ax1 = Axis(fig[1, 1], ylabel=L"\textrm{V}_1 \textrm{ (mV)}", title="Half-Center Oscillator", 
+             titlesize=24, ylabelsize=20)
+  ax2 = Axis(fig[2, 1], ylabel=L"\textrm{I}_{\textrm{syn},1}\textrm{ (mA)}", ylabelsize=20)
+  ax3 = Axis(fig[3, 1], ylabel=L"\textrm{V}_2 \textrm{ (mV)}", ylabelsize=20)
+  ax4 = Axis(fig[4, 1], ylabel=L"\textrm{I}_{\textrm{syn},2}\textrm{ (mA)}", xlabel=L"\textrm{Time (s)}", 
+             ylabelsize=20, xlabelsize=20)
   
   # Hide x-axis labels for all but the bottom plot
   hidexdecorations!(ax1, grid=false)
   hidexdecorations!(ax2, grid=false)
   hidexdecorations!(ax3, grid=false)
   
-  # Plot the time series
-  lines!(ax1, sol.t, sol[6, :], color=:blue)   # V1
-  lines!(ax2, sol.t, sol[7, :], color=:blue)   # Isyn1
-  lines!(ax3, sol.t, sol[13, :], color=:red)   # V2
-  lines!(ax4, sol.t, sol[14, :], color=:red)   # Isyn2
+  # Plot the time series with time in seconds
+  time_in_seconds = sol.t ./ 5e4
+  lines!(ax1, time_in_seconds, sol[6, :], color=:blue)   # V1
+  lines!(ax2, time_in_seconds, sol[7, :], color=:blue)   # Isyn1
+  lines!(ax3, time_in_seconds, sol[13, :], color=:red)   # V2
+  lines!(ax4, time_in_seconds, sol[14, :], color=:red)   # Isyn2
+  
+  # Increase tick label sizes
+  ax1.xticklabelsize = 16
+  ax1.yticklabelsize = 16
+  ax2.xticklabelsize = 16
+  ax2.yticklabelsize = 16
+  ax3.xticklabelsize = 16
+  ax3.yticklabelsize = 16
+  ax4.xticklabelsize = 16
+  ax4.yticklabelsize = 16
   
   # Link the x-axes so they zoom together
   linkxaxes!(ax1, ax2, ax3, ax4)
@@ -408,45 +421,55 @@ end
 function plot_hco_results_with_sscs(sol, sscs_data, V_sd=-50.0)
   fig = Figure(resolution=(1000, 800))
   
-  # Create 4 axes in vertical arrangement
-  ax1 = Axis(fig[1, 1], ylabel="V₁ (mV)", title="Half-Center Oscillator with SSCS")
-  ax2 = Axis(fig[2, 1], ylabel="Isyn₁")
-  ax3 = Axis(fig[3, 1], ylabel="V₂ (mV)")
-  ax4 = Axis(fig[4, 1], ylabel="Isyn₂", xlabel="Time")
+  # Create 4 axes in vertical arrangement with LaTeX labels
+  ax1 = Axis(fig[1, 1], ylabel=L"\textrm{V}_1 \textrm{ (mV)}", title="Half-Center Oscillator with SSCS")
+  ax2 = Axis(fig[2, 1], ylabel=L"\textrm{I}_{\textrm{syn},1}\textrm{ (mA)}")
+  ax3 = Axis(fig[3, 1], ylabel=L"\textrm{V}_2 \textrm{ (mV)}")
+  ax4 = Axis(fig[4, 1], ylabel=L"\textrm{I}_{\textrm{syn},2}\textrm{ (mA)}", xlabel=L"\textrm{Time (s)}")
   
   # Hide x-axis labels for all but the bottom plot
   hidexdecorations!(ax1, grid=false)
   hidexdecorations!(ax2, grid=false)
   hidexdecorations!(ax3, grid=false)
   
-  # Plot the time series
-  lines!(ax1, sol.t, sol[6, :], color=:blue)   # V1
-  lines!(ax2, sol.t, sol[7, :], color=:blue)   # Isyn1
-  lines!(ax3, sol.t, sol[13, :], color=:red)   # V2
-  lines!(ax4, sol.t, sol[14, :], color=:red)   # Isyn2
+  # Plot the time series with time in seconds
+  time_in_seconds = sol.t ./ 5e4
+  lines!(ax1, time_in_seconds, sol[6, :], color=:blue)   # V1
+  lines!(ax2, time_in_seconds, sol[7, :], color=:blue)   # Isyn1
+  lines!(ax3, time_in_seconds, sol[13, :], color=:red)   # V2
+  lines!(ax4, time_in_seconds, sol[14, :], color=:red)   # Isyn2
   
   # Add horizontal line for V_sd threshold
   hlines!(ax1, V_sd, color=:black, linestyle=:dash)
   hlines!(ax3, V_sd, color=:black, linestyle=:dash)
   
+  # Convert event times to seconds
+  Vplus_times1_seconds = sscs_data.Vplus_times1 ./ 1e3
+  Vminus_times1_seconds = sscs_data.Vminus_times1 ./ 1e3
+  I_times1_seconds = sscs_data.I_times1 ./ 1e3
+  
+  Vplus_times2_seconds = sscs_data.Vplus_times2 ./ 1e3
+  Vminus_times2_seconds = sscs_data.Vminus_times2 ./ 1e3
+  I_times2_seconds = sscs_data.I_times2 ./ 1e3
+  
   # Plot SSCS events for neuron 1
-  scatter!(ax1, sscs_data.Vplus_times1, fill(V_sd+2, length(sscs_data.Vplus_times1)), 
+  scatter!(ax1, Vplus_times1_seconds, fill(V_sd+2, length(Vplus_times1_seconds)), 
            color=:green, markersize=8, marker=:utriangle)
-  scatter!(ax1, sscs_data.Vminus_times1, fill(V_sd-2, length(sscs_data.Vminus_times1)), 
+  scatter!(ax1, Vminus_times1_seconds, fill(V_sd-2, length(Vminus_times1_seconds)), 
            color=:purple, markersize=8, marker=:dtriangle)
-  scatter!(ax1, sscs_data.I_times1, fill(V_sd+5, length(sscs_data.I_times1)), 
+  scatter!(ax1, I_times1_seconds, fill(V_sd+5, length(I_times1_seconds)), 
            color=:orange, markersize=8, marker=:diamond)
   
   # Plot SSCS events for neuron 2
-  scatter!(ax3, sscs_data.Vplus_times2, fill(V_sd+2, length(sscs_data.Vplus_times2)), 
+  scatter!(ax3, Vplus_times2_seconds, fill(V_sd+2, length(Vplus_times2_seconds)), 
            color=:green, markersize=8, marker=:utriangle)
-  scatter!(ax3, sscs_data.Vminus_times2, fill(V_sd-2, length(sscs_data.Vminus_times2)), 
+  scatter!(ax3, Vminus_times2_seconds, fill(V_sd-2, length(Vminus_times2_seconds)), 
            color=:purple, markersize=8, marker=:dtriangle)
-  scatter!(ax3, sscs_data.I_times2, fill(V_sd+5, length(sscs_data.I_times2)), 
+  scatter!(ax3, I_times2_seconds, fill(V_sd+5, length(I_times2_seconds)), 
            color=:orange, markersize=8, marker=:diamond)
   
   # Add SSCS labels for neuron 1
-  for (i, t) in enumerate(sscs_data.Vminus_times1)
+  for (i, t) in enumerate(Vminus_times1_seconds)
     if i <= length(sscs_data.symbols1)
       text!(ax1, string(sscs_data.symbols1[i]),
             position=(t, V_sd-10),
@@ -455,7 +478,7 @@ function plot_hco_results_with_sscs(sol, sscs_data, V_sd=-50.0)
   end
   
   # Add SSCS labels for neuron 2
-  for (i, t) in enumerate(sscs_data.Vminus_times2)
+  for (i, t) in enumerate(Vminus_times2_seconds)
     if i <= length(sscs_data.symbols2)
       text!(ax3, string(sscs_data.symbols2[i]),
             position=(t, V_sd-10),
@@ -498,9 +521,9 @@ println("Neuron 2 branch coordinate range: ", branch2)
 println("Neuron 2 center branch coordinate: ", sum(branch2)/2)
 
 # Plot results with SSCS markers
-fig = plot_hco_results_with_sscs(sol, sscs_data)
+# fig = plot_hco_results_with_sscs(sol, sscs_data)
 # save("hco_results_with_sscs.png", fig)
-display(fig)
+# display(fig)
 
 # Also display the original plot
 fig_original = plot_hco_results(sol)
@@ -537,13 +560,13 @@ function plot_network_coordinate_diagram(ncd, sequence_times=nothing)
   )
   
   # Color points by sequence order
-  colors = sequence_times ./ 1e3
+  colors = sequence_times ./ 5e4
   
   # Connect the points with lines
-  lines!(ax, x_coords, y_coords, color=(:black, 0.1), linewidth=2)
+  lines!(ax, x_coords, y_coords, color=(:black, 3e-2), linewidth=2)
   
   # Plot original points with color indicating sequence order
-  sc = scatter!(ax, x_coords, y_coords, color=colors, colormap=:thermal, 
+  sc = scatter!(ax, x_coords, y_coords, color=colors, colormap=:managua, 
                markersize=10, alpha=1.0)
   
   # Set appropriate margins
