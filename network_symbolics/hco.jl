@@ -106,8 +106,8 @@ function run_hco_simulation(tspan=(0.0, 1000.0))
     p2 = vcat(Plant.default_params[1:15], [p2_Δx, p2_ΔCa])
     
     # Coupling parameters - mutual inhibition for half-center oscillator
-    g12 = 0.3  # Inhibition from neuron 1 to 2
-    g21 = 0.3  # Inhibition from neuron 2 to 1
+    g12 = 0.0  # Inhibition from neuron 1 to 2
+    g21 = 0.0  # Inhibition from neuron 2 to 1
     
     # Logistic synapse parameters
     # 1->2 synapse parameters
@@ -475,7 +475,7 @@ sscs_data = encode_sscs(sol, 20.0, :minima, 2.0, 180.0)
 
 # Discard transients at the start in case of a partial burst.
 # 1 means no discard.
-sscs1_transient_begin = 1
+sscs1_transient_begin = 2
 sscs2_transient_begin = 2
 
 sscs1 = sscs_data.symbols1[sscs1_transient_begin:end]
@@ -507,36 +507,60 @@ display(fig_original)
 
 # Compute the network coordinate diagram
 sscs_list = [sscs1, sscs2]
-order_list = [sscs1_times, sscs2_times]
-ncd = NetworkCoordinateDiagram.sequence(sscs_list, order_list)
+times_list = [sscs1_times, sscs2_times]
+ncd = NetworkCoordinateDiagram.sequence(sscs_list, times_list)
 
-### Plot the network coordinate diagram as a scatter plot in 2D joined by lines
-### between consecutive points in the diagrammed sequence.
+##### Plot network coordinate diagram
 
-# Create a figure for the network coordinate diagram
-fig_ncd = Figure(resolution=(800, 600))
-ax_ncd = Axis(
-  fig_ncd[1, 1], 
-  xlabel="Neuron 1 Coordinate", 
-  ylabel="Neuron 2 Coordinate",
-  title="Network Coordinate Diagram"
+# Function to plot network coordinate diagram
+function plot_network_coordinate_diagram(ncd, sequence_times=nothing)
+  # Create figure with higher resolution.
+  fig = Figure(resolution=(800, 800))
+  
+  # Extract coordinates
+  x_coords = [point[1] for point in ncd]
+  y_coords = [point[2] for point in ncd]
+  
+  # Create single view with original scale
+  ax = Axis(
+    fig[1, 1],
+    xlabel=L"\textrm{Neuron 1 Coordinate}", 
+    ylabel=L"\textrm{Neuron 2 Coordinate}",
+    # title=L"\textrm{Network Coordinate Diagram}",
+    # titlesize=24,
+    xlabelsize=20,
+    ylabelsize=20,
+    xticklabelsize=16,
+    yticklabelsize=16
+  )
+  
+  # Color points by sequence order
+  colors = sequence_times ./ 1e3
+  
+  # Connect the points with lines
+  lines!(ax, x_coords, y_coords, color=(:black, 0.1), linewidth=2)
+  
+  # Plot original points with color indicating sequence order
+  sc = scatter!(ax, x_coords, y_coords, color=colors, colormap=:thermal, 
+               markersize=10, alpha=1.0)
+  
+  # Set appropriate margins
+  margin = 0.05
+  xlims!(ax, minimum(x_coords) - margin, maximum(x_coords) + margin)
+  ylims!(ax, minimum(y_coords) - margin, maximum(y_coords) + margin)
+  
+  # Add colorbar to show sequence progression
+  Colorbar(fig[2, 1], sc, vertical=false, 
+           label=L"\textrm{Time (s)}", flipaxis=false,
+           labelsize=18, ticklabelsize=14)
+  
+  return fig
+end
+
+# Plot NCD.
+fig_ncd = plot_network_coordinate_diagram(
+  ncd,
+  cat(sscs1_times, sscs2_times, dims=1)
 )
-
-# Extract x and y coordinates from the network coordinate diagram
-x_coords = [point[1] for point in ncd]
-y_coords = [point[2] for point in ncd]
-
-# Plot the points
-scatter!(ax_ncd, x_coords, y_coords, color=(:blue, 0.2), markersize=8)
-
-# Connect the points with lines (with transparency)
-lines!(ax_ncd, x_coords, y_coords, color=(:black, 0.2), linewidth=1)
-
-# Set axis limits with a small margin
-margin = 0.05
-xlims!(ax_ncd, minimum(x_coords) - margin, maximum(x_coords) + margin)
-ylims!(ax_ncd, minimum(y_coords) - margin, maximum(y_coords) + margin)
-
-# Display the network coordinate diagram
 display(fig_ncd)
-# save("network_coordinate_diagram.png", fig_ncd)
+# save("network_coordinate_diagram.png", fig_ncd, dpi=600)
