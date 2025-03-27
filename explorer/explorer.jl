@@ -23,7 +23,7 @@ dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
 ));
 
 set_theme!(theme_black())
-set_window_config!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina Swim InterNeuron (SIN) Model")
+GLMakie.activate!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina Swim InterNeuron (SIN) Model")
 
 fig = Figure(resolution = (1500, 1000).*1.3);
 

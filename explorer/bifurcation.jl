@@ -4,18 +4,18 @@ using FileIO
 isiimg = rotr90(load("./explorer/ISI_variance.png"))
 min_x, max_x = -130, 100
 min_y, max_y = -12, 15
-image!(bifax, [min_x, max_x], [min_y, max_y], isiimg, interpolate=false)
+image!(bifax, (min_x, max_x), (min_y, max_y), isiimg, interpolate=false)
 
 img = rotr90(load("map_vis/lyapunov_3color.png"))
 min_x, max_x = -60, 0
 min_y, max_y = -2, .5
-image!(bifax, [min_x, max_x], [min_y, max_y], img, interpolate=false)
+image!(bifax, (min_x, max_x), (min_y, max_y), img, interpolate=false)
 
 beimg = rotr90(load("./explorer/block_entropy.png"))
 min_x, max_x = -50, 100
 min_y, max_y = -5, 1
 
-image!(bifax, [min_x, max_x], [min_y, max_y], beimg, interpolate=false)
+image!(bifax, (min_x, max_x), (min_y, max_y), beimg, interpolate=false)
 
 hopf = readdlm("./explorer/hopf.csv", ',', Float64)
 lines!(bifax, hopf, label="hopf", linewidth = 3)
