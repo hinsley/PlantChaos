@@ -16,8 +16,8 @@ default_params = @SVector Float32[
     0.03e0,   # 7: gKCa
     30.0e0,   # 8: EI
     -75.0e0,  # 9: EK
-    -70.0e0,   # 10: Eₕ
-    -40.0e0,  # 11: EL
+    60.0e0,   # 10: Eₕ
+    -42.0e0,  # 11: EL
     140.0e0,  # 12: ECa
     0.0085e0, # 13: Kc
     100.0e0,  # 14: τₓ
@@ -53,7 +53,7 @@ dx(p, x, V) = (xinf(p, V) - x) / p[14]
 xinfinv(p, xinf) = p[16] - 50.0f0 - log(1.0f0/xinf - 1.0f0)/0.15f0 # Produces voltage.
 
 Ih(p, y, V) = p[4] * y * (V - p[10])
-dy(y, V) = 2e-4*((1/(1+exp((V+50))))-y)
+dy(y, V) = ((1/(1+exp((V+54))))-y)/20000
 
 Ileak(p, V) = p[5] * (V - p[11])
 

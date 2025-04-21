@@ -1,10 +1,10 @@
 using Pkg
 Pkg.activate("../lyapunov_old/")
 Pkg.instantiate()
-using GLMakie, StaticArrays, OrdinaryDiffEq, LinearAlgebra, ForwardDiff, ImageShow
+using GLMakie, StaticArrays, OrdinaryDiffEq, LinearAlgebra, ImageShow
 import LinearAlgebra
 
-gh = .002
+gh = .0005
 
 include("../model/Plant.jl")
 function melibeNew(u::AbstractArray{T}, p, t) where T
@@ -23,21 +23,21 @@ u0 = @SVector Float64[
     .1;     #y
     0.137e0;   # n
     0.389e0;   # h
-    1.0e0;     # Ca
+    1.0e0;     # Cadisp
     -62.0e0;   # V
 ]
 
 # set up parameter space
 start_p = Float64[Plant.default_params...]
 start_p[4] = gh
-start_p[17] = -60.0 # Cashift
-start_p[16] = -2 # xshift
+start_p[17] = -50.0 # Cashift
+start_p[16] = -1.6 # xshift
 end_p = Float64[Plant.default_params...]
 end_p[4] = gh
-end_p[17] = 0.0 # Cashift
-end_p[16] = .5 # xshift
+end_p[17] = -20.0 # Cashift
+end_p[16] = .4 # xshift
 
-resolution = 300 # How many points to sample.
+resolution = 1000 # How many points to sample.
 Ca_shifts = LinRange(start_p[17], end_p[17], resolution)
 x_shifts = LinRange(start_p[16], end_p[16], resolution)
 ps = [[Plant.default_params[1:3];[gh];Plant.default_params[5:15]; [x_shifts[i], Ca_shifts[j]]] for i in 1:resolution, j in 1:resolution]
@@ -67,14 +67,14 @@ begin
 end
 
 using DynamicalSystems
-p = [ps[1,1][1:3]; gh; ps[1,1][5:15]; [-1.0, -38.0]]
+p = [ps[1,1][1:3]; gh; ps[1,1][5:15]; [21.0, -30.0]]
 sys = ContinuousDynamicalSystem(melibeNew, u0, p)
 
 # test lyapunov
 lyapunov = lyapunovspectrum(sys, 1000000)
 
 # Allocate space for first three Lyapunov exponents
-lyap_vals = zeros(3, resolution, resolution)
+lyap_vals = zeros(4, resolution, resolution)
 
 using ProgressMeter
 total_points = resolution * resolution
@@ -90,6 +90,7 @@ Threads.@threads for i in 1:resolution
         lyap_vals[1, i, j] = length(lyaps) >= 1 ? lyaps[1] : 0
         lyap_vals[2, i, j] = length(lyaps) >= 2 ? lyaps[2] : 0
         lyap_vals[3, i, j] = length(lyaps) >= 3 ? lyaps[3] : 0
+        lyap_vals[4, i, j] = length(lyaps) >= 4 ? lyaps[4] : 0
         next!(progress)
     end
 end
@@ -110,22 +111,18 @@ end
 min1, max1 = extrema(lyap_vals[1, :, :])
 min2, max2 = extrema(lyap_vals[2, :, :])
 min3, max3 = extrema(lyap_vals[3, :, :])
-
 top3 = lyap_vals[1, :, :] .+ lyap_vals[2, :, :] .+ lyap_vals[3, :, :]
-min4, max4 = extrema(top3)
+tp = [top > 0 ? top : 0.0 for top in top3]
+min4, max4 = extrema(tp)
 
-
-
-[RGBf(shape(top3[i, j], min4, max4, -.0005, .0000001), 0,0) for j in 1:resolution, i in 1:resolution]
-
-img = rotl90([RGBf(shape(lyap_vals[1, i, j], min1, max1, .0, 5e-6),
-            shape(lyap_vals[2, i, j], min2, max2, 0, .0000015),
-            shape(top3[i,j], min4, max4, -.00015, 0.0 ))
+img = rotl90([RGBf(shape(lyap_vals[1, i, j], min1, max1, .0, 3e-5),
+            shape(lyap_vals[2, i, j], min2, max2, .000000, 0.0000025),
+            shape(tp[i,j], min4, max4, 0, 0.00001 ))
        for j in 1:resolution, i in 1:resolution])
 
 fig = Figure()
 ax = Axis(fig[1, 1], aspect=1)
-image!(ax, rotr90(img))
+image!(ax, Ca_shifts, x_shifts, rotr90(img))
 fig
 
 maximum(lyap_vals[1,:,:])
@@ -133,3 +130,5 @@ maximum(lyap_vals[1,:,:])
 # save data
 using JLD2
 @save "lyapunov.jld2" lyap_vals
+
+# loop for next three
