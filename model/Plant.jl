@@ -66,7 +66,7 @@ function dV(p, x, y, n, h, Ca, V)#, Isyn)
 end
 function dV(p, x, y, n, h, Ca, V, Isyn)
     # TODO: Add a function for Isyn per (12) in the appendix of the paper.
-    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V)+ Isyn) / p[1]
+    return -(II(p, h, V) + IK(p, n, V) + IT(p, x, V) + IKCa(p, Ca, V) + Ih(p, y, V) + Ileak(p, V) + Isyn) / p[1]
 end
 
 function melibeNew(u::AbstractArray{T}, p, t) where T
@@ -99,6 +99,18 @@ function melibeNew(u::AbstractArray{T}, p, t) where T
     ]
 end
 
+function melibeNewIsyn(u::AbstractArray{T}, p, t) where T
+    return @SVector T[
+        dx(p, u[1], u[6]),
+        0.0*dy(u[2], u[6]),
+        dn(u[3], u[6]),
+        dh(u[4], u[6]),
+        dCa(p, u[5], u[1], u[6]),
+        dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7]),
+        0.0e0
+    ]
+end
+
 function melibeNew!(du, u, p, t)
     # TODO: REVERT THIS! u[1], u[2], u[3], u[4], u[5], u[6], u[7] = u
 
@@ -116,6 +128,16 @@ function melibeNew!(du, u, p, t)
     du[5] = dCa(p, u[5], u[1], u[6])
     du[6] = dV(p, u[1], u[2], u[3], u[4], u[5], u[6])#, u[7])
     #du[7] = 0.0e0
+end
+
+function melibeNewIsyn!(du, u, p, t)
+    du[1] = dx(p, u[1], u[6])
+    du[2] = 0.0*dy(u[2], u[6])
+    du[3] = dn(u[3], u[6])
+    du[4] = dh(u[4], u[6])
+    du[5] = dCa(p, u[5], u[1], u[6])
+    du[6] = dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
+    du[7] = 0.0e0
 end
 
 function melibeNewReverse!(du, u, p, t)
@@ -137,6 +159,16 @@ function melibeNewReverse!(du, u, p, t)
     #du[7] = 0.0e0
 end
 
+function melibeNewIsynReverse!(du, u, p, t)
+    du[1] = -dx(p, u[1], u[6])
+    du[2] = -0.0*dy(u[2], u[6])
+    du[3] = -dn(u[3], u[6])
+    du[4] = -dh(u[4], u[6])
+    du[5] = -dCa(p, u[5], u[1], u[6])
+    du[6] = -dV(p, u[1], u[2], u[3], u[4], u[5], u[6], u[7])
+    du[7] = 0.0e0
+end
+
 default_state = @SVector Float32[
     0.8e0;     # x
     #0e0; # y
@@ -145,6 +177,16 @@ default_state = @SVector Float32[
     0.8e0;     # Ca
     -62.0e0;   # V
     #0.0e0      # Isyn
+]
+
+default_state_Isyn = @SVector Float32[
+    0.8e0;     # x
+    #0e0; # y
+    0.137e0;   # n
+    0.389e0;   # h
+    0.8e0;     # Ca
+    -62.0e0;   # V
+    0.0e0      # Isyn
 ]
 
 # Methods involved in calculating Vddot (d^2V/dt^2).
@@ -183,6 +225,7 @@ function Ileakdot(p, Vdot)
 end
 
 function Vddot(p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot)
+    # This does not work with Isyn.
     return -(IIdot(p, h, hdot, V, Vdot) + IKdot(p, n, ndot, V, Vdot) + ITdot(p, x, xdot, V, Vdot) + IKCadot(p, Ca, Cadot, V, Vdot) + Ileakdot(p, Vdot))/p[1]
 end
 
@@ -203,7 +246,7 @@ function numerical_derivative(f, u, p, dt=1e-8)
     u_new = u .+ du .* dt
 
     # Compute du/dt at the new state u_new
-    du_new = melibeNew(u_new, p, dt)
+    du_new = melibeNew(u_new, p, 0.0)
 
     # Evaluate the function f at the new state
     x_new = u_new[1]; xdot_new = du_new[1]
@@ -215,6 +258,40 @@ function numerical_derivative(f, u, p, dt=1e-8)
     f_u_new = f(p, h_new, hdot_new, n_new, ndot_new, x_new, xdot_new, Ca_new, Cadot_new, V_new, Vdot_new)
 
     # Compute the derivative of f with respect to time
+    df_dt = (f_u_new - f_u) / dt
+    return df_dt
+end
+
+function numerical_derivative_Isyn(f, Isyn_function, u, p, t, dt=1e-8)
+    # Compute du/dt at the current state u.
+    du = melibeNewIsyn(u, p, t)
+
+    # Evaluate the function f at the current state.
+    x = u[1]; xdot = du[1]
+    y = u[2]; ydot = du[2]
+    n = u[3]; ndot = du[3]
+    h = u[4]; hdot = du[4]
+    Ca = u[5]; Cadot = du[5]
+    V = u[6]; Vdot = du[6]
+
+    f_u = f(p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot)
+
+    # Perform an Euler step to get the new state u_new and substitute the appropriate synaptic current.
+    u_new = [(u .+ du .* dt)[1:end-1]..., Isyn_function(t+dt)]
+
+    # Compute du/dt at the new state u_new.
+    du_new = melibeNewIsyn(u_new, p, t)
+
+    # Evaluate the function f at the new state.
+    x_new = u_new[1]; xdot_new = du_new[1]
+    y_new = u_new[2]; ydot_new = du_new[2]
+    n_new = u_new[3]; ndot_new = du_new[3]
+    h_new = u_new[4]; hdot_new = du_new[4]
+    Ca_new = u_new[5]; Cadot_new = du_new[5]
+    V_new = u_new[6]; Vdot_new = du_new[6]
+    f_u_new = f(p, h_new, hdot_new, n_new, ndot_new, x_new, xdot_new, Ca_new, Cadot_new, V_new, Vdot_new)
+
+    # Compute the derivative of f with respect to time.
     df_dt = (f_u_new - f_u) / dt
     return df_dt
 end

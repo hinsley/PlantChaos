@@ -23,7 +23,7 @@ dynsys = @lift CoupledODEs(Plant.melibeNew, $u0, $p, diffeq = (
 ));
 
 set_theme!(theme_black())
-set_window_config!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina Swim InterNeuron (SIN) Model")
+GLMakie.activate!(framerate=60.0, focus_on_show=true, title = "Melibe Leonina Swim InterNeuron (SIN) Model")
 
 fig = Figure(resolution = (1500, 1000).*1.3);
 
@@ -106,7 +106,7 @@ bifctrlax = GridLayout(ctrlax[1,2], tellwidth = false)
 
 include("./trajectory.jl")
 include("./bifurcation.jl")
-#include("./return_map.jl")
+# include("./return_map.jl")
 
 display(fig) # display
 run_traj()
