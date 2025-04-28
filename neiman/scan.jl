@@ -34,9 +34,9 @@ end
 # Constants and parameter grid
 # ------------------------------------------------------------------
 const u0          = @SVector Float64[0.2, 0.1, 0.137, 0.389, 1.0, -62.0]
-const resolution  = 1000
-const Ca_shifts   = LinRange(-50.0, -20.0, resolution)
-const x_shifts    = LinRange(-1.6, 0.4,   resolution)
+const resolution  = 50
+const Ca_shifts   = LinRange(-60.0, 20.0, resolution)
+const x_shifts    = LinRange(-2., 2, resolution)
 const gh_values   = [0.0, 0.0002, 0.0005, 0.001, 0.0015, 0.002, 0.01, 0.02]
 
 # Total number of lattice points over all gh
@@ -76,7 +76,7 @@ end
 for gh in gh_values
     @info "Scanning gh = $gh"
     lyap_vals = compute_lyapunov_for_gh(gh, global_progress)
-    fname = "lyapunov_scan_$(replace(string(gh), '.' => '_')).jld2"
+    fname = "lyapunov_scan_small_$(replace(string(gh), '.' => '_')).jld2"
     @info "Writing $fname"
     @save fname lyap_vals gh Ca_shifts x_shifts
 end
