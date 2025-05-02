@@ -63,7 +63,13 @@ end
 #test plot
 
 let
-    ΔCa = -30.14
+
+    f = Figure()
+    ax1 = Axis(f[1,1], ylabel = "x")
+    ax2 = Axis(f[2,1], ylabel = "x")
+    ax3 = Axis(f[3,1], xlabel = "Ca", ylabel = "x")
+
+    ΔCa = -.92190969905
     Δx = -1.11518075
     p = vcat(Plant.default_params[1:15], Δx, ΔCa)
     # calculate initial conditions
@@ -79,14 +85,120 @@ let
     vec = real.(vecs)[:,ix]
     u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
 
-    prob2 = remake(prob, p = Params(p, 0, 0.,0.0,1.0), u0 = u0)
+    prob2 = remake(prob, p = Params(p, 0,0.0), u0 = u0)
     sol = solve(prob2, RK4(), abstol = 1e-8, reltol = 1e-8, callback = spike_cb)
 
-    f = Figure()
-    ax1 = Axis(f[1,1], xlabel = "t", ylabel = "V")
-    ax2 = Axis(f[2,1], xlabel = "Ca", ylabel = "x")
+    lines!(ax1, sol[5,:], sol[1,:])
 
-    lines!(ax1, sol.t, sol[6,:])
+    ΔCa = -.9219096991
+    Δx = -1.11518075
+    p = vcat(Plant.default_params[1:15], Δx, ΔCa)
+    # calculate initial conditions
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    eq = [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+    jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p,0), eq)
+    vals,vecs = eigen(jac)
+    _,ix = findmax(real.(vals))
+    eps = .001
+    vec = real.(vecs)[:,ix]
+    u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
+
+    prob2 = remake(prob, p = Params(p, 0,0.0), u0 = u0)
+    sol = solve(prob2, RK4(), abstol = 1e-8, reltol = 1e-8, callback = spike_cb)
+
+    lines!(ax1, sol[5,:], sol[1,:], linestyle = :dot, color = :black, linewidth = 2)
+
+    ΔCa = 10.394
+    Δx = -1.11518075
+    p = vcat(Plant.default_params[1:15], Δx, ΔCa)
+    # calculate initial conditions
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    eq = [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+    jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p,0), eq)
+    vals,vecs = eigen(jac)
+    _,ix = findmax(real.(vals))
+    eps = .001
+    vec = real.(vecs)[:,ix]
+    u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
+
+    prob2 = remake(prob, p = Params(p, 0,0.0), u0 = u0)
+    sol = solve(prob2, RK4(), abstol = 1e-8, reltol = 1e-8, callback = spike_cb)
+
     lines!(ax2, sol[5,:], sol[1,:])
+
+    ΔCa = 10.39
+    Δx = -1.11518075
+    p = vcat(Plant.default_params[1:15], Δx, ΔCa)
+    # calculate initial conditions
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    eq = [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+    jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p,0), eq)
+    vals,vecs = eigen(jac)
+    _,ix = findmax(real.(vals))
+    eps = .001
+    vec = real.(vecs)[:,ix]
+    u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
+
+    prob2 = remake(prob, p = Params(p, 0,0.0), u0 = u0)
+    sol = solve(prob2, RK4(), abstol = 1e-8, reltol = 1e-8, callback = spike_cb)
+
+    lines!(ax2, sol[5,:], sol[1,:], linestyle = :dot, color = :black, linewidth = 2)
+
+
+
+    ΔCa = 25.085
+    Δx = -1.11518075
+    p = vcat(Plant.default_params[1:15], Δx, ΔCa)
+    # calculate initial conditions
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    eq = [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+    jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p,0), eq)
+    vals,vecs = eigen(jac)
+    _,ix = findmax(real.(vals))
+    eps = .001
+    vec = real.(vecs)[:,ix]
+    u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
+
+    prob2 = remake(prob, p = Params(p, 0,0.0), u0 = u0)
+    sol = solve(prob2, RK4(), abstol = 1e-8, reltol = 1e-8, callback = spike_cb)
+
+    lines!(ax3, sol[5,:], sol[1,:])
+
+    ΔCa = 25.08
+    Δx = -1.11518075
+    p = vcat(Plant.default_params[1:15], Δx, ΔCa)
+    # calculate initial conditions
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p, v), Plant.xinfinv(p, 0.99e0), Plant.xinfinv(p, 0.01e0))
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p, v_eq)
+    x_eq = Plant.xinf(p, v_eq)
+    eq = [x_eq, Plant.default_state[2], Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
+    jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p,0), eq)
+    vals,vecs = eigen(jac)
+    _,ix = findmax(real.(vals))
+    eps = .001
+    vec = real.(vecs)[:,ix]
+    u0 = SVector{6}(eq - eps * vec * sign(vec[1]))
+
+    prob2 = remake(prob, p = Params(p, 0,0.0), u0 = u0)
+    sol = solve(prob2, RK4(), abstol = 1e-8, reltol = 1e-8, callback = spike_cb)
+
+    lines!(ax3, sol[5,:], sol[1,:], linestyle = :dot, color = :black, linewidth = 2)
+
+
+
+    println(sol.prob.p.count)
     f
 end

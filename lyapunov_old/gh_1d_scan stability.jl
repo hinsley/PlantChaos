@@ -8,7 +8,6 @@ import LinearAlgebra, Base.Threads
 # --- model definition & fixed data ------------------------------------------------
 include("../model/Plant.jl")       # assumes Plant.default_params is available
 
-inc = 0;
 function melibeNew(u::AbstractArray{T}, p, t) where T
     @SVector T[
         Plant.dx(p, u[1], u[6]),
@@ -19,39 +18,37 @@ function melibeNew(u::AbstractArray{T}, p, t) where T
         Plant.dV(p, u[1], u[2], u[3], u[4], u[5], u[6])
     ]
 end
+inc = 0;
 
 u0 = @SVector Float64[0.2, 0.1, 0.137, 0.389, 1.0, -62.0]   # initial state
-x_shift_fixed  = -1
-Ca_shift_fixed = -36.0
+x_shift_fixed  = -1;
+gh = .002;
 
 # --- parameter vector builder -----------------------------------------------------
-function build_params(gh)
+function build_params(c)
     # default_params[4] is gh; last two entries are (x_shift, Ca_shift)
     [Plant.default_params[1:3];
      gh;
      Plant.default_params[5:15];
      x_shift_fixed;
-     Ca_shift_fixed]
+     c]
 end
 
 # --- scan specification -----------------------------------------------------------
-n_gh      = 100
-gh_range  = LinRange(0.0, 0.001, n_gh)      # same numeric range as previous work
+n_gh      = 100000
+dc = 1
+Ca_range  = LinRange(-36-dc,-36+dc, n_gh)      # same numeric range as previous work
 n_steps   = 500_000                        # integration length for lyapunovspectrum
 
 λ1 = zeros(n_gh)
-λ2 = zeros(n_gh)
-λ3 = zeros(n_gh)
 
 progress = Progress(n_gh, desc = "1‑D gh scan", dt = 1)
 
 Threads.@threads for k in 1:n_gh
-    p   = build_params(gh_range[k])
+    p   = build_params(Ca_range[k])
     sys = ContinuousDynamicalSystem(melibeNew, u0, p)
-    ly  = lyapunovspectrum(sys, n_steps, Ttr = 500_000)
+    ly  = lyapunov(sys, n_steps; Ttr = 500_000, d0 = 1e-6, Δt = .1)
     λ1[k] = ly[1]
-    λ2[k] = length(ly) ≥ 2 ? ly[2] : 0.0
-    λ3[k] = length(ly) ≥ 3 ? ly[3] : 0.0
     next!(progress)
 end
 
@@ -59,14 +56,12 @@ end
 GLMakie.activate!()                             # use OpenGL backend
 fig = Figure(size = (800, 500))
 ax  = Axis(fig[1, 1],
-           xlabel = "gh",
+           xlabel = "ca_shift",
            ylabel = "Lyapunov exponent",
-           title  = "Lyapunov spectrum at (x_shift, Ca_shift) = ("*string(x_shift_fixed)*","*string(Ca_shift_fixed)*")")
+           title  = "Lyapunov spectrum near (x_shift, Ca_shift) = ("*string(x_shift_fixed)*","*string(Ca_shift_fixed)*")")
 
-lines!(ax, gh_range, λ1, label = "λ₁")
-lines!(ax, gh_range, λ2, label = "λ₂")
-lines!(ax, gh_range, λ3, label = "λ₃")
+lines!(ax, Ca_range, λ1, label = "λ₁")
 axislegend(ax, position = :rb)
 inc += 1
-save("lyapunov_1d_gh_scan"*string(inc)*".png", fig)   # optional
+#save("lyapunov_1d_gh_scan"*string(inc)*".png", fig)   # optional
 display(fig)

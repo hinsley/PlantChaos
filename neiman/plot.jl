@@ -53,7 +53,6 @@ function plot_all(all_data, gh_values, Ca_shifts, x_shifts)
         c = ((idx-1) % ncols) + 1
 
         lyap_vals = all_data[gh]
-        img = create_lyapunov_image(lyap_vals)
 
         ax = Axis(fig[r,c]; aspect=1,
                   title="gh = $gh",
@@ -61,7 +60,7 @@ function plot_all(all_data, gh_values, Ca_shifts, x_shifts)
                   ylabel="x shift")
         
         pos_sum = lyap_vals[1,:,:] .+ lyap_vals[3,:,:]
-        heatmap!(ax, Ca_shifts, x_shifts, clamp.(pos_sum, -.0002, .0002)', colormap = Reverse(:RdYlBu))
+        heatmap!(ax, Ca_shifts, x_shifts, pos_sum', colormap = Reverse(:RdYlBu), colorrange = (-.0002, .0002))
         maxλ = maximum(lyap_vals[1,:,:])
         pcchaos = 100 * count(>(0.00001), lyap_vals[1,:,:]) / length(lyap_vals[1,:,:])
 
@@ -122,5 +121,7 @@ function dimension_map(lyap_vals::Array{Float64,3})
 end
 
 # Example usage:
-dim_map = dimension_map(all_data[.000])
-heatmap(Ca_shifts, x_shifts, rotl90(dim_map))  # to visualize
+dim_map = dimension_map(all_data[.01])
+heatmap(Ca_shifts, x_shifts, dim_map')  # to visualize
+dim3map = [x ==  0 ? x : 1 for x in dim_map]
+heatmap(Ca_shifts, x_shifts, dim3map')
