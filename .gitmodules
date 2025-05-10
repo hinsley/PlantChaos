@@ -1,0 +1,3 @@
+[submodule "kneading/MultimodalMaps"]
+	path = kneading/MultimodalMaps
+	url = https://github.com/hinsley/MultimodalMaps.git

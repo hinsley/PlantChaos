@@ -13,6 +13,8 @@ include("../model/Plant.jl")
 using .Plant
 include("../tools/equilibria.jl")
 include("../tools/symbolics.jl")
+include("MultimodalMaps/kneading/power_series.jl")
+include("MultimodalMaps/kneading/smallest_root.jl")
 
 # Define the parameter values to sweep over.
 sweep_resolution = 100
@@ -269,14 +271,19 @@ display(fig)
     Vminus # Slow subsystem oscillation (V max below V_sd).
 end
 
-# Constants for SSCS computation (from inline_scan.jl).
+# Constants for SSCS and htop computation (from inline_scan.jl).
 const TRANSIENT_TIME = 1e2 # Time to wait before beginning to detect events.
 const MAX_SEQ_LENGTH = 80 # Maximum length of signed spike counts before terminating trajectory integration.
 const MAX_SPIKE_COUNT = 35 # Maximum number of spikes in a single burst before considering the trajectory tonic-spiking and terminating.
 const SSCS_ODE_TSPAN = (0.0, 1e6) # Timespan for SSCS ODE solves.
+const KNEADING_DET_TRUNCATION_LENGTH = 30 # Number of terms to truncate the kneading determinant to.
 
 # Iterate over the parameter values in the specified sweep range.
-for i in 1:1#sweep_resolution
+lz_complexity_values = Float64[]
+htop_values = Float64[]
+for i in 1:sweep_resolution
+  println("Sweeping... [$(i)/$(sweep_resolution)]")
+
   # Update the parameter vector.
   p = Observable(SVector{17, Float64}([base_params..., Δxs[i], ΔCas[i]]))
 
@@ -338,18 +345,18 @@ for i in 1:1#sweep_resolution
   V_sd_current = V_eq_SD
 
   # Initialize state machines for SSCS computation.
-  state_machine_T0 = Dict{Symbol, Any}(
-      :scs => Int[], 
-      :count => 0, 
-      :last_symbol => Void, 
-      :last2_symbol => Void, 
+  state_machine_T = Dict{Symbol, Any}(
+      :scs => Int[],
+      :count => 0,
+      :last_symbol => Void,
+      :last2_symbol => Void,
       :V_sd => V_sd_current
   )
   state_machine_Gamma_SD_minus0 = Dict{Symbol, Any}(
-      :scs => Int[], 
-      :count => 0, 
-      :last_symbol => Void, 
-      :last2_symbol => Void, 
+      :scs => Int[],
+      :count => 0,
+      :last_symbol => Void,
+      :last2_symbol => Void,
       :V_sd => V_sd_current
   )
 
@@ -426,36 +433,139 @@ for i in 1:1#sweep_resolution
     return affect_sscs!
   end
 
-  affect_for_T0! = make_affect_sscs!(state_machine_T0)
+  affect_for_T! = make_affect_sscs!(state_machine_T)
   affect_for_Gamma! = make_affect_sscs!(state_machine_Gamma_SD_minus0)
 
-  # Compute SSCS for T0.
-  println("Computing SSCS for T0...")
-  cb_T0_sscs = VectorContinuousCallback(condition_sscs, affect_for_T0!, nothing, 2, save_positions=(false,false))
-  prob_T0_sscs = ODEProblem(Plant.melibeNew, T0, SSCS_ODE_TSPAN, p[], callback=cb_T0_sscs)
-  sol_T0_sscs = solve(prob_T0_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
-  T0_scs = state_machine_T0[:scs]
-  println("SSCS for T0: ", T0_scs)
+  # Compute SSCS for T.
+  # println("Computing SSCS for T...")
+  cb_T_sscs = VectorContinuousCallback(condition_sscs, affect_for_T!, nothing, 2, save_positions=(false,false))
+  prob_T_sscs = ODEProblem(Plant.melibeNew, T0, SSCS_ODE_TSPAN, p[], callback=cb_T_sscs)
+  sol_T_sscs = solve(prob_T_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
+  T_scs = state_machine_T[:scs]
+  # println("SSCS for T: ", T_scs)
   
   # Compute SSCS for Γ_SD_minus0.
-  println("Computing SSCS for Γ_SD_minus0...")
+  # println("Computing SSCS for Γ_SD_minus0...")
   cb_Gamma_sscs = VectorContinuousCallback(condition_sscs, affect_for_Gamma!, nothing, 2, save_positions=(false,false))
   prob_Gamma_sscs = ODEProblem(Plant.melibeNew, Γ_SD_minus0, SSCS_ODE_TSPAN, p[], callback=cb_Gamma_sscs)
   sol_Gamma_sscs = solve(prob_Gamma_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
   Gamma_SD_minus0_scs = state_machine_Gamma_SD_minus0[:scs]
-  println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
+  # println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
 
   # Compute the LZ complexity of the SSCS for Γ_SD^-.
   LZ_complexity = normalized_LZ76_complexity(Gamma_SD_minus0_scs)
   println("LZ complexity of Γ_SD_minus: ", LZ_complexity)
 
   # Compute the kneading sequences of each critical trajectory.
-  T0_kneading_sequence = itinerary_to_kneading_sequence(
-    SSCS_to_itinerary(T0_scs[2:end])
+  T_kneading_sequence = itinerary_to_kneading_sequence(
+    SSCS_to_itinerary(T_scs[2:end])
   )
-  println("Kneading sequence of T0: ", T0_kneading_sequence)
+  # println("Kneading sequence of T: ", T_kneading_sequence)
   Gamma_SD_minus0_kneading_sequence = itinerary_to_kneading_sequence(
     SSCS_to_itinerary(Gamma_SD_minus0_scs)
   )
-  println("Kneading sequence of Γ_SD_minus0: ", Gamma_SD_minus0_kneading_sequence)
+  # println("Kneading sequence of Γ_SD_minus0: ", Gamma_SD_minus0_kneading_sequence)
+
+  # Compute the kneading determinant using the matrix determinant lemma trick
+  # for saddled Swiss-roll attractors.
+  ℓ = Gamma_SD_minus0_kneading_sequence[1] # Top lap index in the core.
+
+  # Allocate a 3D matrix for shorthand kneading matrix computation.
+  kneading_matrix = zeros(Integer, 2, ℓ-1, MAX_SEQ_LENGTH)
+
+  # Prepopulate the constant terms with known values.
+  kneading_matrix[1, 1, 1] = -1
+  kneading_matrix[1, 2, 1] = 1
+  kneading_matrix[2, 2, 1] = -1
+  kneading_matrix[2, 3, 1] = 1
+
+  # Compute the rest of the kneading matrix.
+  sign1 = -1
+  sign2 = 1
+  for k in 2:MAX_SEQ_LENGTH-1
+    lap1 = Gamma_SD_minus0_kneading_sequence[k-1]
+    if lap1 > 1
+      kneading_matrix[
+        1,
+        lap1 - 1,
+        k
+      ] = 2 * sign1
+      if iseven(lap1)
+        sign1 = -sign1
+      end
+    end
+    lap2 = T_kneading_sequence[k]
+    if lap2 > 1
+      kneading_matrix[
+        2,
+        lap2 - 1,
+        k
+      ] = 2 * sign2
+      if iseven(lap2)
+        sign2 = -sign2
+      end
+    end
+  end
+
+  # println("Kneading matrix: ", kneading_matrix)
+
+  # Helper function for computing the coefficients of the kneading determinant.
+  function coeff(j, k)
+    if isodd(j)
+      if isodd(k)
+        return 0
+      else
+        return (1-j)/2
+      end
+    else
+      if isodd(k)
+        return (k-1)/2
+      else
+        return (k-j)/2
+      end
+    end
+  end
+
+  # Compute the kneading determinant.
+  det = Integer[]
+  for j in 2:ℓ
+    for k in j+1:ℓ
+      factor1 = kneading_matrix[1, j-1, :]
+      factor2 = kneading_matrix[2, k-1, :]
+      factor3 = kneading_matrix[1, k-1, :]
+      factor4 = kneading_matrix[2, j-1, :]
+      result = scale(
+        coeff(j, k),
+        add(
+          multiply(factor1, factor2),
+          scale(-1, multiply(factor3, factor4))
+        )
+      )
+      det = add(det, result)
+    end
+  end
+
+  # Truncate the kneading determinant and convert to Int64.
+  det = convert(Vector{Int64}, det[1:KNEADING_DET_TRUNCATION_LENGTH])
+  # println("Kneading determinant: ", det)
+
+  # Compute the smallest root of the kneading determinant.
+  r = smallest_root(det)
+  # println("Smallest root of the kneading determinant: ", r)
+
+  # Compute the topological entropy of the system.
+  htop = -log(r)
+  println("Topological entropy: ", htop)
+
+  push!(lz_complexity_values, LZ_complexity)
+  push!(htop_values, htop)
 end
+
+# Plot the results.
+fig = Figure(size=(1000, 600))
+ax_lz_complexity = Axis(fig[1, 1], title="LZ Complexity", xlabel="Parameter Index", ylabel="LZ Complexity")
+ax_htop = Axis(fig[1, 2], title="Topological Entropy", xlabel="Parameter Index", ylabel="Topological Entropy")
+
+lines!(ax_lz_complexity, lz_complexity_values)
+lines!(ax_htop, htop_values)
+display(fig)
