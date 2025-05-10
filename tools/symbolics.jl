@@ -368,3 +368,24 @@ function voltage_trace_to_itinerary(voltage_trace::Vector{Float64}, times::Vecto
   
   return itinerary
 end
+
+function SSCS_to_itinerary(SSCS::Vector{Int})::Vector{BranchSymbol}
+  itinerary = BranchSymbol[]
+  for symbol in SSCS
+    if symbol == 0
+      push!(itinerary, SymbolA)
+    else
+      push!(itinerary, SymbolB)
+      for spike in 2:abs(symbol)
+        push!(itinerary, SymbolD)
+      end
+      push!(itinerary, SymbolC)
+      if symbol > 0
+        push!(itinerary, SymbolE)
+      else
+        push!(itinerary, SymbolF)
+      end
+    end
+  end
+  return itinerary
+end

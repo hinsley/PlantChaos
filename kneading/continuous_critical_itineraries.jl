@@ -10,8 +10,9 @@ using GLMakie, OrdinaryDiffEq, StaticArrays, Roots, NonlinearSolve
 using Interpolations, ForwardDiff, LinearAlgebra
 
 include("../model/Plant.jl")
-using .Plant # Make functions from Plant module available
-include("../tools/equilibria.jl") # Included Equilibria
+using .Plant
+include("../tools/equilibria.jl")
+include("../tools/symbolics.jl")
 
 # Define the parameter values to sweep over.
 sweep_resolution = 100
@@ -443,4 +444,18 @@ for i in 1:1#sweep_resolution
   sol_Gamma_sscs = solve(prob_Gamma_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
   Gamma_SD_minus0_scs = state_machine_Gamma_SD_minus0[:scs]
   println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
+
+  # Compute the LZ complexity of the SSCS for Γ_SD^-.
+  LZ_complexity = normalized_LZ76_complexity(Gamma_SD_minus0_scs)
+  println("LZ complexity of Γ_SD_minus: ", LZ_complexity)
+
+  # Compute the kneading sequences of each critical trajectory.
+  T0_kneading_sequence = itinerary_to_kneading_sequence(
+    SSCS_to_itinerary(T0_scs[2:end])
+  )
+  println("Kneading sequence of T0: ", T0_kneading_sequence)
+  Gamma_SD_minus0_kneading_sequence = itinerary_to_kneading_sequence(
+    SSCS_to_itinerary(Gamma_SD_minus0_scs)
+  )
+  println("Kneading sequence of Γ_SD_minus0: ", Gamma_SD_minus0_kneading_sequence)
 end
