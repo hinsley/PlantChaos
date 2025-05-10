@@ -7,7 +7,8 @@ Pkg.activate("./kneading")
 Pkg.instantiate()
 
 using GLMakie, OrdinaryDiffEq, StaticArrays, Roots, NonlinearSolve
-using Interpolations, ForwardDiff, LinearAlgebra
+using Interpolations, ForwardDiff, LinearAlgebra, DynamicalSystems
+using ProgressMeter
 
 include("../model/Plant.jl")
 using .Plant
@@ -17,7 +18,7 @@ include("MultimodalMaps/kneading/power_series.jl")
 include("MultimodalMaps/kneading/smallest_root.jl")
 
 # Define the parameter values to sweep over.
-sweep_resolution = 300
+sweep_resolution = 2000
 Δxs = range(-1.0, -1.0, length=sweep_resolution)
 ΔCas = range(-35.0, -25.0, length=sweep_resolution)
 
@@ -78,12 +79,9 @@ prob = ODEProblem(Plant.melibeNew, Γ_SD_minus0, tspan, p[])
 sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
 
 # Store only the endpoint at the calcium minimum.
-Γ_SD_minus_Ca_min_V = sol.u[end][6]
 Γ_SD_minus_Ca_min = sol.u[end][5]
 
-# Generate a range of initial conditions along the Ca nullcline between
-# SF and Γ_SD_minus_Ca_min.
-map_resolution = 500
+# Obtain the voltage value at the calcium minimum on the calcium nullcline.
 function Ca_x_eq(p)
     V_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
     Ca_eq = Ca_null_Ca(p, V_eq)
@@ -93,6 +91,12 @@ end
 function Ca_null_Ca(p, V)
     return p[13]*Plant.xinf(p, V)*(p[12]-V+p[17])
 end
+Γ_SD_minus_Ca_min_V = sol.u[end][6] # Initial guess.
+Γ_SD_minus_Ca_min_V = find_zero(V -> Ca_null_Ca(p[], V) - Γ_SD_minus_Ca_min, Γ_SD_minus_Ca_min_V)
+
+# Generate a range of initial conditions along the Ca nullcline between
+# SF and Γ_SD_minus_Ca_min.
+map_resolution = 500
 Vs = range(V_eq_SF, Γ_SD_minus_Ca_min_V, length=map_resolution)
 x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
 u0s = [
@@ -460,18 +464,18 @@ for i in 1:sweep_resolution
     SSCS_to_itinerary(T_scs[2:end])
   )
   # println("Kneading sequence of T: ", T_kneading_sequence)
-  Gamma_SD_minus0_kneading_sequence = itinerary_to_kneading_sequence(
+  Gamma_SD_minus_kneading_sequence = itinerary_to_kneading_sequence(
     SSCS_to_itinerary(Gamma_SD_minus0_scs)
   )
-  # println("Kneading sequence of Γ_SD_minus0: ", Gamma_SD_minus0_kneading_sequence)
+  # println("Kneading sequence of Γ_SD_minus: ", Gamma_SD_minus_kneading_sequence)
 
   # Compute the kneading determinant using the matrix determinant lemma trick
   # for saddled Swiss-roll attractors.
-  ℓ = Gamma_SD_minus0_kneading_sequence[1] # Top lap index in the core.
+  ℓ = Gamma_SD_minus_kneading_sequence[1] # Top lap index in the core.
   
   # Get the shorter length among the two kneading sequences.
   K = min(
-    length(Gamma_SD_minus0_kneading_sequence),
+    length(Gamma_SD_minus_kneading_sequence),
     length(T_kneading_sequence)
   )
 
@@ -487,7 +491,7 @@ for i in 1:sweep_resolution
     kneading_matrix[1] = 1
     sign1 = -1
     for k in 1:K
-      lap1 = Gamma_SD_minus0_kneading_sequence[k]
+      lap1 = Gamma_SD_minus_kneading_sequence[k]
       if lap1 == 2
         kneading_matrix[k+1] = 2 * sign1
         sign1 = -sign1
@@ -513,7 +517,7 @@ for i in 1:sweep_resolution
     sign1 = -1
     sign2 = 1
     for k in 1:K
-      lap1 = Gamma_SD_minus0_kneading_sequence[k]
+      lap1 = Gamma_SD_minus_kneading_sequence[k]
       if lap1 > 1
         kneading_matrix[
           1,
@@ -574,7 +578,7 @@ for i in 1:sweep_resolution
         det = add(det, result)
       end
     end
-    
+
     # Multiply by 1/(1-t) to get D(t).
     det = multiply(det, [1 for _ in 1:K+1] |> Vector{Integer})
 
@@ -595,14 +599,37 @@ for i in 1:sweep_resolution
   push!(htop_values, htop)
 end
 
+# Compute the LLE of some trajectory for all points in the parameter sweep.
+# Pre-allocate lle_values outside the loop.
+lle_values = Vector{Float64}(undef, sweep_resolution)
+T = 1e6
+Ttr = 1e5
+d0 = 1e-6
+Δt = 1e-1
+progress_bar = Progress(sweep_resolution, 1, "Computing LLE: ", 50) # Progress bar can be outside.
+Threads.@threads for i in 1:sweep_resolution
+  local_p_svector = SVector{17, Float64}([base_params..., Δxs[i], ΔCas[i]])
+  system = CoupledODEs(Plant.melibeNew, u0, local_p_svector)
+  LLE_val = lyapunov(
+    system, T;
+    Ttr = Ttr,
+    d0 = d0,
+    Δt = Δt
+  )
+  lle_values[i] = LLE_val
+  next!(progress_bar)
+end
+
 # Plot the results.
-fig = Figure(size=(1000, 800))
+fig = Figure(size=(1000, 1200))
 ax_lz_complexity = Axis(fig[1, 1], title="LZ Complexity", xlabel=L"$\Delta$Ca", ylabel="LZ Complexity")
 ax_htop = Axis(fig[2, 1], title="Topological Entropy", xlabel=L"$\Delta$Ca", ylabel="Topological Entropy")
+ax_lle = Axis(fig[3, 1], title="Leading Lyapunov exponent", xlabel=L"$\Delta$Ca", ylabel="LLE")
 
 lines!(ax_lz_complexity, ΔCas, lz_complexity_values)
 lines!(ax_htop, ΔCas, htop_values)
+lines!(ax_lle, ΔCas, lle_values)
 display(fig)
 
 # Save the figure to a file.
-save("htop_vs_lz.png", fig)
+save("lz_htop_lle.png", fig)
