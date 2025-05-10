@@ -66,99 +66,124 @@ transient_time = 1e2 # Time to wait before beginning to detect events.
 
 # Adjust the problem for each parameter vector in the scan.
 function prob_func(prob, i, repeat)
-  # Load the parameters from the pre-defined array.
-  ΔCa, ΔVx = param_list[i]
+  try
+    # Load the parameters from the pre-defined array.
+    ΔCa, ΔVx = param_list[i]
 
-  # Construct new parameter SVector.
-  p_new = SVector{length(prob.p)}(prob.p[1:15]..., ΔVx, ΔCa)
+    # Construct new parameter SVector.
+    p_new = SVector{length(prob.p)}(prob.p[1:15]..., ΔVx, ΔCa)
 
-  # Recalculate the initial conditions at the upper saddle equilibrium.
-  v_eqs = find_zeros(v -> Equilibria.Ca_difference(p_new, v), Plant.xinfinv(p_new, 0.99), Plant.xinfinv(p_new, 0.01))
-  if length(v_eqs) < 3
-    v_eqs = [0.0, 0.0, 0.0] # TODO: Codesmell. This is a bad approximation and may produce artifacts.
-    # error("Unable to find upper saddle equilibrium for parameter vector $i: $p_new. Found only v_eqs $v_eqs.")
-  end
-  v_eq = v_eqs[3]
-  Ca_eq = Equilibria.Ca_null_Ca(p_new, v_eq)
-  x_eq = Plant.xinf(p_new, v_eq)
-  u0 = SVector{6}(x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq)
+    # Recalculate the initial conditions at the upper saddle equilibrium.
+    v_eqs = find_zeros(v -> Equilibria.Ca_difference(p_new, v), Plant.xinfinv(p_new, 0.99), Plant.xinfinv(p_new, 0.01))
+    if length(v_eqs) < 3
+      v_eqs = [0.0, 0.0, 0.0] # TODO: Codesmell. This is a bad approximation and may produce artifacts.
+      # error("Unable to find upper saddle equilibrium for parameter vector $i: $p_new. Found only v_eqs $v_eqs.")
+    end
+    v_eq = v_eqs[3]
+    Ca_eq = Equilibria.Ca_null_Ca(p_new, v_eq)
+    x_eq = Plant.xinf(p_new, v_eq)
+    u0 = SVector{6}(x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq)
 
-  # Update the state machine with the appropriate V_sd value.
-  state_list[i][:V_sd] = v_eq
+    # Update the state machine with the appropriate V_sd value.
+    state_list[i][:V_sd] = v_eq
 
-  # Define the condition function inside of prob_func as a closure so it can access the problem index i.
-  function condition(out, u, t, integrator)
-    if t < transient_time
-      out[1] = 0.0
-      out[2] = 0.0
-    else
-      # Add safety check for NaN values
-      if any(isnan, u)
+    # Define the condition function inside of prob_func as a closure so it can access the problem index i.
+    function condition(out, u, t, integrator)
+      if t < transient_time
         out[1] = 0.0
         out[2] = 0.0
-        return
-      end
-      
-      Vdot = Plant.dV(integrator.p, u...)
-      out[1] = -Vdot
-
-      # out[2] is -Vddot, but we must use finite differencing to
-      # calculate it accurately, as the analytical derivative of
-      # minf is numerically unstable.
-      out[2] = -Plant.numerical_derivative(
-        (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
-        u,
-        integrator.p,
-        1e-4
-      )
-    end
-  end
-
-  # Define the affect! function inside of prob_func as a closure so it can access the problem index i.
-  function affect!(integrator, idx)
-    if idx == 1
-      if integrator.u[6] > state_list[i][:V_sd]
-        state_list[i][:count] += 1
-        state_list[i][:last2_symbol] = state_list[i][:last_symbol]
-        state_list[i][:last_symbol] = Vplus
-        if state_list[i][:count] > max_spike_count
-          terminate!(integrator) # Early termination upon tonic-spiking detected.
-        end
       else
-        push!(
-          state_list[i][:scs], # Spike count sequence.
-          (state_list[i][:last2_symbol] == Vplus ? -1 : 1) * state_list[i][:count]
-        )
-        state_list[i][:count] = 0
-        state_list[i][:last2_symbol] = state_list[i][:last_symbol]
-        state_list[i][:last_symbol] = Vminus
-        if length(state_list[i][:scs]) > max_seq_length
-          terminate!(integrator) # Early termination upon satisfactory sequence length.
+        # Add safety check for NaN values
+        if any(isnan, u)
+          out[1] = 0.0
+          out[2] = 0.0
+          return
         end
+        
+        Vdot = Plant.dV(integrator.p, u...)
+        out[1] = -Vdot
+
+        # out[2] is -Vddot, but we must use finite differencing to
+        # calculate it accurately, as the analytical derivative of
+        # minf is numerically unstable.
+        out[2] = -Plant.numerical_derivative(
+          (p, h, hdot, n, ndot, x, xdot, Ca, Cadot, V, Vdot) -> Vdot,
+          u,
+          integrator.p,
+          1e-4
+        )
       end
-    elseif idx == 2
-      state_list[i][:last2_symbol] = state_list[i][:last_symbol]
-      state_list[i][:last_symbol] = I
     end
+
+    # Define the affect! function inside of prob_func as a closure so it can access the problem index i.
+    function affect!(integrator, idx)
+      try  # Add error handling around the event processing
+        if idx == 1
+          if integrator.u[6] > state_list[i][:V_sd]
+            state_list[i][:count] += 1
+            state_list[i][:last2_symbol] = state_list[i][:last_symbol]
+            state_list[i][:last_symbol] = Vplus
+            if state_list[i][:count] > max_spike_count
+              terminate!(integrator) # Early termination upon tonic-spiking detected.
+            end
+          else
+            push!(
+              state_list[i][:scs], # Spike count sequence.
+              (state_list[i][:last2_symbol] == Vplus ? -1 : 1) * state_list[i][:count]
+            )
+            state_list[i][:count] = 0
+            state_list[i][:last2_symbol] = state_list[i][:last_symbol]
+            state_list[i][:last_symbol] = Vminus
+            if length(state_list[i][:scs]) > max_seq_length
+              terminate!(integrator) # Early termination upon satisfactory sequence length.
+            end
+          end
+        elseif idx == 2
+          state_list[i][:last2_symbol] = state_list[i][:last_symbol]
+          state_list[i][:last_symbol] = I
+        end
+      catch e
+        @warn "Error in affect! function. Terminating integration." exception=(e, catch_backtrace())
+        terminate!(integrator)
+      end
+    end
+
+    # Define callback to symbolically encode trajectories.
+    cb = VectorContinuousCallback(condition, affect!, nothing, 2; 
+                                 interp_points=100,      # Increase interpolation points
+                                 abstol=1e-4,           # More relaxed tolerances for root-finding
+                                 reltol=1e-4,
+                                 save_positions=(false,false))
+
+    # Return the modified problem.
+    return remake(
+      prob,
+      p=p_new,
+      u0=u0,
+      callback=cb
+    )
+  catch e
+    @warn "Error setting up problem for parameter point $(param_list[i]): $e"
+    # Return a dummy problem that will immediately terminate and be marked as failed
+    return remake(
+      prob,
+      u0=prob.u0,
+      tspan=(0.0, 0.1),
+      callback=CallbackSet()
+    )
   end
-
-  # Define callback to symbolically encode trajectories.
-  cb = VectorContinuousCallback(condition, affect!, nothing, 2)
-
-  # Return the modified problem.
-  return remake(
-    prob,
-    p=p_new,
-    u0=u0,
-    callback=cb
-  )
 end
 
 # Define an output function to discard the solution trajectory and only
 # return the signed spike count symbolic sequence.
 function output_func(sol, i)
-  next!(p) # Update progress bar here instead
-  return (state_list[i][:scs], false) # (output, rerun).
+  next!(p) # Update progress bar here
+  if sol.retcode == :Success
+    return (state_list[i][:scs], false) # Normal case: return the sequence
+  else
+    @warn "Problem at parameter point $(param_list[i]) failed with retcode: $(sol.retcode). Skipping."
+    return (Int[], false) # Return empty sequence for failed parameter points
+  end
 end
 
 # Define the EnsembleProblem using prob_func to customize each trajectory.
@@ -173,14 +198,17 @@ num_trajectories = length(param_list)
 p = Progress(num_trajectories, 1, "Computing trajectories: ", 50)
 sol = solve(
   ensemble_prob,
-  Tsit5(),
-  abstol=1e-5,  # Increased tolerance from 3e-6
-  reltol=1e-5,  # Increased tolerance from 3e-6
+  Rodas4P(),
+  abstol=1e-4,                # Further relaxed tolerances
+  reltol=1e-4,
   EnsembleThreads(),
   trajectories=num_trajectories,
   save_on=false,
-  progress=false,  # Turn off built-in progress
-  maxiters=1_000_000  # Add maximum iterations limit
+  progress=false,
+  maxiters=1_000_000,
+  dtmin=1e-12,                # Set minimum time step
+  force_dtmin=true,           # Allow solver to use minimum time step
+  adaptive=true               # Ensure adaptive stepping is on
 )
 
 # @save "inline_scan_SSC_sequences.jld2" sol
@@ -192,9 +220,13 @@ last_n = 70 # Length of tail of signed spike-count sequences to use for LZ compl
 prune_threshold = 1.0 # Discard any sequence comprising more than this fraction of subthreshold oscillations.
 minimum_n = 20 # Minimum number of signed spike counts to plot.
 @time lz_complexities = [
-    (count(x -> x == 0, sequence) / length(sequence) > prune_threshold) ? 0.0 : 
-    (length(sequence) >= last_n ? normalized_LZ76_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
-    (length(sequence) > minimum_n ? normalized_LZ76_complexity(Vector{Int}(sequence)) : 0.0)) 
+    if isempty(sequence)
+        0.0  # Handle empty sequences from failed points
+    else
+        (count(x -> x == 0, sequence) / length(sequence) > prune_threshold) ? 0.0 : 
+        (length(sequence) >= last_n ? normalized_LZ76_complexity(Vector{Int}(sequence[end-last_n+1:end])) : 
+        (length(sequence) > minimum_n ? normalized_LZ76_complexity(Vector{Int}(sequence)) : 0.0))
+    end
     for sequence in sol
 ]
 

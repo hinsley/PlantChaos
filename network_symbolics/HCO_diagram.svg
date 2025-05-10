@@ -9,6 +9,9 @@
    id="svg5"
    inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
    sodipodi:docname="HCO_diagram.svg"
+   inkscape:export-filename="/home/chinsley1@gsuad.gsu.edu/Dev/PlantChaos/network_symbolics/HCO_diagram.png"
+   inkscape:export-xdpi="400"
+   inkscape:export-ydpi="400"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -23,9 +26,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="1.8635421"
-     inkscape:cx="482.95127"
-     inkscape:cy="633.20277"
+     inkscape:zoom="1.7251267"
+     inkscape:cx="580.82691"
+     inkscape:cy="597.63727"
      inkscape:window-width="2560"
      inkscape:window-height="1454"
      inkscape:window-x="0"
@@ -52,14 +55,14 @@
        r="19.77927"
        transform="scale(-1,1)" />
     <circle
-       style="fill:#ff0000;fill-rule:evenodd;stroke:#ffffff;stroke-width:0.25235599;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-miterlimit:4"
+       style="fill:#ff0000;fill-rule:evenodd;stroke:#ffffff;stroke-width:0.25235599;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-miterlimit:4;opacity:1"
        id="path934-3-6"
        cx="-115.75357"
        cy="170.95575"
        r="4.9914322"
        transform="scale(-1,1)" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;opacity:0.15"
        d="m 114.92005,214.76683 c 7.39176,-15.15277 7.46911,-31.19668 0,-46.38228"
        id="path1350"
        sodipodi:nodetypes="cc" />
@@ -71,7 +74,7 @@
        r="4.9914322"
        transform="scale(1,-1)" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#0000ff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;fill-rule:evenodd;stroke:#0000ff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;opacity:0.15"
        d="m 95.502837,166.83814 c -7.391718,15.15277 -7.469068,31.19668 0,46.38228"
        id="path1350-5"
        sodipodi:nodetypes="cc" />
