@@ -7,7 +7,7 @@ Pkg.activate("./kneading")
 Pkg.instantiate()
 
 using GLMakie, OrdinaryDiffEq, StaticArrays, Roots, NonlinearSolve
-using Interpolations
+using Interpolations, SciMLSensitivity, ForwardDiff
 
 include("../model/Plant.jl")
 using .Plant # Make functions from Plant module available
@@ -183,5 +183,89 @@ if first_max_index !== nothing
 else
     println("No local maximum found in the return map.")
 end
+
+display(fig)
+
+# Compute the itinerary of the critical point associated with the 1-spike
+# preimage of T.
+
+function f(V0, p)
+  # Compute the return map at an initial voltage value V0.
+  function _condition(u, t, integrator)
+    if t < 1e3 || u[1] > x_eq_SF
+      return 1.0
+    end
+    dCa = Plant.melibeNew(u, p, t)[5]
+    return dCa
+  end
+  function _affect!(integrator)
+    terminate!(integrator)
+  end
+  _cb = ContinuousCallback(_condition, _affect!)
+  _prob = remake(prob, u0 = SVector{6}([
+    Plant.xinf(p, V0)-x_offset,
+    SF_eq[2:4]...,
+    Ca_null_Ca(p, V0),
+    V0
+  ]))
+  _sol = solve(
+    _prob,
+    Tsit5(),
+    callback=_cb,
+    abstol=1e-8,
+    reltol=1e-8,
+    save_everystep=false
+  )
+  return _sol.u[end][6]
+end
+
+# Compute the first and second derivatives of f with respect to V0.
+function differentiate_f(p, V0)
+  # Define a function of V0 only, with p fixed from the outer scope.
+  # This represents f(V_val; p) as a function of V_val.
+  f_with_fixed_p = V_val -> f(V_val, p)
+
+  # Define a function that computes the first derivative of f_with_fixed_p at any given point.
+  # This function, let's call it g(x), returns f_with_fixed_p'(x).
+  first_derivative_func = x -> ForwardDiff.derivative(f_with_fixed_p, x)
+
+  # Compute the value of the first derivative at the specific point V0.
+  dV = first_derivative_func(V0)
+  
+  # Compute the value of the second derivative at the specific point V0.
+  d2V = ForwardDiff.derivative(first_derivative_func, V0)
+  
+  return dV, d2V
+end
+
+V0 = Vs[first_max_index]
+newton_iters = 20
+for i in 1:newton_iters
+  T_dV, T_d2V = differentiate_f(p[], V0)
+  V0 = V0 - T_dV / T_d2V
+end
+T_Ca0 = Ca_null_Ca(p[], V0)
+
+# Run the trajectory associated with the refined critical point.
+__prob = remake(prob, u0 = SVector{6}([
+  Plant.xinf(p[], V0)-x_offset,
+  SF_eq[2:4]...,
+  T_Ca0,
+  V0
+]))
+__sol = solve(__prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
+
+# Plot the critical point on the return map.
+# scatter!(ax_return_map, [T_Ca0], [return_Ca_mins[first_max_index]], 
+#          color = :blue, markersize = 8, marker = :star5)
+scatter!(ax_return_map, [__sol.u[1][5]], [__sol.u[end][5]], 
+         color = :blue, markersize = 8, marker = :star5)
+
+# Plot the trajectory in the trajectories plot.
+x_vals_critical = [pt[1] for pt in __sol.u]
+ca_vals_critical = [pt[5] for pt in __sol.u]
+lines!(ax_trajectories, ca_vals_critical, x_vals_critical, 
+        color = :blue, linewidth = 4, linestyle = :solid, 
+        label = "Critical trajectory")
 
 display(fig)
