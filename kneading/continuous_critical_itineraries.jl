@@ -7,7 +7,7 @@ Pkg.activate("./kneading")
 Pkg.instantiate()
 
 using GLMakie, OrdinaryDiffEq, StaticArrays, Roots, NonlinearSolve
-using Interpolations, SciMLSensitivity, ForwardDiff
+using Interpolations, ForwardDiff, LinearAlgebra
 
 include("../model/Plant.jl")
 using .Plant # Make functions from Plant module available
@@ -75,7 +75,7 @@ cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 
 # Set up and solve the ODE problem.
 tspan = (0.0, 1e5) # Set a sufficiently long time span.
-prob = ODEProblem(melibeNew, Γ_SD_minus0, tspan, p[])
+prob = ODEProblem(Plant.melibeNew, Γ_SD_minus0, tspan, p[])
 sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
 
 # Store only the endpoint at the calcium minimum.
@@ -189,7 +189,7 @@ display(fig)
 # Compute the itinerary of the critical point associated with the 1-spike
 # preimage of T.
 
-function f(V0, p)
+function f(p, Ca0, u0)
   # Compute the return map at an initial voltage value V0.
   function _condition(u, t, integrator)
     if t < 1e3 || u[1] > x_eq_SF
@@ -201,13 +201,14 @@ function f(V0, p)
   function _affect!(integrator)
     terminate!(integrator)
   end
+  _u0 = Equilibria.dune(p, u0[1], Ca0)
   _cb = ContinuousCallback(_condition, _affect!)
-  _prob = remake(prob, u0 = SVector{6}([
-    Plant.xinf(p, V0)-x_offset,
-    SF_eq[2:4]...,
-    Ca_null_Ca(p, V0),
-    V0
-  ]))
+  # _prob = remake(prob, u0 = SVector{6}([
+  #   u0[1:4]...,
+  #   Ca0,
+  #   u0[6]
+  # ]))
+  _prob = remake(prob, u0 = SVector{6}(_u0))
   _sol = solve(
     _prob,
     Tsit5(),
@@ -219,39 +220,37 @@ function f(V0, p)
   return _sol.u[end][6]
 end
 
-# Compute the first and second derivatives of f with respect to V0.
-function differentiate_f(p, V0)
-  # Define a function of V0 only, with p fixed from the outer scope.
-  # This represents f(V_val; p) as a function of V_val.
-  f_with_fixed_p = V_val -> f(V_val, p)
+# Find T_Ca0 using golden section search.
+T_Ca0_guess = Ca0s[first_max_index]
+u0 = u0s[first_max_index]
+search_radius = 1e-4
+a = T_Ca0_guess - search_radius
+b = T_Ca0_guess + search_radius
+golden_ratio = (sqrt(5) - 1) / 2
+c = b - golden_ratio * (b - a)
+d = a + golden_ratio * (b - a)
+tol = 1e-10
 
-  # Define a function that computes the first derivative of f_with_fixed_p at any given point.
-  # This function, let's call it g(x), returns f_with_fixed_p'(x).
-  first_derivative_func = x -> ForwardDiff.derivative(f_with_fixed_p, x)
-
-  # Compute the value of the first derivative at the specific point V0.
-  dV = first_derivative_func(V0)
-  
-  # Compute the value of the second derivative at the specific point V0.
-  d2V = ForwardDiff.derivative(first_derivative_func, V0)
-  
-  return dV, d2V
+# Golden section search algorithm to find maximum of f.
+while abs(b - a) > tol
+    fc = f(p[], c, u0)
+    fd = f(p[], d, u0)
+    if fc > fd
+        b = d
+    else
+        a = c
+    end
+    c = b - golden_ratio * (b - a)
+    d = a + golden_ratio * (b - a)
 end
 
-V0 = Vs[first_max_index]
-newton_iters = 20
-for i in 1:newton_iters
-  T_dV, T_d2V = differentiate_f(p[], V0)
-  V0 = V0 - T_dV / T_d2V
-end
-T_Ca0 = Ca_null_Ca(p[], V0)
+T_Ca0 = (a + b) / 2
 
 # Run the trajectory associated with the refined critical point.
 __prob = remake(prob, u0 = SVector{6}([
-  Plant.xinf(p[], V0)-x_offset,
-  SF_eq[2:4]...,
+  u0[1:4]...,
   T_Ca0,
-  V0
+  u0[6]
 ]))
 __sol = solve(__prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
 
