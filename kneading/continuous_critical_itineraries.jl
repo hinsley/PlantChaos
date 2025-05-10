@@ -60,7 +60,7 @@ eps = .001
 
 # Condition for the callback: du[5] (Ca derivative) crossing zero from negative to positive.
 function condition(u, t, integrator)
-  if t < 1e3 || u[1] > 0.64
+  if t < 1e3 || u[1] > x_eq_SF
     return 1.0
   end
   dCa = Plant.melibeNew(u, integrator.p, integrator.t)[5]
@@ -76,7 +76,7 @@ cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 # Set up and solve the ODE problem.
 tspan = (0.0, 1e5) # Set a sufficiently long time span.
 prob = ODEProblem(melibeNew, Γ_SD_minus0, tspan, p[])
-sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=false)
+sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
 
 # Store only the endpoint at the calcium minimum.
 Γ_SD_minus_Ca_min_V = sol.u[end][6]
@@ -112,12 +112,6 @@ function prob_func(prob, i, repeat)
     remake(prob, u0 = u0s[i])
 end
 ensemble_prob = EnsembleProblem(template_prob, prob_func = prob_func)
-
-# Solve the EnsembleProblem using multithreading.
-# EnsembleThreads() enables parallel execution.
-# trajectories is set to the number of initial conditions.
-# The callback cb (detecting Ca minimum) is applied to each trajectory.
-# save_everystep=true is set to store full trajectories.
 ensemble_sol = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = length(u0s), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
 
 return_Ca_mins = [s.u[end][5] for s in ensemble_sol]
@@ -139,6 +133,55 @@ for s in ensemble_sol
     x_vals = [pt[1] for pt in s.u]
     ca_vals = [pt[5] for pt in s.u]
     lines!(ax_trajectories, ca_vals, x_vals) # Makie will cycle colors.
+end
+
+# Add the trajectory for Γ_SD_minus0 (solution in sol) in red.
+if @isdefined(sol) && !isempty(sol.u)
+    x_vals_gamma_sd_minus = [pt[1] for pt in sol.u]
+    ca_vals_gamma_sd_minus = [pt[5] for pt in sol.u]
+    lines!(ax_trajectories, ca_vals_gamma_sd_minus, x_vals_gamma_sd_minus, color = :red, linewidth = 2, linestyle = :dot, label = "Γ_SD⁻ trajectory")
+else
+    println("Warning: `sol` for Γ_SD_minus0 is not defined or empty, cannot plot its trajectory.")
+end
+
+# Obtain the first guess at the calcium value for the critical point associated
+# with the 1-spike preimage of T.
+# Find the first local maximum in the return map.
+function find_first_local_maximum(x, y)
+    for i in 2:(length(y)-1)
+        if y[i] > y[i-1] && y[i] > y[i+1]
+            return i
+        end
+    end
+    return nothing  # Return nothing if no local maximum is found.
+end
+
+# Get the index of the first local maximum in return_Ca_mins.
+first_max_index = find_first_local_maximum(Ca0s, return_Ca_mins)
+
+if first_max_index !== nothing
+    println("T found at index: ", first_max_index)
+    println("Corresponding Ca₀ value: ", Ca0s[first_max_index])
+    println("Return Ca value: ", return_Ca_mins[first_max_index])
+    
+    # Mark the first local maximum on the return map plot.
+    scatter!(ax_return_map, [Ca0s[first_max_index]], [return_Ca_mins[first_max_index]], 
+             color = :red, markersize = 8, marker = :star5)
+    
+    # Mark the initial condition in the trajectories plot.
+    scatter!(ax_trajectories, [Ca0s[first_max_index]], [u0s[first_max_index][1]], 
+             color = :red, markersize = 8, marker = :star5)
+    
+    # Plot the trajectory associated with the maximum in extra large sized lines.
+    max_trajectory = ensemble_sol[first_max_index]
+    x_vals_max = [pt[1] for pt in max_trajectory.u]
+    ca_vals_max = [pt[5] for pt in max_trajectory.u]
+    lines!(ax_trajectories, ca_vals_max, x_vals_max, 
+           color = :red, linewidth = 4, linestyle = :solid, 
+           label = "1-spike preimage of T trajectory")
+    axislegend(ax_trajectories, position = (:right, :bottom))
+else
+    println("No local maximum found in the return map.")
 end
 
 display(fig)
