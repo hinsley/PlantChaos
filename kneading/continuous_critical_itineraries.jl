@@ -13,9 +13,6 @@ include("../model/Plant.jl")
 using .Plant # Make functions from Plant module available
 include("../tools/equilibria.jl") # Included Equilibria
 
-# How many iterates of the return map to compute for the critical itineraries.
-RETURN_ITERATES = 10
-
 # Define the parameter values to sweep over.
 sweep_resolution = 100
 Δxs = range(-1.0, -1.0, length=sweep_resolution)
@@ -263,6 +260,20 @@ lines!(ax_trajectories, ca_vals_critical, x_vals_critical,
 
 display(fig)
 
+# Define Event Symbols for SSCS computation.
+@enum EventSymbol begin
+    Void # Nothing detected yet.
+    I # Vdot maximum.
+    Vplus # Spike (V max above V_sd).
+    Vminus # Slow subsystem oscillation (V max below V_sd).
+end
+
+# Constants for SSCS computation (from inline_scan.jl).
+const TRANSIENT_TIME = 1e2 # Time to wait before beginning to detect events.
+const MAX_SEQ_LENGTH = 80 # Maximum length of signed spike counts before terminating trajectory integration.
+const MAX_SPIKE_COUNT = 35 # Maximum number of spikes in a single burst before considering the trajectory tonic-spiking and terminating.
+const SSCS_ODE_TSPAN = (0.0, 1e6) # Timespan for SSCS ODE solves.
+
 # Iterate over the parameter values in the specified sweep range.
 for i in 1:1#sweep_resolution
   # Update the parameter vector.
@@ -290,9 +301,9 @@ for i in 1:1#sweep_resolution
   # Compute the initial condition for Γ_SD^-.
   jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p[],0), SD_eq)
   vals,vecs = eigen(jac)
-  _,i = findmax(real.(vals))
+  _,idx_eigen = findmax(real.(vals)) # Renamed i to idx_eigen to avoid conflict.
   eps = .001
-  Γ_SD_minus0 = SVector{6}(SD_eq .- eps .* real.(vecs)[:,i])
+  Γ_SD_minus0 = SVector{6}(SD_eq .- eps .* real.(vecs)[:,idx_eigen])
 
   # Find T_Ca0 using golden section search.
   T_Ca0_guess = Ca0s[first_max_index]
@@ -300,25 +311,136 @@ for i in 1:1#sweep_resolution
   a = T_Ca0_guess - search_radius
   b = T_Ca0_guess + search_radius
   golden_ratio = (sqrt(5) - 1) / 2
-  c = b - golden_ratio * (b - a)
-  d = a + golden_ratio * (b - a)
+  c_gs = b - golden_ratio * (b - a) # Renamed c to c_gs to avoid conflict.
+  d_gs = a + golden_ratio * (b - a) # Renamed d to d_gs to avoid conflict.
   tol = 1e-10
 
   # Golden section search algorithm to find maximum of f.
   while abs(b - a) > tol
-    fc = f(p[], c, u0, x_eq_SF)
-    fd = f(p[], d, u0, x_eq_SF)
+    fc = f(p[], c_gs, u0, x_eq_SF)
+    fd = f(p[], d_gs, u0, x_eq_SF)
     if fc > fd
-        b = d
+        b = d_gs
     else
-        a = c
+        a = c_gs
     end
-    c = b - golden_ratio * (b - a)
-    d = a + golden_ratio * (b - a)
+    c_gs = b - golden_ratio * (b - a)
+    d_gs = a + golden_ratio * (b - a)
   end
 
   T_Ca0 = (a + b) / 2
 
   # Construct the initial conditions for T.
   T0 = SVector{6}([u0[1:4]..., T_Ca0, u0[6]])
+
+  # Current V_sd for SSCS state machines.
+  V_sd_current = V_eq_SD
+
+  # Initialize state machines for SSCS computation.
+  state_machine_T0 = Dict{Symbol, Any}(
+      :scs => Int[], 
+      :count => 0, 
+      :last_symbol => Void, 
+      :last2_symbol => Void, 
+      :V_sd => V_sd_current
+  )
+  state_machine_Gamma_SD_minus0 = Dict{Symbol, Any}(
+      :scs => Int[], 
+      :count => 0, 
+      :last_symbol => Void, 
+      :last2_symbol => Void, 
+      :V_sd => V_sd_current
+  )
+
+  # Define the condition function for SSCS callback.
+  function condition_sscs(out, u, t, integrator)
+    if t < TRANSIENT_TIME
+      # Condition should be non-zero if no event, zero if event.
+      # To prevent triggering before TRANSIENT_TIME, set to a non-zero value.
+      out[1] = 1.0 
+      out[2] = 1.0
+      return
+    end
+    
+    current_p_val = integrator.p
+    # Vdot calculation from single_trajectory_fig.jl
+    # The `u` in the callback is the SVector [x, 0.0, n, h, Ca, V].
+    # Plant.dV expects arguments p, x, y, n, h, Ca, V.
+    # u[2] is y, which is 0.0 in this model's state vector for melibeNew.
+    Vdot_val = Plant.dV(current_p_val, u[1], u[2], u[3], u[4], u[5], u[6])
+    out[1] = -Vdot_val # Condition from single_trajectory_fig.jl for Vdot == 0.
+
+    # Vddot calculation using Plant.numerical_derivative as in single_trajectory_fig.jl.
+    Vddot_val = Plant.numerical_derivative(
+        (params_nd, h_nd, hdot_nd, n_nd, ndot_nd, x_nd, xdot_nd, Ca_nd, Cadot_nd, V_nd, Vdot_selector) -> Vdot_selector,
+        u, # current state vector [x,0,n,h,Ca,V]
+        current_p_val, # parameters
+        1e-4 # dt for numerical differentiation
+    )
+    out[2] = -Vddot_val # Condition from single_trajectory_fig.jl for Vddot == 0.
+  end
+
+  # Factory for the affect! function for SSCS callback.
+  function make_affect_sscs!(state_machine)
+    function affect_sscs!(integrator, idx)
+      # Algorithm 1 only processes V+ and V- events, which occur when Vdot == 0 (idx == 1).
+      # We ignore idx == 2 (I events) for updating SSCS state according to strict Algorithm 1.
+      if idx == 1 # V extremum (Vdot == 0), this is where V+ or V- is determined for Algorithm 1.
+        current_V = integrator.u[6]
+        current_algorithmic_event = (current_V > state_machine[:V_sd]) ? Vplus : Vminus
+
+        if current_algorithmic_event == Vminus
+          # This corresponds to "Event == V-" in Algorithm 1.
+          # state_machine[:last2_symbol] is PrevPrevEvent.
+          # state_machine[:count] is Spikes.
+          if state_machine[:last2_symbol] == Vplus
+            push!(state_machine[:scs], -state_machine[:count])
+          else
+            push!(state_machine[:scs], state_machine[:count])
+          end
+          state_machine[:count] = 0 # Spikes <- 0.
+        elseif current_algorithmic_event == Vplus
+          # This corresponds to "Event == V+" in Algorithm 1.
+          state_machine[:count] += 1 # Spikes <- Spikes + 1.
+        end
+
+        # Update history: PrevPrevEvent <- PrevEvent; PrevEvent <- Event.
+        # These are state_machine[:last_symbol] and current_algorithmic_event respectively.
+        state_machine[:last2_symbol] = state_machine[:last_symbol]
+        state_machine[:last_symbol] = current_algorithmic_event
+        
+        # Termination for sequence length (applies after any symbol modification).
+        if length(state_machine[:scs]) >= MAX_SEQ_LENGTH
+          terminate!(integrator)
+        end
+        # Termination for max spike count (relevant if Vplus just occurred).
+        if current_algorithmic_event == Vplus && state_machine[:count] > MAX_SPIKE_COUNT
+            terminate!(integrator)
+        end
+
+      end # End of if idx == 1.
+      # idx == 2 (I event from Vddot == 0) is intentionally not handled here for SSCS state update
+      # to strictly follow Algorithm 1, which does not feature I events.
+    end
+    return affect_sscs!
+  end
+
+  affect_for_T0! = make_affect_sscs!(state_machine_T0)
+  affect_for_Gamma! = make_affect_sscs!(state_machine_Gamma_SD_minus0)
+
+  # Compute SSCS for T0.
+  println("Computing SSCS for T0...")
+  cb_T0_sscs = VectorContinuousCallback(condition_sscs, affect_for_T0!, nothing, 2, save_positions=(false,false))
+  prob_T0_sscs = ODEProblem(Plant.melibeNew, T0, SSCS_ODE_TSPAN, p[], callback=cb_T0_sscs)
+  sol_T0_sscs = solve(prob_T0_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
+  T0_scs = state_machine_T0[:scs]
+  println("SSCS for T0: ", T0_scs)
+  
+  # Compute SSCS for Γ_SD_minus0.
+  println("Computing SSCS for Γ_SD_minus0...")
+  cb_Gamma_sscs = VectorContinuousCallback(condition_sscs, affect_for_Gamma!, nothing, 2, save_positions=(false,false))
+  prob_Gamma_sscs = ODEProblem(Plant.melibeNew, Γ_SD_minus0, SSCS_ODE_TSPAN, p[], callback=cb_Gamma_sscs)
+  sol_Gamma_sscs = solve(prob_Gamma_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
+  Gamma_SD_minus0_scs = state_machine_Gamma_SD_minus0[:scs]
+  println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
 end
