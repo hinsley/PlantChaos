@@ -17,7 +17,7 @@ include("MultimodalMaps/kneading/power_series.jl")
 include("MultimodalMaps/kneading/smallest_root.jl")
 
 # Define the parameter values to sweep over.
-sweep_resolution = 100
+sweep_resolution = 300
 Δxs = range(-1.0, -1.0, length=sweep_resolution)
 ΔCas = range(-35.0, -25.0, length=sweep_resolution)
 
@@ -272,11 +272,10 @@ display(fig)
 end
 
 # Constants for SSCS and htop computation (from inline_scan.jl).
-const TRANSIENT_TIME = 1e2 # Time to wait before beginning to detect events.
-const MAX_SEQ_LENGTH = 80 # Maximum length of signed spike counts before terminating trajectory integration.
+const TRANSIENT_TIME = 1e3 # Time to wait before beginning to detect events.
+const MAX_SEQ_LENGTH = 300 # Maximum length of signed spike counts before terminating trajectory integration.
 const MAX_SPIKE_COUNT = 35 # Maximum number of spikes in a single burst before considering the trajectory tonic-spiking and terminating.
 const SSCS_ODE_TSPAN = (0.0, 1e6) # Timespan for SSCS ODE solves.
-const KNEADING_DET_TRUNCATION_LENGTH = 30 # Number of terms to truncate the kneading determinant to.
 
 # Iterate over the parameter values in the specified sweep range.
 lz_complexity_values = Float64[]
@@ -453,7 +452,7 @@ for i in 1:sweep_resolution
   # println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
 
   # Compute the LZ complexity of the SSCS for Γ_SD^-.
-  LZ_complexity = normalized_LZ76_complexity(Gamma_SD_minus0_scs)
+  @time LZ_complexity = normalized_LZ76_complexity(Gamma_SD_minus0_scs)
   println("LZ complexity of Γ_SD_minus: ", LZ_complexity)
 
   # Compute the kneading sequences of each critical trajectory.
@@ -469,92 +468,127 @@ for i in 1:sweep_resolution
   # Compute the kneading determinant using the matrix determinant lemma trick
   # for saddled Swiss-roll attractors.
   ℓ = Gamma_SD_minus0_kneading_sequence[1] # Top lap index in the core.
+  
+  # Get the shorter length among the two kneading sequences.
+  K = min(
+    length(Gamma_SD_minus0_kneading_sequence),
+    length(T_kneading_sequence)
+  )
 
-  # Allocate a 3D matrix for shorthand kneading matrix computation.
-  kneading_matrix = zeros(Integer, 2, ℓ-1, MAX_SEQ_LENGTH)
+  htop = 0.0
+  T_max_lap = maximum(T_kneading_sequence)
+  @time if T_max_lap > ℓ
+    println("ℓ incorrectly computed: Is $(ℓ) and should be at least $(T_max_lap). Setting htop = 0.0.")
+    htop = 0.0
+  elseif ℓ == 2
+    # Compute topological entropy using the formula for a unimodal map.
 
-  # Prepopulate the constant terms with known values.
-  kneading_matrix[1, 1, 1] = -1
-  kneading_matrix[1, 2, 1] = 1
-  kneading_matrix[2, 2, 1] = -1
-  kneading_matrix[2, 3, 1] = 1
-
-  # Compute the rest of the kneading matrix.
-  sign1 = -1
-  sign2 = 1
-  for k in 2:MAX_SEQ_LENGTH-1
-    lap1 = Gamma_SD_minus0_kneading_sequence[k-1]
-    if lap1 > 1
-      kneading_matrix[
-        1,
-        lap1 - 1,
-        k
-      ] = 2 * sign1
-      if iseven(lap1)
+    kneading_matrix = zeros(Integer, K+1)
+    kneading_matrix[1] = 1
+    sign1 = -1
+    for k in 1:K
+      lap1 = Gamma_SD_minus0_kneading_sequence[k]
+      if lap1 == 2
+        kneading_matrix[k+1] = 2 * sign1
         sign1 = -sign1
       end
     end
-    lap2 = T_kneading_sequence[k]
-    if lap2 > 1
-      kneading_matrix[
-        2,
-        lap2 - 1,
-        k
-      ] = 2 * sign2
-      if iseven(lap2)
-        sign2 = -sign2
+
+    # Compute the smallest root of the kneading determinant.
+    r = smallest_root(kneading_matrix)
+    htop = -log(r)
+  elseif ℓ > 2
+    # Perform the multimodal kneading determinant computation, using the matrix
+    # determinant lemma trick for saddled Swiss-roll attractors.
+
+    # Allocate a 3D matrix for shorthand kneading matrix computation.
+    kneading_matrix = zeros(Integer, 2, ℓ-1, K+1)
+
+    # Prepopulate the constant terms with known values.
+    kneading_matrix[1, 1, 1] = 1
+    kneading_matrix[2, 1, 1] = -1
+    kneading_matrix[2, 2, 1] = 1
+
+    # Compute the rest of the kneading matrix.
+    sign1 = -1
+    sign2 = 1
+    for k in 1:K
+      lap1 = Gamma_SD_minus0_kneading_sequence[k]
+      if lap1 > 1
+        kneading_matrix[
+          1,
+          lap1 - 1,
+          k+1
+        ] = 2 * sign1
+        if iseven(lap1)
+          sign1 = -sign1
+        end
+      end
+      lap2 = T_kneading_sequence[k]
+      if lap2 > 1
+        kneading_matrix[
+          2,
+          lap2 - 1,
+          k+1
+        ] = 2 * sign2
+        if iseven(lap2)
+          sign2 = -sign2
+        end
       end
     end
-  end
 
-  # println("Kneading matrix: ", kneading_matrix)
+    # println("Kneading matrix: ", kneading_matrix)
 
-  # Helper function for computing the coefficients of the kneading determinant.
-  function coeff(j, k)
-    if isodd(j)
-      if isodd(k)
-        return 0
+    # Helper function for computing the coefficients of the kneading determinant.
+    function coeff(j, k)
+      if isodd(j)
+        if isodd(k)
+          return 0
+        else
+          return (1-j)/2
+        end
       else
-        return (1-j)/2
-      end
-    else
-      if isodd(k)
-        return (k-1)/2
-      else
-        return (k-j)/2
+        if isodd(k)
+          return (k-1)/2
+        else
+          return (k-j)/2
+        end
       end
     end
-  end
 
-  # Compute the kneading determinant.
-  det = Integer[]
-  for j in 2:ℓ
-    for k in j+1:ℓ
-      factor1 = kneading_matrix[1, j-1, :]
-      factor2 = kneading_matrix[2, k-1, :]
-      factor3 = kneading_matrix[1, k-1, :]
-      factor4 = kneading_matrix[2, j-1, :]
-      result = scale(
-        coeff(j, k),
-        add(
-          multiply(factor1, factor2),
-          scale(-1, multiply(factor3, factor4))
+    # Compute the kneading determinant.
+    det = Integer[]
+    for j in 2:ℓ
+      for k in j+1:ℓ
+        factor1 = kneading_matrix[1, j-1, :]
+        factor2 = kneading_matrix[2, k-1, :]
+        factor3 = kneading_matrix[1, k-1, :]
+        factor4 = kneading_matrix[2, j-1, :]
+        result = scale(
+          coeff(j, k),
+          add(
+            multiply(factor1, factor2),
+            scale(-1, multiply(factor3, factor4))
+          )
         )
-      )
-      det = add(det, result)
+        det = add(det, result)
+      end
     end
+    
+    # Multiply by 1/(1-t) to get D(t).
+    det = multiply(det, [1 for _ in 1:K+1] |> Vector{Integer})
+
+    # Truncate the kneading determinant and convert to Int64.
+    det = convert(Vector{Int64}, det[1:K+1])
+    # println("Kneading determinant: ", det)
+
+    # Compute the smallest root of the kneading determinant.
+    r = smallest_root(det)
+    # println("Smallest root of the kneading determinant: ", r)
+
+    # Compute the topological entropy of the system.
+    htop = -log(r)
   end
-
-  # Truncate the kneading determinant and convert to Int64.
-  det = convert(Vector{Int64}, det[1:KNEADING_DET_TRUNCATION_LENGTH])
-  # println("Kneading determinant: ", det)
-
-  # Compute the smallest root of the kneading determinant.
-  r = smallest_root(det)
-  # println("Smallest root of the kneading determinant: ", r)
-
-  # Compute the topological entropy of the system.
-  htop = -log(r)
   println("Topological entropy: ", htop)
 
   push!(lz_complexity_values, LZ_complexity)
@@ -562,10 +596,13 @@ for i in 1:sweep_resolution
 end
 
 # Plot the results.
-fig = Figure(size=(1000, 600))
-ax_lz_complexity = Axis(fig[1, 1], title="LZ Complexity", xlabel="Parameter Index", ylabel="LZ Complexity")
-ax_htop = Axis(fig[1, 2], title="Topological Entropy", xlabel="Parameter Index", ylabel="Topological Entropy")
+fig = Figure(size=(1000, 800))
+ax_lz_complexity = Axis(fig[1, 1], title="LZ Complexity", xlabel=L"$\Delta$Ca", ylabel="LZ Complexity")
+ax_htop = Axis(fig[2, 1], title="Topological Entropy", xlabel=L"$\Delta$Ca", ylabel="Topological Entropy")
 
-lines!(ax_lz_complexity, lz_complexity_values)
-lines!(ax_htop, htop_values)
+lines!(ax_lz_complexity, ΔCas, lz_complexity_values)
+lines!(ax_htop, ΔCas, htop_values)
 display(fig)
+
+# Save the figure to a file.
+save("htop_vs_lz.png", fig)
