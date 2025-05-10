@@ -17,13 +17,12 @@ include("../tools/equilibria.jl") # Included Equilibria
 RETURN_ITERATES = 10
 
 # Define the parameter values to sweep over.
-# Δx = 0.01
-# ΔCas = range(0.0, 40.0, step=0.01)
-# Import the model file to get default parameters.
+sweep_resolution = 100
+Δxs = range(-1.0, -1.0, length=sweep_resolution)
+ΔCas = range(-35.0, -25.0, length=sweep_resolution)
 
-# Parameters from map_vis/burst_stabilization.jl.
-Δx = -1.0
-ΔCa = -32.0
+Δx = Δxs[1]
+ΔCa = ΔCas[1]
 
 base_params = Plant.default_params[1:15]
 p_svector = SVector{17, Float64}([base_params..., Δx, ΔCa])
@@ -189,7 +188,7 @@ display(fig)
 # Compute the itinerary of the critical point associated with the 1-spike
 # preimage of T.
 
-function f(p, Ca0, u0)
+function f(p, Ca0, u0, x_eq_SF)
   # Compute the return map at an initial voltage value V0.
   function _condition(u, t, integrator)
     if t < 1e3 || u[1] > x_eq_SF
@@ -203,11 +202,6 @@ function f(p, Ca0, u0)
   end
   _u0 = Equilibria.dune(p, u0[1], Ca0)
   _cb = ContinuousCallback(_condition, _affect!)
-  # _prob = remake(prob, u0 = SVector{6}([
-  #   u0[1:4]...,
-  #   Ca0,
-  #   u0[6]
-  # ]))
   _prob = remake(prob, u0 = SVector{6}(_u0))
   _sol = solve(
     _prob,
@@ -223,7 +217,7 @@ end
 # Find T_Ca0 using golden section search.
 T_Ca0_guess = Ca0s[first_max_index]
 u0 = u0s[first_max_index]
-search_radius = 1e-4
+search_radius = 1e-2
 a = T_Ca0_guess - search_radius
 b = T_Ca0_guess + search_radius
 golden_ratio = (sqrt(5) - 1) / 2
@@ -233,8 +227,8 @@ tol = 1e-10
 
 # Golden section search algorithm to find maximum of f.
 while abs(b - a) > tol
-    fc = f(p[], c, u0)
-    fd = f(p[], d, u0)
+    fc = f(p[], c, u0, x_eq_SF)
+    fd = f(p[], d, u0, x_eq_SF)
     if fc > fd
         b = d
     else
@@ -268,3 +262,63 @@ lines!(ax_trajectories, ca_vals_critical, x_vals_critical,
         label = "Critical trajectory")
 
 display(fig)
+
+# Iterate over the parameter values in the specified sweep range.
+for i in 1:1#sweep_resolution
+  # Update the parameter vector.
+  p = Observable(SVector{17, Float64}([base_params..., Δxs[i], ΔCas[i]]))
+
+  # Compute the equilibria of the slow subsystem.
+  V_eqs = find_zeros(v -> Equilibria.Ca_difference(p[], v), Plant.xinfinv(p[], 0.99e0), Plant.xinfinv(p[], 0.01e0))
+
+  # Compute the location of the saddle-focus equilibrium (SF).
+  V_eq_SF = V_eqs[2]
+  Ca_eq_SF = Equilibria.Ca_null_Ca(p[], V_eq_SF)
+  x_eq_SF = Plant.xinf(p[], V_eq_SF)
+  n_eq_SF = Plant.ninf(V_eq_SF)
+  h_eq_SF = Plant.hinf(V_eq_SF)
+  SF_eq = @SVector [x_eq_SF, 0.0, n_eq_SF, h_eq_SF, Ca_eq_SF, V_eq_SF]
+
+  # Compute the location of the upper saddle equilibrium SD.
+  V_eq_SD = V_eqs[3]
+  Ca_eq_SD = Equilibria.Ca_null_Ca(p[], V_eq_SD)
+  x_eq_SD = Plant.xinf(p[], V_eq_SD)
+  n_eq_SD = Plant.ninf(V_eq_SD)
+  h_eq_SD = Plant.hinf(V_eq_SD)
+  SD_eq = @SVector [x_eq_SD, 0.0, n_eq_SD, h_eq_SD, Ca_eq_SD, V_eq_SD]
+
+  # Compute the initial condition for Γ_SD^-.
+  jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p[],0), SD_eq)
+  vals,vecs = eigen(jac)
+  _,i = findmax(real.(vals))
+  eps = .001
+  Γ_SD_minus0 = SVector{6}(SD_eq .- eps .* real.(vecs)[:,i])
+
+  # Find T_Ca0 using golden section search.
+  T_Ca0_guess = Ca0s[first_max_index]
+  search_radius = 1e-2
+  a = T_Ca0_guess - search_radius
+  b = T_Ca0_guess + search_radius
+  golden_ratio = (sqrt(5) - 1) / 2
+  c = b - golden_ratio * (b - a)
+  d = a + golden_ratio * (b - a)
+  tol = 1e-10
+
+  # Golden section search algorithm to find maximum of f.
+  while abs(b - a) > tol
+    fc = f(p[], c, u0, x_eq_SF)
+    fd = f(p[], d, u0, x_eq_SF)
+    if fc > fd
+        b = d
+    else
+        a = c
+    end
+    c = b - golden_ratio * (b - a)
+    d = a + golden_ratio * (b - a)
+  end
+
+  T_Ca0 = (a + b) / 2
+
+  # Construct the initial conditions for T.
+  T0 = SVector{6}([u0[1:4]..., T_Ca0, u0[6]])
+end
