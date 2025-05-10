@@ -20,7 +20,7 @@ include("MultimodalMaps/kneading/smallest_root.jl")
 # Define the parameter values to sweep over.
 sweep_resolution = 2000
 Δxs = range(-1.0, -1.0, length=sweep_resolution)
-ΔCas = range(-35.0, -25.0, length=sweep_resolution)
+ΔCas = range(-36.0, -22.0, length=sweep_resolution)
 
 Δx = Δxs[1]
 ΔCa = ΔCas[1]
