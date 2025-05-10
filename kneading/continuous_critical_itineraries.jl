@@ -22,9 +22,8 @@ RETURN_ITERATES = 10
 # Import the model file to get default parameters.
 
 # Parameters from map_vis/burst_stabilization.jl.
-# The 16th element corresponds to Δx, and the 17th to ΔCa_shift.
-Δx = -0.81
-ΔCa = -41.0
+Δx = -1.0
+ΔCa = -32.0
 
 base_params = Plant.default_params[1:15]
 p_svector = SVector{17, Float64}([base_params..., Δx, ΔCa])
@@ -32,68 +31,91 @@ p_svector = SVector{17, Float64}([base_params..., Δx, ΔCa])
 p = Observable(p_svector)
 
 # Compute the equilibria of the slow subsystem.
-eqs = find_zeros(v -> Equilibria.Ca_difference(p[], v), Plant.xinfinv(p[], 0.99e0), Plant.xinfinv(p[], 0.01e0))
+V_eqs = find_zeros(v -> Equilibria.Ca_difference(p[], v), Plant.xinfinv(p[], 0.99e0), Plant.xinfinv(p[], 0.01e0))
 
 # Compute the location of the saddle-focus equilibrium (SF).
-V_eq = eqs[2]
-Ca_eq = Equilibria.Ca_null_Ca(p[], V_eq)
-x_eq = Plant.xinf(p[], V_eq)
-n_eq = Plant.ninf(V_eq)
-h_eq = Plant.hinf(V_eq)
-SF_eq = @SVector [x_eq, 0.0, n_eq, h_eq, V_eq, Ca_eq]
+V_eq_SF = V_eqs[2]
+Ca_eq_SF = Equilibria.Ca_null_Ca(p[], V_eq_SF)
+x_eq_SF = Plant.xinf(p[], V_eq_SF)
+n_eq_SF = Plant.ninf(V_eq_SF)
+h_eq_SF = Plant.hinf(V_eq_SF)
+SF_eq = @SVector [x_eq_SF, 0.0, n_eq_SF, h_eq_SF, Ca_eq_SF, V_eq_SF]
 
 # Compute the location of the upper saddle equilibrium SD.
-V_eq = eqs[1]
-Ca_eq = Equilibria.Ca_null_Ca(p[], V_eq)
-x_eq = Plant.xinf(p[], V_eq)
-n_eq = Plant.ninf(V_eq)
-h_eq = Plant.hinf(V_eq)
-SD_eq = @SVector [x_eq, 0.0, n_eq, h_eq, V_eq, Ca_eq]
+V_eq_SD = V_eqs[3]
+Ca_eq_SD = Equilibria.Ca_null_Ca(p[], V_eq_SD)
+x_eq_SD = Plant.xinf(p[], V_eq_SD)
+n_eq_SD = Plant.ninf(V_eq_SD)
+h_eq_SD = Plant.hinf(V_eq_SD)
+SD_eq = @SVector [x_eq_SD, 0.0, n_eq_SD, h_eq_SD, Ca_eq_SD, V_eq_SD]
 
 include("../map_vis/return_map_utils.jl")
 
 # Obtain an initial condition for Γ_SD^-.
-V_eqs = find_zeros(v -> Equilibria.Ca_difference(p[], v), Plant.xinfinv(p[], 0.99e0), Plant.xinfinv(p[], 0.01e0))
-if length(V_eqs) < 3
-    return fill(NaN, 6)
-end
-v_eq = V_eqs[3]
-Ca_eq = Equilibria.Ca_null_Ca(p[], v_eq)
-x_eq = Plant.xinf(p[], v_eq)
-saddle = [x_eq, 0.0, Plant.ninf(v_eq), Plant.hinf(v_eq), Ca_eq, v_eq]
-jac = ForwardDiff.jacobian(u -> melibeNew(u,p[],0), saddle)
+jac = ForwardDiff.jacobian(u -> Plant.melibeNew(u,p[],0), SD_eq)
 vals,vecs = eigen(jac)
 _,i = findmax(real.(vals))
 eps = .001
-Γ_SD_minus0 = SVector{6}(saddle .- eps .* real.(vecs)[:,i])
+Γ_SD_minus0 = SVector{6}(SD_eq .- eps .* real.(vecs)[:,i])
 
 # Condition for the callback: du[5] (Ca derivative) crossing zero from negative to positive.
-dCas = Float64[]
 function condition(u, t, integrator)
-    du = get_du(integrator)
-    push!(dCas, du[5])
-    return du[5] # Trigger when this is zero.
+  if t < 1e3
+    return -1.0
+  end
+  dCa = Plant.melibeNew(u, integrator.p, integrator.t)[5]
+  return dCa
 end
 
 function affect!(integrator)
-    terminate!(integrator)
+  terminate!(integrator)
 end
 
-# affect_pos! (for positive-to-negative crossings of condition) should do nothing.
-# affect_neg! (for negative-to-positive crossings of condition) should call affect! (terminate).
-# Since condition returns du[5], this will trigger at a Ca minimum.
-cb = ContinuousCallback(condition, affect_pos! = nothing, affect_neg! = affect!)
+cb = ContinuousCallback(condition, affect!, affect_neg! = nothing)
 
-# Set up and solve the ODE problem
-tspan = (0.0, 1e5)  # Set a sufficiently long time span
+# Set up and solve the ODE problem.
+tspan = (0.0, 1e5) # Set a sufficiently long time span.
 prob = ODEProblem(melibeNew, Γ_SD_minus0, tspan, p[])
-sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8)#, save_everystep=false)
+sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=false)
 
-# Store only the endpoint at the calcium minimum
-Γ_SD_minus_Ca_min = sol.u[end]
+# Store only the endpoint at the calcium minimum.
+Γ_SD_minus_Ca_min = sol.u[end][5]
 
-# Plot the solution in the Ca-x phase plane.
-fig = Figure(size=(1000, 1000))
-ax = Axis(fig[1, 1], xlabel="Calcium (Ca)", ylabel="x", title="Ca-x Phase Plane")
-lines!(ax, [u[5] for u in sol.u], [u[1] for u in sol.u])
+# Generate a range of initial conditions along the Ca nullcline between
+# SF and Γ_SD_minus_Ca_min.
+map_resolution = 500
+function Ca_x_eq(p)
+    V_eq = find_zeros(v -> Ca_difference(p, v), xinfinv(p, 0.99e0), xinfinv(p, 0.01e0))[2]
+    Ca_eq = Ca_null_Ca(p, V_eq)
+    x_eq = Plant.xinf(p, V_eq)
+    return V_eq, Ca_eq, x_eq
+end
+function Ca_null_Ca(p, V)
+    return p[13]*Plant.xinf(p, V)*(p[12]-V+p[17])
+end
+Vs = range(V_eq_SF, V_eq_SD, length=map_resolution)
+x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
+u0s = [
+  SVector{6, Float64}([
+    Plant.xinf(p[], V)-x_offset,
+    SF_eq[2:4]...,
+    Ca_null_Ca(p[], V),
+    V])
+  for V in Vs
+]
+Ca0s = [u0[5] for u0 in u0s]
+
+# Calculate the return map.
+template_prob = ODEProblem(Plant.melibeNew, u0s[1], tspan, p[])
+function prob_func(prob, i, repeat)
+    remake(prob, u0 = u0s[i])
+end
+ensemble_prob = EnsembleProblem(template_prob, prob_func = prob_func)
+ensemble_sol = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = length(u0s), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=false)
+return_Ca_mins = [s.u[end][5] for s in ensemble_sol]
+
+# Plot the return map as a scatter plot of Ca0 vs return Ca min.
+fig = Figure(size=(800, 600))
+ax = Axis(fig[1, 1], title="Return Map", xlabel="Initial Ca", ylabel="Return Ca")
+scatter!(ax, Ca0s, return_Ca_mins)
 display(fig)
