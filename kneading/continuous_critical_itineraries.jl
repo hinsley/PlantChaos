@@ -60,8 +60,8 @@ eps = .001
 
 # Condition for the callback: du[5] (Ca derivative) crossing zero from negative to positive.
 function condition(u, t, integrator)
-  if t < 1e3
-    return -1.0
+  if t < 1e3 || u[1] > 0.64
+    return 1.0
   end
   dCa = Plant.melibeNew(u, integrator.p, integrator.t)[5]
   return dCa
@@ -79,6 +79,7 @@ prob = ODEProblem(melibeNew, Γ_SD_minus0, tspan, p[])
 sol = solve(prob, Tsit5(), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=false)
 
 # Store only the endpoint at the calcium minimum.
+Γ_SD_minus_Ca_min_V = sol.u[end][6]
 Γ_SD_minus_Ca_min = sol.u[end][5]
 
 # Generate a range of initial conditions along the Ca nullcline between
@@ -93,7 +94,7 @@ end
 function Ca_null_Ca(p, V)
     return p[13]*Plant.xinf(p, V)*(p[12]-V+p[17])
 end
-Vs = range(V_eq_SF, V_eq_SD, length=map_resolution)
+Vs = range(V_eq_SF, Γ_SD_minus_Ca_min_V, length=map_resolution)
 x_offset = 1f-4 # Offset from xinf to avoid numerical issues.
 u0s = [
   SVector{6, Float64}([
@@ -111,11 +112,33 @@ function prob_func(prob, i, repeat)
     remake(prob, u0 = u0s[i])
 end
 ensemble_prob = EnsembleProblem(template_prob, prob_func = prob_func)
-ensemble_sol = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = length(u0s), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=false)
+
+# Solve the EnsembleProblem using multithreading.
+# EnsembleThreads() enables parallel execution.
+# trajectories is set to the number of initial conditions.
+# The callback cb (detecting Ca minimum) is applied to each trajectory.
+# save_everystep=true is set to store full trajectories.
+ensemble_sol = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = length(u0s), callback=cb, abstol=1e-8, reltol=1e-8, save_everystep=true)
+
 return_Ca_mins = [s.u[end][5] for s in ensemble_sol]
 
 # Plot the return map as a scatter plot of Ca0 vs return Ca min.
-fig = Figure(size=(800, 600))
-ax = Axis(fig[1, 1], title="Return Map", xlabel="Initial Ca", ylabel="Return Ca")
-scatter!(ax, Ca0s, return_Ca_mins)
+fig = Figure(size=(800, 1200)) # Adjusted figure size for two plots.
+ax_return_map = Axis(fig[1, 1], title="Return Map", xlabel="Initial Ca (Ca₀)", ylabel="Return Ca at Minimum", aspect=DataAspect())
+scatter!(ax_return_map, Ca0s, return_Ca_mins, markersize = 4)
+
+# Add identity line
+all_ca_values = vcat(Ca0s, return_Ca_mins)
+min_ca, max_ca = extrema(all_ca_values)
+lines!(ax_return_map, [min_ca, max_ca], [min_ca, max_ca], color=:gray, linestyle=:dash)
+
+# Plot all trajectories from the ensemble solve.
+ax_trajectories = Axis(fig[2, 1], title="Trajectories (Ca vs x)", xlabel="Ca", ylabel="x")
+for s in ensemble_sol
+    # Extract Ca (index 5) and x (index 1) for each point in the trajectory.
+    x_vals = [pt[1] for pt in s.u]
+    ca_vals = [pt[5] for pt in s.u]
+    lines!(ax_trajectories, ca_vals, x_vals) # Makie will cycle colors.
+end
+
 display(fig)
