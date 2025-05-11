@@ -18,12 +18,15 @@ include("MultimodalMaps/kneading/power_series.jl")
 include("MultimodalMaps/kneading/smallest_root.jl")
 
 # Define the parameter values to sweep over.
-sweep_resolution = 2000
+sweep_resolution = 1200
 Δxs = range(-1.0, -1.0, length=sweep_resolution)
 ΔCas = range(-36.0, -22.0, length=sweep_resolution)
 
 Δx = Δxs[1]
 ΔCa = ΔCas[1]
+# TODO: Remove.
+# ΔCa = -34.44703919933278
+# ΔCa = ΔCas[320]
 
 base_params = Plant.default_params[1:15]
 p_svector = SVector{17, Float64}([base_params..., Δx, ΔCa])
@@ -221,7 +224,7 @@ end
 # Find T_Ca0 using golden section search.
 T_Ca0_guess = Ca0s[first_max_index]
 u0 = u0s[first_max_index]
-search_radius = 1e-2
+search_radius = 1e-3
 a = T_Ca0_guess - search_radius
 b = T_Ca0_guess + search_radius
 golden_ratio = (sqrt(5) - 1) / 2
@@ -277,7 +280,7 @@ end
 
 # Constants for SSCS and htop computation (from inline_scan.jl).
 const TRANSIENT_TIME = 1e3 # Time to wait before beginning to detect events.
-const MAX_SEQ_LENGTH = 300 # Maximum length of signed spike counts before terminating trajectory integration.
+const MAX_SEQ_LENGTH = 50 # Maximum length of signed spike counts before terminating trajectory integration.
 const MAX_SPIKE_COUNT = 35 # Maximum number of spikes in a single burst before considering the trajectory tonic-spiking and terminating.
 const SSCS_ODE_TSPAN = (0.0, 1e8) # Timespan for SSCS ODE solves.
 
@@ -289,6 +292,9 @@ for i in 1:sweep_resolution
 
   # Update the parameter vector.
   p = Observable(SVector{17, Float64}([base_params..., Δxs[i], ΔCas[i]]))
+
+  # Placeholder value for the orientation determining max voltage threshold.
+  V_return_threshold = -Inf
 
   # Compute the equilibria of the slow subsystem.
   V_eqs = find_zeros(v -> Equilibria.Ca_difference(p[], v), Plant.xinfinv(p[], 0.99e0), Plant.xinfinv(p[], 0.01e0))
@@ -318,7 +324,7 @@ for i in 1:sweep_resolution
 
   # Find T_Ca0 using golden section search.
   T_Ca0_guess = Ca0s[first_max_index]
-  search_radius = 1e-2
+  search_radius = 1e-3
   a = T_Ca0_guess - search_radius
   b = T_Ca0_guess + search_radius
   golden_ratio = (sqrt(5) - 1) / 2
@@ -394,44 +400,37 @@ for i in 1:sweep_resolution
   # Factory for the affect! function for SSCS callback.
   function make_affect_sscs!(state_machine)
     function affect_sscs!(integrator, idx)
-      # Algorithm 1 only processes V+ and V- events, which occur when Vdot == 0 (idx == 1).
-      # We ignore idx == 2 (I events) for updating SSCS state according to strict Algorithm 1.
       if idx == 1 # V extremum (Vdot == 0), this is where V+ or V- is determined for Algorithm 1.
         current_V = integrator.u[6]
         current_algorithmic_event = (current_V > state_machine[:V_sd]) ? Vplus : Vminus
 
         if current_algorithmic_event == Vminus
-          # This corresponds to "Event == V-" in Algorithm 1.
-          # state_machine[:last2_symbol] is PrevPrevEvent.
-          # state_machine[:count] is Spikes.
-          if state_machine[:last2_symbol] == Vplus
-            push!(state_machine[:scs], -state_machine[:count])
-          else
+          if V_return_threshold == -Inf
+            V_return_threshold = current_V
+          end
+          if current_V > V_return_threshold || state_machine[:last2_symbol] != Vplus
             push!(state_machine[:scs], state_machine[:count])
+          else
+            push!(state_machine[:scs], -state_machine[:count])
           end
           state_machine[:count] = 0 # Spikes <- 0.
-        elseif current_algorithmic_event == Vplus
-          # This corresponds to "Event == V+" in Algorithm 1.
+        else
           state_machine[:count] += 1 # Spikes <- Spikes + 1.
         end
 
-        # Update history: PrevPrevEvent <- PrevEvent; PrevEvent <- Event.
-        # These are state_machine[:last_symbol] and current_algorithmic_event respectively.
         state_machine[:last2_symbol] = state_machine[:last_symbol]
         state_machine[:last_symbol] = current_algorithmic_event
         
-        # Termination for sequence length (applies after any symbol modification).
         if length(state_machine[:scs]) >= MAX_SEQ_LENGTH
           terminate!(integrator)
         end
-        # Termination for max spike count (relevant if Vplus just occurred).
         if current_algorithmic_event == Vplus && state_machine[:count] > MAX_SPIKE_COUNT
             terminate!(integrator)
         end
-
-      end # End of if idx == 1.
-      # idx == 2 (I event from Vddot == 0) is intentionally not handled here for SSCS state update
-      # to strictly follow Algorithm 1, which does not feature I events.
+      elseif idx == 2
+        state_machine[:last2_symbol] = state_machine[:last_symbol]
+        state_machine[:last_symbol] = I
+      end
     end
     return affect_sscs!
   end
@@ -440,12 +439,16 @@ for i in 1:sweep_resolution
   affect_for_Gamma! = make_affect_sscs!(state_machine_Gamma_SD_minus0)
 
   # Compute SSCS for T.
+  # Note: Because we're not using I, V-, V+ events, but instead a threshold
+  # for V on the return to the dune, the SSCS for T has to be computed before
+  # the SSCS for any other trajectory so that the signs of SSCS can be
+  # properly determined.
   # println("Computing SSCS for T...")
   cb_T_sscs = VectorContinuousCallback(condition_sscs, affect_for_T!, nothing, 2, save_positions=(false,false))
   prob_T_sscs = ODEProblem(Plant.melibeNew, T0, SSCS_ODE_TSPAN, p[], callback=cb_T_sscs)
-  sol_T_sscs = solve(prob_T_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
+  sol_T_sscs = solve(prob_T_sscs, Tsit5(), abstol=3e-6, reltol=3e-6, save_everystep=false)
   T_scs = state_machine_T[:scs]
-  # println("SSCS for T: ", T_scs)
+  println("SSCS for T: ", T_scs)
   
   # Compute SSCS for Γ_SD_minus0.
   # println("Computing SSCS for Γ_SD_minus0...")
@@ -453,7 +456,7 @@ for i in 1:sweep_resolution
   prob_Gamma_sscs = ODEProblem(Plant.melibeNew, Γ_SD_minus0, SSCS_ODE_TSPAN, p[], callback=cb_Gamma_sscs)
   sol_Gamma_sscs = solve(prob_Gamma_sscs, Tsit5(), abstol=1e-8, reltol=1e-8, save_everystep=false)
   Gamma_SD_minus0_scs = state_machine_Gamma_SD_minus0[:scs]
-  # println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
+  println("SSCS for Γ_SD_minus0: ", Gamma_SD_minus0_scs)
 
   # Compute the LZ complexity of the SSCS for Γ_SD^-.
   @time LZ_complexity = normalized_LZ76_complexity(Gamma_SD_minus0_scs)
@@ -651,9 +654,9 @@ ax_lle = Axis(fig[3, 1], title=L"\text{Leading Lyapunov Exponent}",
 # Link the horizontal axes together.
 linkxaxes!(ax_htop, ax_lz_complexity, ax_lle)
 
-lines!(ax_htop, ΔCas, htop_values)
-lines!(ax_lz_complexity, ΔCas, lz_complexity_values)
-lines!(ax_lle, ΔCas, lle_values)
+lines!(ax_htop, ΔCas[1:320], htop_values[1:320])
+lines!(ax_lz_complexity, ΔCas[1:320], lz_complexity_values[1:320])
+lines!(ax_lle, ΔCas[1:320], lle_values[1:320])
 display(fig)
 
 # Save the figure to a file.
