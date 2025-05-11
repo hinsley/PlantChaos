@@ -634,13 +634,25 @@ end
 # lz_complexity_values, htop_values, lle_values, ΔCas = load_saved_data()
 
 # Plot the results.
-fig = Figure(size=(1000, 1200))
-ax_lz_complexity = Axis(fig[1, 1], title="LZ Complexity", xlabel=L"$\Delta$Ca", ylabel="LZ Complexity")
-ax_htop = Axis(fig[2, 1], title="Topological Entropy", xlabel=L"$\Delta$Ca", ylabel="Topological Entropy")
-ax_lle = Axis(fig[3, 1], title="Leading Lyapunov exponent", xlabel=L"$\Delta$Ca", ylabel="LLE")
+fig = Figure(size=(1200, 1200))
+ax_htop = Axis(fig[1, 1], title=L"\text{Topological Entropy}", 
+    titlesize=24,
+    ylabel=L"h_{top}", 
+    ylabelsize=24)
+ax_lz_complexity = Axis(fig[2, 1], title=L"\text{Lempel-Ziv Complexity}", 
+    titlesize=24,
+    ylabel=L"\text{LZ76}", 
+    ylabelsize=24)
+ax_lle = Axis(fig[3, 1], title=L"\text{Leading Lyapunov Exponent}", 
+    titlesize=24,
+    xlabel=L"$\Delta$Ca", ylabel=L"\text{LLE}", 
+    xlabelsize=24, ylabelsize=24)
 
-lines!(ax_lz_complexity, ΔCas, lz_complexity_values)
+# Link the horizontal axes together.
+linkxaxes!(ax_htop, ax_lz_complexity, ax_lle)
+
 lines!(ax_htop, ΔCas, htop_values)
+lines!(ax_lz_complexity, ΔCas, lz_complexity_values)
 lines!(ax_lle, ΔCas, lle_values)
 display(fig)
 
