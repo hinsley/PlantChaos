@@ -8,7 +8,7 @@ Pkg.instantiate()
 
 using GLMakie, OrdinaryDiffEq, StaticArrays, Roots, NonlinearSolve
 using Interpolations, ForwardDiff, LinearAlgebra, DynamicalSystems
-using ProgressMeter
+using ProgressMeter, JLD2
 
 include("../model/Plant.jl")
 using .Plant
@@ -619,6 +619,19 @@ Threads.@threads for i in 1:sweep_resolution
   lle_values[i] = LLE_val
   next!(progress_bar)
 end
+
+# Save the computed values to a JLD2 file for later use.
+@save "./kneading/lz_htop_lle_data.jld2" lz_complexity_values htop_values lle_values ΔCas
+println("Data saved to lz_htop_lle_data.jld2.")
+
+# Function to load the saved data if needed.
+function load_saved_data(filename="./kneading/lz_htop_lle_data.jld2")
+    data = load(filename)
+    return data["lz_complexity_values"], data["htop_values"], data["lle_values"], data["ΔCas"]
+end
+
+# Load the saved values.
+# lz_complexity_values, htop_values, lle_values, ΔCas = load_saved_data()
 
 # Plot the results.
 fig = Figure(size=(1000, 1200))
