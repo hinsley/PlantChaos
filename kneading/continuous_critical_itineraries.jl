@@ -279,7 +279,7 @@ end
 const TRANSIENT_TIME = 1e3 # Time to wait before beginning to detect events.
 const MAX_SEQ_LENGTH = 300 # Maximum length of signed spike counts before terminating trajectory integration.
 const MAX_SPIKE_COUNT = 35 # Maximum number of spikes in a single burst before considering the trajectory tonic-spiking and terminating.
-const SSCS_ODE_TSPAN = (0.0, 1e6) # Timespan for SSCS ODE solves.
+const SSCS_ODE_TSPAN = (0.0, 1e8) # Timespan for SSCS ODE solves.
 
 # Iterate over the parameter values in the specified sweep range.
 lz_complexity_values = Float64[]
