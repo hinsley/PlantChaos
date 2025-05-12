@@ -25,9 +25,6 @@ sweep_resolution = 1200
 
 Δx = Δxs[1]
 ΔCa = ΔCas[1]
-# TODO: Remove.
-# ΔCa = -34.44703919933278
-# ΔCa = ΔCas[204]
 
 base_params = Plant.default_params[1:15]
 p_svector = SVector{17, Float64}([base_params..., Δx, ΔCa])
@@ -724,15 +721,15 @@ end
 fig = Figure(size=(1200, 1200))
 ax_htop = Axis(fig[1, 1], title=L"\text{Topological Entropy}", 
     titlesize=24,
-    ylabel=L"h_{top}", 
+    ylabel=L"h_{\text{top}}", 
     ylabelsize=24)
 ax_lz_complexity = Axis(fig[2, 1], title=L"\text{Lempel-Ziv Complexity (\Gamma_{\text{SD}}^-)}", 
     titlesize=24,
     ylabel=L"\text{LZ76}", 
     ylabelsize=24)
-ax_lle = Axis(fig[3, 1], title=L"\text{Leading Lyapunov Exponent}", 
+ax_lle = Axis(fig[3, 1], title=L"\text{Maximum Lyapunov Exponent}", 
     titlesize=24,
-    xlabel=L"$\Delta$Ca", ylabel=L"\text{LLE}", 
+    xlabel=L"$\Delta$Ca", ylabel=L"\text{MLE}", 
     xlabelsize=24, ylabelsize=24)
 
 # Link the horizontal axes together.
